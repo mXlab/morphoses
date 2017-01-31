@@ -228,26 +228,26 @@ void loop()
         }
         if (messIn.fullMatch("/stream")) {
           if (OSCDebug) Serial.println("STREAM");
-          if (messIn.isInt(0)) {
+          if (argIsNumber(messIn, 0)) {
             if (OSCDebug) Serial.print("stream value ");
-            int32_t val = messIn.getInt(0);
+            int32_t val = getArgAsInt(messIn, 0);
             if (OSCDebug) Serial.println(val);
             sendOSC = (val != 0);
           }
         }
         else if (messIn.fullMatch("/replyto")) {
           if (OSCDebug) Serial.println("REPLYTO");
-          if (messIn.isInt(0)) {
+          if (argIsNumber(messIn, 0)) {
             if (OSCDebug) Serial.print("reply value ");
-            uint8_t val = (uint8_t)messIn.getInt(0);
+            int32_t val = getArgAsInt(messIn, 0);
             if (OSCDebug) Serial.println(val);
             destIP[3] = val;
           }
         }
         else if (messIn.fullMatch("/motor/1")) {
-          if (messIn.isInt(0)) {
+          if (argIsNumber(messIn, 0)) {
             if (OSCDebug) Serial.print("motor 1 value ");
-            int32_t val = messIn.getInt(0);
+            int32_t val = getArgAsInt(messIn, 0);
             if (OSCDebug) Serial.println(val);
             char val8 = (char)(val&0xFF);
             Wire.beginTransmission(MOTOR1_I2C_ADDRESS); // transmit to device #8
@@ -260,9 +260,9 @@ void loop()
           }
         }
         else if (messIn.fullMatch("/motor/2")) {
-          if (messIn.isInt(0)) {
+          if (argIsNumber(messIn, 0)) {
             if (OSCDebug) Serial.print("motor 2 value ");
-            int32_t val = messIn.getInt(0);
+            int32_t val = getArgAsInt(messIn, 0);
             if (OSCDebug) Serial.println(val);
             char val8 = (char)(val&0xFF);
             Wire.beginTransmission(MOTOR2_I2C_ADDRESS); // transmit to device #8
@@ -283,9 +283,9 @@ void loop()
         }
         else if (messIn.fullMatch("/red")) {
           if (OSCDebug) Serial.println("RED");
-          if (messIn.isInt(0)) {
+          if (argIsNumber(messIn, 0)) {
             if (OSCDebug) Serial.print("value ");
-            int32_t val = messIn.getInt(0);
+            int32_t val = getArgAsInt(messIn, 0);
             if (OSCDebug) Serial.println(val);
             //digitalWrite(redLed, (val != 0));
             analogWrite(redLed, (val%256));
@@ -293,9 +293,9 @@ void loop()
         }
         else if (messIn.fullMatch("/green")) {
           if (OSCDebug) Serial.println("GREEN");
-          if (messIn.isInt(0)) {
+          if (argIsNumber(messIn, 0)) {
             if (OSCDebug) Serial.print("value ");
-            int32_t val = messIn.getInt(0);
+            int32_t val = getArgAsInt(messIn, 0);
             if (OSCDebug) Serial.println(val);
             //digitalWrite(greenLed, (val != 0));
             analogWrite(greenLed, (val%256));
@@ -303,9 +303,9 @@ void loop()
         }
         else if (messIn.fullMatch("/blue")) {
           if (OSCDebug) Serial.println("BLUE");
-          if (messIn.isInt(0)) {
+          if (argIsNumber(messIn, 0)) {
             if (OSCDebug) Serial.print("value ");
-            int32_t val = messIn.getInt(0);
+            int32_t val = getArgAsInt(messIn, 0);
             if (OSCDebug) Serial.println(val);
             //digitalWrite(blueLed, (val != 0));
             analogWrite(blueLed, (val%256));
@@ -326,11 +326,11 @@ void loop()
         break;
     }
   } //if (packetSize)
-  
+
   // If intPin goes high, all data registers have new data
   // On interrupt, check if data ready interrupt
   if (myIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
-  {  
+  {
     myIMU.readAccelData(myIMU.accelCount);  // Read the x/y/z adc values
     myIMU.getAres();
 
@@ -445,7 +445,7 @@ void loop()
         bndl.add("/gyro/ds").add(myIMU.gx).add(myIMU.gy).add(myIMU.gz);
         bndl.add("/mag/mG").add(myIMU.mx).add(myIMU.my).add(myIMU.mz);
       }
-      
+
       if(SerialDebug)
       {
         Serial.print("ax = "); Serial.print((int)1000*myIMU.ax);
@@ -552,7 +552,7 @@ void loop()
         Serial.print("(0)");
         Serial.println(tick0, HEX);
       }
-      int32_t motor1Ticks = (tick3<<24) + (tick2<<16) + (tick1<<8) + tick0; 
+      int32_t motor1Ticks = (tick3<<24) + (tick2<<16) + (tick1<<8) + tick0;
       if (sendOSC) bndl.add("/motor/1/ticks").add(motor1Ticks);
 
       // get the motor 2 encoder count
@@ -573,7 +573,7 @@ void loop()
         Serial.print("(0)");
         Serial.println(tick0, HEX);
       }
-      int32_t motor2Ticks = (tick3<<24) + (tick2<<16) + (tick1<<8) + tick0; 
+      int32_t motor2Ticks = (tick3<<24) + (tick2<<16) + (tick1<<8) + tick0;
       if (sendOSC) {
         bndl.add("/motor/2/ticks").add(motor2Ticks);
         udp.beginPacket(destIP, destPort);
@@ -585,7 +585,23 @@ void loop()
       myIMU.sumCount = 0;
       myIMU.sum = 0;
     } // if (myIMU.delt_t > 500)
-    
+
   } // if (AHRS)
 }
 
+int32_t getArgAsInt(OSCMessage& msg, int index) {
+  if (msg.isInt(index))
+    return msg.getInt(index);
+  else if (msg.isBoolean(index))
+    return (msg.getBoolean(index) ? 1 : 0);
+  else {
+    double val = 0;
+    if (msg.isFloat(index))       val = msg.getFloat(index);
+    else if (msg.isDouble(index)) val = msg.getDouble(index);
+    return round(val);
+  }
+}
+
+boolean argIsNumber(OSCMessage& msg, int index) {
+  return (msg.isInt(index) || msg.isFloat(index) || msg.isDouble(index) || msg.isBoolean(index));
+}
