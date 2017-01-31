@@ -236,6 +236,15 @@ void loop()
             sendOSC = (val != 0);
           }
         }
+        else if (messIn.fullMatch("/replyto")) {
+          if (OSCDebug) Serial.println("REPLYTO");
+          if (messIn.isInt(0)) {
+            if (OSCDebug) Serial.print("reply value ");
+            uint8_t val = (uint8_t)messIn.getInt(0);
+            if (OSCDebug) Serial.println(val);
+            destIP[3] = val;
+          }
+        }
         else if (messIn.fullMatch("/motor/1")) {
           if (messIn.isInt(0)) {
             if (OSCDebug) Serial.print("motor 1 value ");
