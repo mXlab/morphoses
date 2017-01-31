@@ -53,6 +53,7 @@ const int intPin = 4;  // incoming MPU9250 interrupt
 const int redLed  = 5;  // red led is also green pin 5 on-board led
 const int greenLed = 12;
 const int blueLed = 13;
+const int power = 0; // controls power to the rest of the ball
 const byte MOTOR1_I2C_ADDRESS = 8; // i2c address of motor 1
 const byte MOTOR2_I2C_ADDRESS = 16; // i2c address of motor 2
 const byte MOTOR_SPEED = 1; // selector for motor speed
@@ -86,6 +87,8 @@ void setup()
   digitalWrite(redLed, HIGH);
   digitalWrite(greenLed, HIGH);
   digitalWrite(greenLed, HIGH);
+  pinMode(power, OUTPUT);
+  digitalWrite(power, LOW);
 
   // Read the WHO_AM_I register, this is a good test of communication
   byte c = myIMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
@@ -233,6 +236,15 @@ void loop()
             int32_t val = getArgAsInt(messIn, 0);
             if (OSCDebug) Serial.println(val);
             sendOSC = (val != 0);
+          }
+        }
+        else if (messIn.fullMatch("/power")) {
+          if (OSCDebug) Serial.println("POWER");
+          if (argIsNumber(messIn, 0)) {
+            if (OSCDebug) Serial.print("power value ");
+            int32_t val = getArgAsInt(messIn, 0);
+            if (OSCDebug) Serial.println(val);
+            digitalWrite(power, val ? HIGH : LOW);
           }
         }
         else if (messIn.fullMatch("/replyto")) {
