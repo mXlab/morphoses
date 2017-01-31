@@ -508,10 +508,14 @@ void loop()
                     - *(getQ()+2) * *(getQ()+2) + *(getQ()+3) * *(getQ()+3));
       myIMU.pitch *= RAD_TO_DEG;
       myIMU.yaw   *= RAD_TO_DEG;
-      // Declination of SparkFun Electronics (40°05'26.6"N 105°11'05.9"W) is
-      // 	8° 30' E  ± 0° 21' (or 8.5°) on 2016-07-19
+       // Declination of SparkFun Electronics (40°05'26.6"N 105°11'05.9"W) is
+       //       8° 30' E  ± 0° 21' (or 8.5°) on 2016-07-19
+       // - http://www.ngdc.noaa.gov/geomag-web/#declination
+      //myIMU.yaw   -= 8.5;
+      // Declination of Concordia University EV Building is
+      // 14.47° W  ± 0.38° on 2017-01-31
       // - http://www.ngdc.noaa.gov/geomag-web/#declination
-      myIMU.yaw   -= 8.5;
+      myIMU.yaw   -= -14.47;
       myIMU.roll  *= RAD_TO_DEG;
 
       if (sendOSC) {
