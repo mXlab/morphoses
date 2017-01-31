@@ -47,7 +47,7 @@ instruments and provide superior reliability and accuracy.
 #define SerialDebug false  // Set to true to get Serial output for debugging
 const bool OSCDebug = true; // debug-print OSC packet stuff
 boolean sendOSC = true; // set to true to stream samples
-      
+
 // Pin definitions for ESP8266Thing
 const int intPin = 4;  // incoming MPU9250 interrupt
 const int redLed  = 5;  // red led is also green pin 5 on-board led
@@ -69,7 +69,7 @@ const char *ssid = "ball"; // Pointer to the SSID (max 63 char)
 const char *password = "roller"; // for WPA2 min 8 char, for open use NULL
 unsigned int localPort = 8765; // local port to listen for UDP packets
 unsigned int destPort = 8766; // remote port to send UDP packets
-IPAddress destIP(192,168, 4, 2); // remote IP
+IPAddress destIP(192, 168, 4, 2); // remote IP
 char packetBuffer[128];
 
 void setup()
@@ -149,7 +149,7 @@ void setup()
   }
   digitalWrite(blueLed, LOW);
 
-  // now start the wifi  
+  // now start the wifi
   Serial.print("Configuring access point...");
   /* You can remove the password parameter if you want the AP to be open. */
   if (!WiFi.softAP(ssid, password)) {
@@ -165,7 +165,7 @@ void setup()
  * @param channel       WiFi channel number, 1 - 13.
  * @param ssid_hidden   Network cloaking (0 = broadcast SSID, 1 = hide SSID)
  */
- 
+
   IPAddress myIP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
   Serial.println(myIP);
@@ -178,14 +178,13 @@ void setup()
   Serial.print("Local port: ");
   Serial.println(udp.localPort());
   digitalWrite(redLed, LOW);
-
 }
 
 void loop()
 {
     // if there's data available, read a packet
   int packetSize = udp.parsePacket();
-  
+
   if (packetSize)
   {
     if (OSCDebug) {
