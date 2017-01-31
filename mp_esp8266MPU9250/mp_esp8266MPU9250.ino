@@ -75,6 +75,9 @@ char packetBuffer[128];
 
 void setup()
 {
+  pinMode(power, OUTPUT);
+  digitalWrite(power, HIGH);
+
   Wire.begin();
   // TWBR = 12;  // 400 kbit/sec I2C speed
   Serial.begin(115200);
@@ -87,8 +90,6 @@ void setup()
   digitalWrite(redLed, HIGH);
   digitalWrite(greenLed, HIGH);
   digitalWrite(greenLed, HIGH);
-  pinMode(power, OUTPUT);
-  digitalWrite(power, LOW);
 
   // Read the WHO_AM_I register, this is a good test of communication
   byte c = myIMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
@@ -244,7 +245,7 @@ void loop()
             if (OSCDebug) Serial.print("power value ");
             int32_t val = getArgAsInt(messIn, 0);
             if (OSCDebug) Serial.println(val);
-            digitalWrite(power, val ? HIGH : LOW);
+            digitalWrite(power, val ? LOW : HIGH);
           }
         }
         else if (messIn.fullMatch("/replyto")) {
