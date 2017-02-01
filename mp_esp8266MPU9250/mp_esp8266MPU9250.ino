@@ -44,7 +44,7 @@ traditional mechanical gyroscopic flight
 instruments and provide superior reliability and accuracy.
 */
 #define AHRS true         // Set to false for basic data read
-#define SerialDebug false  // Set to true to get Serial output for debugging
+#define SerialDebug true  // Set to true to get Serial output for debugging
 const bool OSCDebug = true; // debug-print OSC packet stuff
 boolean sendOSC = true; // set to true to stream samples
 
@@ -482,22 +482,22 @@ void loop()
         Serial.print(" qz = "); Serial.println(*(getQ() + 3));
       }
 
-// Define output variables from updated quaternion---these are Tait-Bryan
-// angles, commonly used in aircraft orientation. In this coordinate system,
-// the positive z-axis is down toward Earth. Yaw is the angle between Sensor
-// x-axis and Earth magnetic North (or true North if corrected for local
-// declination, looking down on the sensor positive yaw is counterclockwise.
-// Pitch is angle between sensor x-axis and Earth ground plane, toward the
-// Earth is positive, up toward the sky is negative. Roll is angle between
-// sensor y-axis and Earth ground plane, y-axis up is positive roll. These
-// arise from the definition of the homogeneous rotation matrix constructed
-// from quaternions. Tait-Bryan angles as well as Euler angles are
-// non-commutative; that is, the get the correct orientation the rotations
-// must be applied in the correct order which for this configuration is yaw,
-// pitch, and then roll.
-// For more see
-// http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-// which has additional links.
+      // Define output variables from updated quaternion---these are Tait-Bryan
+      // angles, commonly used in aircraft orientation. In this coordinate system,
+      // the positive z-axis is down toward Earth. Yaw is the angle between Sensor
+      // x-axis and Earth magnetic North (or true North if corrected for local
+      // declination, looking down on the sensor positive yaw is counterclockwise.
+      // Pitch is angle between sensor x-axis and Earth ground plane, toward the
+      // Earth is positive, up toward the sky is negative. Roll is angle between
+      // sensor y-axis and Earth ground plane, y-axis up is positive roll. These
+      // arise from the definition of the homogeneous rotation matrix constructed
+      // from quaternions. Tait-Bryan angles as well as Euler angles are
+      // non-commutative; that is, the get the correct orientation the rotations
+      // must be applied in the correct order which for this configuration is yaw,
+      // pitch, and then roll.
+      // For more see
+      // http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+      // which has additional links.
       myIMU.yaw   = atan2(2.0f * (*(getQ()+1) * *(getQ()+2) + *getQ() *
                     *(getQ()+3)), *getQ() * *getQ() + *(getQ()+1) * *(getQ()+1)
                     - *(getQ()+2) * *(getQ()+2) - *(getQ()+3) * *(getQ()+3));
