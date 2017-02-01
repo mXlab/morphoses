@@ -44,7 +44,7 @@ traditional mechanical gyroscopic flight
 instruments and provide superior reliability and accuracy.
 */
 #define AHRS true         // Set to false for basic data read
-#define SerialDebug true  // Set to true to get Serial output for debugging
+#define SerialDebug false  // Set to true to get Serial output for debugging
 const bool OSCDebug = true; // debug-print OSC packet stuff
 boolean sendOSC = true; // set to true to stream samples
 
@@ -525,9 +525,10 @@ void loop()
                     - *(getQ()+2) * *(getQ()+2) + *(getQ()+3) * *(getQ()+3));
       myIMU.pitch *= RAD_TO_DEG;
       myIMU.yaw   *= RAD_TO_DEG;
-       // Declination of SparkFun Electronics (40°05'26.6"N 105°11'05.9"W) is
-       //       8° 30' E  ± 0° 21' (or 8.5°) on 2016-07-19
-       // - http://www.ngdc.noaa.gov/geomag-web/#declination
+
+      // Declination of SparkFun Electronics (40°05'26.6"N 105°11'05.9"W) is
+      // 	8° 30' E  ± 0° 21' (or 8.5°) on 2016-07-19
+      // - http://www.ngdc.noaa.gov/geomag-web/#declination
       //myIMU.yaw   -= 8.5;
       // Declination of Concordia University EV Building is
       // 14.47° W  ± 0.38° on 2017-01-31
