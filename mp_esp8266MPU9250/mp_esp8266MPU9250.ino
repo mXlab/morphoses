@@ -644,7 +644,9 @@ void autoCalibrateMagMPU9250()
   avg_rad /= 3.0;
 
   for (int i = 0; i < 3; i++) {
-    magScale[i] = avg_rad/((float)magScale[i]);
+    if (magScale[i] != 0) {
+      magScale[i] = avg_rad/((float)magScale[i]);
+    }
   }
 }
 
