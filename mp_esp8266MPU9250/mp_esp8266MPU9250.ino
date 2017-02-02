@@ -44,7 +44,7 @@ traditional mechanical gyroscopic flight
 instruments and provide superior reliability and accuracy.
 */
 #define AHRS true         // Set to false for basic data read
-#define SerialDebug true  // Set to true to get Serial output for debugging
+#define SerialDebug false  // Set to true to get Serial output for debugging
 const bool OSCDebug = true; // debug-print OSC packet stuff
 boolean sendOSC = true; // set to true to stream samples
 
@@ -133,6 +133,7 @@ void setup()
     myIMU.initAK8963(myIMU.magCalibration);
     // Initialize device for active mode read of magnetometer
     Serial.println("AK8963 initialized for active data mode....");
+
     if (SerialDebug)
     {
       //  Serial.println("Calibration values: ");
@@ -395,10 +396,11 @@ void loop()
   // along the x-axis just like in the LSM9DS0 sensor. This rotation can be
   // modified to allow any convenient orientation convention. This is ok by
   // aircraft orientation standards! Pass gyro rate as rad/s
-//  MadgwickQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f, gz*PI/180.0f,  my,  mx, mz);
-  MahonyQuaternionUpdate(myIMU.ax, myIMU.ay, myIMU.az, myIMU.gx*DEG_TO_RAD,
-                         myIMU.gy*DEG_TO_RAD, myIMU.gz*DEG_TO_RAD, myIMU.my,
-                         myIMU.mx, myIMU.mz, myIMU.deltat);
+  //  MadgwickQuaternionUpdate(ax, ay, az, gx*PI/180.0f, gy*PI/180.0f, gz*PI/180.0f,  my,  mx, mz);
+  MahonyQuaternionUpdate(myIMU.ax, myIMU.ay, myIMU.az,
+                         myIMU.gx*DEG_TO_RAD, myIMU.gy*DEG_TO_RAD, myIMU.gz*DEG_TO_RAD,
+                         myIMU.my, myIMU.mx, myIMU.mz,
+                         myIMU.deltat);
 
   if (!AHRS)
   {
@@ -508,9 +510,10 @@ void loop()
                     - *(getQ()+2) * *(getQ()+2) + *(getQ()+3) * *(getQ()+3));
       myIMU.pitch *= RAD_TO_DEG;
       myIMU.yaw   *= RAD_TO_DEG;
-       // Declination of SparkFun Electronics (40°05'26.6"N 105°11'05.9"W) is
-       //       8° 30' E  ± 0° 21' (or 8.5°) on 2016-07-19
-       // - http://www.ngdc.noaa.gov/geomag-web/#declination
+
+      // Declination of SparkFun Electronics (40°05'26.6"N 105°11'05.9"W) is
+      // 	8° 30' E  ± 0° 21' (or 8.5°) on 2016-07-19
+      // - http://www.ngdc.noaa.gov/geomag-web/#declination
       //myIMU.yaw   -= 8.5;
       // Declination of Concordia University EV Building is
       // 14.47° W  ± 0.38° on 2017-01-31
