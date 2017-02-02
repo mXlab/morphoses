@@ -636,7 +636,8 @@ void autoCalibrateMagMPU9250()
   // Get hard iron correction
   float avg_rad = 0;
   for (int i = 0; i < 3; i++) {
-    myIMU.magbias[i] = magScale[i] = (mag_max[i] + mag_min[i])/2;
+    myIMU.magbias[i] = (mag_max[i] + mag_min[i])/2;
+    magScale[i]      = (mag_max[i] - mag_min[i])/2;
     avg_rad += magScale[i];
     myIMU.magbias[i] = (float) myIMU.magbias[i]*myIMU.mRes*myIMU.magCalibration[i];  // save mag biases in G for main program
   }
