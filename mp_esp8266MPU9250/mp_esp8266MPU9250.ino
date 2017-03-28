@@ -259,100 +259,8 @@ void loop()
           Serial.print("address: ");
           Serial.println(addressIn);
         }
-        if (messIn.fullMatch("/stream")) {
-          if (OSCDebug) Serial.println("STREAM");
-          if (argIsNumber(messIn, 0)) {
-            if (OSCDebug) Serial.print("stream value ");
-            int32_t val = getArgAsInt(messIn, 0);
-            if (OSCDebug) Serial.println(val);
-            sendOSC = (val != 0);
-          }
-        }
-        else if (messIn.fullMatch("/power")) {
-          if (OSCDebug) Serial.println("POWER");
-          if (argIsNumber(messIn, 0)) {
-            if (OSCDebug) Serial.print("power value ");
-            int32_t val = getArgAsInt(messIn, 0);
-            if (OSCDebug) Serial.println(val);
-            digitalWrite(power, val ? LOW : HIGH);
-          }
-        }
-        else if (messIn.fullMatch("/replyto")) {
-          if (OSCDebug) Serial.println("REPLYTO");
-          if (argIsNumber(messIn, 0)) {
-            if (OSCDebug) Serial.print("reply value ");
-            int32_t val = getArgAsInt(messIn, 0);
-            if (OSCDebug) Serial.println(val);
-            destIP[3] = val;
-          }
-        }
-        else if (messIn.fullMatch("/motor/1")) {
-          if (argIsNumber(messIn, 0)) {
-            if (OSCDebug) Serial.print("motor 1 value ");
-            int32_t val = getArgAsInt(messIn, 0);
-            if (OSCDebug) Serial.println(val);
-            char val8 = (char)(val&0xFF);
-            Wire.beginTransmission(MOTOR1_I2C_ADDRESS); // transmit to device #8
-            Wire.write(MOTOR_SPEED); // sends one byte
-            Wire.write(val>>24); // send 4 bytes bigendian 32-bit int
-            Wire.write(val>>16);
-            Wire.write(val>>8);
-            Wire.write(val);
-            Wire.endTransmission(); // stop transmitting
-          }
-        }
-        else if (messIn.fullMatch("/motor/2")) {
-          if (argIsNumber(messIn, 0)) {
-            if (OSCDebug) Serial.print("motor 2 value ");
-            int32_t val = getArgAsInt(messIn, 0);
-            if (OSCDebug) Serial.println(val);
-            char val8 = (char)(val&0xFF);
-            Wire.beginTransmission(MOTOR2_I2C_ADDRESS); // transmit to device #8
-            Wire.write(MOTOR_POSITION); // sends one byte
-            Wire.write(val>>24); // send 4 bytes bigendian 32-bit int
-            Wire.write(val>>16);
-            Wire.write(val>>8);
-            Wire.write(val);
-            Wire.endTransmission(); // stop transmitting
-          }
-        }
-        else if (messIn.fullMatch("/reset/2")) {
-          // no args
-          if (OSCDebug) Serial.println("reset 2");
-          Wire.beginTransmission(MOTOR2_I2C_ADDRESS); // transmit to device #8
-          Wire.write(MOTOR_RESET); // sends one byte
-          Wire.endTransmission(); // stop transmitting
-        }
-        else if (messIn.fullMatch("/red")) {
-          if (OSCDebug) Serial.println("RED");
-          if (argIsNumber(messIn, 0)) {
-            if (OSCDebug) Serial.print("value ");
-            int32_t val = getArgAsInt(messIn, 0);
-            if (OSCDebug) Serial.println(val);
-            //digitalWrite(redLed, (val != 0));
-            analogWrite(redLed, (val%256));
-          }
-        }
-        else if (messIn.fullMatch("/green")) {
-          if (OSCDebug) Serial.println("GREEN");
-          if (argIsNumber(messIn, 0)) {
-            if (OSCDebug) Serial.print("value ");
-            int32_t val = getArgAsInt(messIn, 0);
-            if (OSCDebug) Serial.println(val);
-            //digitalWrite(greenLed, (val != 0));
-            analogWrite(greenLed, (val%256));
-          }
-        }
-        else if (messIn.fullMatch("/blue")) {
-          if (OSCDebug) Serial.println("BLUE");
-          if (argIsNumber(messIn, 0)) {
-            if (OSCDebug) Serial.print("value ");
-            int32_t val = getArgAsInt(messIn, 0);
-            if (OSCDebug) Serial.println(val);
-            //digitalWrite(blueLed, (val != 0));
-            analogWrite(blueLed, (val%256));
-          }
-        }
+        processMessage(messIn);
+
         break;
       case BUFFER_FULL:
         if (OSCDebug) Serial.println("BUFFER_FULL error");
@@ -724,7 +632,7 @@ void magcalMPU9250(float * dest1, float * dest2)
    Serial.println("Mag Calibration done!");
 }
 
-
+/// Smart-converts argument from message to integer.
 int32_t getArgAsInt(OSCMessage& msg, int index) {
   if (msg.isInt(index))
     return msg.getInt(index);
@@ -738,6 +646,104 @@ int32_t getArgAsInt(OSCMessage& msg, int index) {
   }
 }
 
+/// Returns true iff argument from message is convertible to a number.
 boolean argIsNumber(OSCMessage& msg, int index) {
   return (msg.isInt(index) || msg.isFloat(index) || msg.isDouble(index) || msg.isBoolean(index));
+}
+
+void processMessage(OSCMessage& messIn) {
+  if (messIn.fullMatch("/stream")) {
+    if (OSCDebug) Serial.println("STREAM");
+    if (argIsNumber(messIn, 0)) {
+      if (OSCDebug) Serial.print("stream value ");
+      int32_t val = getArgAsInt(messIn, 0);
+      if (OSCDebug) Serial.println(val);
+      sendOSC = (val != 0);
+    }
+  }
+  else if (messIn.fullMatch("/power")) {
+    if (OSCDebug) Serial.println("POWER");
+    if (argIsNumber(messIn, 0)) {
+      if (OSCDebug) Serial.print("power value ");
+      int32_t val = getArgAsInt(messIn, 0);
+      if (OSCDebug) Serial.println(val);
+      digitalWrite(power, val ? LOW : HIGH);
+    }
+  }
+  else if (messIn.fullMatch("/replyto")) {
+    if (OSCDebug) Serial.println("REPLYTO");
+    if (argIsNumber(messIn, 0)) {
+      if (OSCDebug) Serial.print("reply value ");
+      int32_t val = getArgAsInt(messIn, 0);
+      if (OSCDebug) Serial.println(val);
+      destIP[3] = val;
+    }
+  }
+  else if (messIn.fullMatch("/motor/1")) {
+    if (argIsNumber(messIn, 0)) {
+      if (OSCDebug) Serial.print("motor 1 value ");
+      int32_t val = getArgAsInt(messIn, 0);
+      if (OSCDebug) Serial.println(val);
+      char val8 = (char)(val&0xFF);
+      Wire.beginTransmission(MOTOR1_I2C_ADDRESS); // transmit to device #8
+      Wire.write(MOTOR_SPEED); // sends one byte
+      Wire.write(val>>24); // send 4 bytes bigendian 32-bit int
+      Wire.write(val>>16);
+      Wire.write(val>>8);
+      Wire.write(val);
+      Wire.endTransmission(); // stop transmitting
+    }
+  }
+  else if (messIn.fullMatch("/motor/2")) {
+    if (argIsNumber(messIn, 0)) {
+      if (OSCDebug) Serial.print("motor 2 value ");
+      int32_t val = getArgAsInt(messIn, 0);
+      if (OSCDebug) Serial.println(val);
+      char val8 = (char)(val&0xFF);
+      Wire.beginTransmission(MOTOR2_I2C_ADDRESS); // transmit to device #8
+      Wire.write(MOTOR_POSITION); // sends one byte
+      Wire.write(val>>24); // send 4 bytes bigendian 32-bit int
+      Wire.write(val>>16);
+      Wire.write(val>>8);
+      Wire.write(val);
+      Wire.endTransmission(); // stop transmitting
+    }
+  }
+  else if (messIn.fullMatch("/reset/2")) {
+    // no args
+    if (OSCDebug) Serial.println("reset 2");
+    Wire.beginTransmission(MOTOR2_I2C_ADDRESS); // transmit to device #8
+    Wire.write(MOTOR_RESET); // sends one byte
+    Wire.endTransmission(); // stop transmitting
+  }
+  else if (messIn.fullMatch("/red")) {
+    if (OSCDebug) Serial.println("RED");
+    if (argIsNumber(messIn, 0)) {
+      if (OSCDebug) Serial.print("value ");
+      int32_t val = getArgAsInt(messIn, 0);
+      if (OSCDebug) Serial.println(val);
+      //digitalWrite(redLed, (val != 0));
+      analogWrite(redLed, (val%256));
+    }
+  }
+  else if (messIn.fullMatch("/green")) {
+    if (OSCDebug) Serial.println("GREEN");
+    if (argIsNumber(messIn, 0)) {
+      if (OSCDebug) Serial.print("value ");
+      int32_t val = getArgAsInt(messIn, 0);
+      if (OSCDebug) Serial.println(val);
+      //digitalWrite(greenLed, (val != 0));
+      analogWrite(greenLed, (val%256));
+    }
+  }
+  else if (messIn.fullMatch("/blue")) {
+    if (OSCDebug) Serial.println("BLUE");
+    if (argIsNumber(messIn, 0)) {
+      if (OSCDebug) Serial.print("value ");
+      int32_t val = getArgAsInt(messIn, 0);
+      if (OSCDebug) Serial.println(val);
+      //digitalWrite(blueLed, (val != 0));
+      analogWrite(blueLed, (val%256));
+    }
+  }
 }
