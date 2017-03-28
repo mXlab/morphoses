@@ -47,6 +47,8 @@ instruments and provide superior reliability and accuracy.
 #define SerialDebug false  // Set to true to get Serial output for debugging
 const bool OSCDebug = true; // debug-print OSC packet stuff
 boolean sendOSC = true; // set to true to stream samples
+#define useUdp true
+#define AP_MODE false
 
 // Pin definitions for ESP8266Thing
 const int intPin = 4;  // incoming MPU9250 interrupt
@@ -92,6 +94,55 @@ void setup()
   digitalWrite(greenLed, HIGH);
   digitalWrite(blueLed, HIGH);
 
+  /**
+   * Set up an access point
+   * @param ssid          Pointer to the SSID (max 63 char).
+   * @param passphrase    (for WPA2 min 8 char, for open use NULL)
+   * @param channel       WiFi channel number, 1 - 13.
+   * @param ssid_hidden   Network cloaking (0 = broadcast SSID, 1 = hide SSID)
+   */
+  // now start the wifi
+  WiFi.mode(WIFI_AP_STA);
+#if AP_MODE
+  Serial.print("Configuring access point...");
+  /* You can remove the password parameter if you want the AP to be open. */
+  if (!WiFi.softAP(ssid, password)) {
+    Serial.println("Can't start softAP");
+    while(1); // Loop forever if setup didn't work
+  }
+
+  IPAddress myIP = WiFi.softAPIP();
+  Serial.print("AP IP address: ");
+  Serial.println(myIP);
+
+#else
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  IPAddress myIP = WiFi.localIP();
+  Serial.println(myIP);
+#endif
+
+  digitalWrite(greenLed, LOW);
+
+
+  Serial.println("Starting UDP");
+  if (!udp.begin(localPort)) {
+    Serial.println("Can't start UDP");
+    while(1); // Loop forever if setup didn't work
+  }
+  Serial.print("Local port: ");
+  Serial.println(udp.localPort());
+  digitalWrite(redLed, LOW);
+
+  WiFi.printDiag(Serial);
   // Read the WHO_AM_I register, this is a good test of communication
   byte c = myIMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
   Serial.print("MPU9250 "); Serial.print("I AM "); Serial.print(c, HEX);
@@ -160,35 +211,6 @@ void setup()
   }
   digitalWrite(blueLed, LOW);
 
-  // now start the wifi
-  Serial.print("Configuring access point...");
-  /* You can remove the password parameter if you want the AP to be open. */
-  if (!WiFi.softAP(ssid, password)) {
-    Serial.println("Can't start softAP");
-    //while(1); // Loop forever if setup didn't work
-  }
-  digitalWrite(greenLed, LOW);
-
-/**
- * Set up an access point
- * @param ssid          Pointer to the SSID (max 63 char).
- * @param passphrase    (for WPA2 min 8 char, for open use NULL)
- * @param channel       WiFi channel number, 1 - 13.
- * @param ssid_hidden   Network cloaking (0 = broadcast SSID, 1 = hide SSID)
- */
-
-  IPAddress myIP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(myIP);
-
-  Serial.println("Starting UDP");
-  if (!udp.begin(localPort)) {
-    Serial.println("Can't start UDP");
-    while(1); // Loop forever if setup didn't work
-  }
-  Serial.print("Local port: ");
-  Serial.println(udp.localPort());
-  digitalWrite(redLed, LOW);
 }
 
 void loop()
