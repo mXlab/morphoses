@@ -62,6 +62,9 @@ const byte MOTOR_SPEED = 1; // selector for motor speed
 const byte MOTOR_POSITION = 2; // selector for motor encoder position
 const byte MOTOR_RESET = 3; // selector for motor home
 
+//#define SEND_DATA_INTERVAL 500
+#define SEND_DATA_INTERVAL 100
+
 MPU9250 myIMU;
 OSCBundle bndl;
 // A UDP instance to let us send and receive packets over UDP
@@ -350,7 +353,7 @@ void loop()
   if (!AHRS)
   {
     myIMU.delt_t = millis() - myIMU.count;
-    if (myIMU.delt_t > 500)
+    if (myIMU.delt_t > SEND_DATA_INTERVAL)
     {
       if(SerialDebug)
       {
@@ -388,7 +391,7 @@ void loop()
 
       myIMU.count = millis();
       digitalWrite(redLed, !digitalRead(redLed));  // toggle led
-    } // if (myIMU.delt_t > 500)
+    } // if (myIMU.delt_t > SEND_DATA_INTERVAL)
   } // if (!AHRS)
   else
   {
@@ -396,7 +399,7 @@ void loop()
     myIMU.delt_t = millis() - myIMU.count;
 
     // update LCD once per half-second independent of read rate
-    if (myIMU.delt_t > 500)
+    if (myIMU.delt_t > SEND_DATA_INTERVAL)
     {
 
       if (sendOSC) {
@@ -549,7 +552,7 @@ void loop()
       myIMU.count = millis();
       myIMU.sumCount = 0;
       myIMU.sum = 0;
-    } // if (myIMU.delt_t > 500)
+    } // if (myIMU.delt_t > SEND_DATA_INTERVAL)
 
   } // if (AHRS)
 }
