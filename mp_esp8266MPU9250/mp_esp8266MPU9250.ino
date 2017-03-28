@@ -448,16 +448,28 @@ void loop()
       // For more see
       // http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
       // which has additional links.
-      myIMU.yaw   = atan2(2.0f * (*(getQ()+1) * *(getQ()+2) + *getQ() *
-                    *(getQ()+3)), *getQ() * *getQ() + *(getQ()+1) * *(getQ()+1)
-                    - *(getQ()+2) * *(getQ()+2) - *(getQ()+3) * *(getQ()+3));
-      myIMU.pitch = -asin(2.0f * (*(getQ()+1) * *(getQ()+3) - *getQ() *
-                    *(getQ()+2)));
-      myIMU.roll  = atan2(2.0f * (*getQ() * *(getQ()+1) + *(getQ()+2) *
-                    *(getQ()+3)), *getQ() * *getQ() - *(getQ()+1) * *(getQ()+1)
-                    - *(getQ()+2) * *(getQ()+2) + *(getQ()+3) * *(getQ()+3));
-      myIMU.pitch *= RAD_TO_DEG;
+      float q0 = *getQ(); float q1 = *(getQ()+1); float q2 = *(getQ()+2); float q3 = *(getQ()+3);
+
+			float test = q0*q2 - q3*q1;
+			if (test > 0.499f) {
+				myIMU.yaw   =   2 * atan2(q0, q3);
+				myIMU.pitch =   PI/2;
+				myIMU.roll  =   0;
+			}
+			else if (test < -0.499f) {
+				myIMU.yaw   = - 2 * atan2(q0, q3);
+				myIMU.pitch = - PI/2;
+				myIMU.roll  =   0;
+			}
+			else {
+				myIMU.yaw   =   atan2( 2 * (q0*q3 + q1*q2), 1 - 2 * (sq(q2) + sq(q3)) );
+				myIMU.pitch =   asin ( 2 * test );
+				myIMU.roll  =   atan2( 2 * (q0*q1 + q2*q3), 1 - 2 * (sq(q1) + sq(q2)) );
+			}
+
       myIMU.yaw   *= RAD_TO_DEG;
+      myIMU.pitch *= RAD_TO_DEG;
+      myIMU.roll  *= RAD_TO_DEG;
 
       // Declination of SparkFun Electronics (40°05'26.6"N 105°11'05.9"W) is
       // 	8° 30' E  ± 0° 21' (or 8.5°) on 2016-07-19
@@ -467,7 +479,6 @@ void loop()
       // 14.47° W  ± 0.38° on 2017-01-31
       // - http://www.ngdc.noaa.gov/geomag-web/#declination
       myIMU.yaw   -= -14.47;
-      myIMU.roll  *= RAD_TO_DEG;
 
       if (sendOSC) {
         bndl.add("/ypr/deg").add(myIMU.yaw).add(myIMU.pitch).add(myIMU.roll);
