@@ -544,9 +544,17 @@ void loop()
       int32_t motor2Ticks = (tick3<<24) + (tick2<<16) + (tick1<<8) + tick0;
       if (sendOSC) {
         bndl.add("/motor/2/ticks").add(motor2Ticks);
-        udp.beginPacket(destIP, destPort);
-        bndl.send(udp); // send the bytes to the SLIP stream
-        udp.endPacket(); // mark the end of the OSC Packet
+
+        if (useUdp) {
+          udp.beginPacket(destIP, destPort);
+          bndl.send(udp); // send the bytes to the SLIP stream
+          udp.endPacket(); // mark the end of the OSC Packet
+        }
+        else {
+          SLIPSerial.beginPacket();
+          bndl.send(udp); // send the bytes to the SLIP stream
+          SLIPSerial.endPacket(); // mark the end of the OSC Packet
+        }
         bndl.empty(); // empty the bundle to free room for a new one
       }
       myIMU.count = millis();
