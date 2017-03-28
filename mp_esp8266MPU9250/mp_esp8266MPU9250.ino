@@ -90,7 +90,7 @@ void setup()
   pinMode(blueLed, OUTPUT);
   digitalWrite(redLed, HIGH);
   digitalWrite(greenLed, HIGH);
-  digitalWrite(greenLed, HIGH);
+  digitalWrite(blueLed, HIGH);
 
   // Read the WHO_AM_I register, this is a good test of communication
   byte c = myIMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
