@@ -1,0 +1,36 @@
+#ifndef MORPHOSES_CONFIG_
+#define MORPHOSES_CONFIG_
+
+#define AHRS true         // Set to false for basic data read
+#define SerialDebug false  // Set to true to get Serial output for debugging
+const bool OSCDebug = true; // debug-print OSC packet stuff
+boolean sendOSC = true; // set to true to stream samples
+#define useUdp true
+#define AP_MODE false
+
+//#define SEND_DATA_INTERVAL 500
+#define SEND_DATA_INTERVAL 100
+
+const char *ssid = "ball"; // Pointer to the SSID (max 63 char)
+const char *password = "roller"; // for WPA2 min 8 char, for open use NULL
+unsigned int localPort = 8765; // local port to listen for UDP packets
+unsigned int destPort = 8766; // remote port to send UDP packets
+
+#define DEST_IP_0 192
+#define DEST_IP_1 168
+#define DEST_IP_2 0
+#define DEST_IP_3 100
+
+// Pin definitions for ESP8266Thing
+const int intPin = 4;  // incoming MPU9250 interrupt
+const int redLed  = 5;  // red led is also green pin 5 on-board led
+const int greenLed = 12;
+const int blueLed = 13;
+const int power = 0; // controls power to the rest of the ball
+const byte MOTOR1_I2C_ADDRESS = 8; // i2c address of motor 1
+const byte MOTOR2_I2C_ADDRESS = 16; // i2c address of motor 2
+const byte MOTOR_SPEED = 1; // selector for motor speed
+const byte MOTOR_POSITION = 2; // selector for motor encoder position
+const byte MOTOR_RESET = 3; // selector for motor home
+
+#endif
