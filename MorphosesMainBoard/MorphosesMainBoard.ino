@@ -32,51 +32,23 @@
 #include "MPU9250.h"
 #include <OSCBundle.h>
 
+#include <EEPROM.h>
+
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
+#include <SLIPEncodedSerial.h>
+SLIPEncodedSerial SLIPSerial(Serial);
 
-/*
-An attitude and heading reference system (AHRS)
-consists of sensors on three axes that provide
-attitude information for aircraft, including roll,
-pitch and yaw.They are designed to replace
-traditional mechanical gyroscopic flight
-instruments and provide superior reliability and accuracy.
-*/
-#define AHRS true         // Set to false for basic data read
-#define SerialDebug false  // Set to true to get Serial output for debugging
-const bool OSCDebug = true; // debug-print OSC packet stuff
-boolean sendOSC = true; // set to true to stream samples
-#define useUdp true
-#define AP_MODE false
-
-// Pin definitions for ESP8266Thing
-const int intPin = 4;  // incoming MPU9250 interrupt
-const int redLed  = 5;  // red led is also green pin 5 on-board led
-const int greenLed = 12;
-const int blueLed = 13;
-const int power = 0; // controls power to the rest of the ball
-const byte MOTOR1_I2C_ADDRESS = 8; // i2c address of motor 1
-const byte MOTOR2_I2C_ADDRESS = 16; // i2c address of motor 2
-const byte MOTOR_SPEED = 1; // selector for motor speed
-const byte MOTOR_POSITION = 2; // selector for motor encoder position
-const byte MOTOR_RESET = 3; // selector for motor home
-
-//#define SEND_DATA_INTERVAL 500
-#define SEND_DATA_INTERVAL 100
+#include "MorphosesConfig.h"
 
 MPU9250 myIMU;
 OSCBundle bndl;
 // A UDP instance to let us send and receive packets over UDP
 WiFiUDP udp;
 
+IPAddress destIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, DEST_IP_3); // remote IP
 float magScale[3] = {0, 0, 0};
 
-const char *ssid = "ball"; // Pointer to the SSID (max 63 char)
-const char *password = "roller"; // for WPA2 min 8 char, for open use NULL
-unsigned int localPort = 8765; // local port to listen for UDP packets
-unsigned int destPort = 8766; // remote port to send UDP packets
-IPAddress destIP(192, 168, 4, 2); // remote IP
 char packetBuffer[128];
 
 void setup()
@@ -85,8 +57,15 @@ void setup()
   digitalWrite(power, HIGH);
 
   Wire.begin();
+
   // TWBR = 12;  // 400 kbit/sec I2C speed
   Serial.begin(115200);
+  
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+
+  
   // Set up the interrupt pin, it's set as active high, push-pull
   pinMode(intPin, INPUT); // interrupt out from the IMU
   digitalWrite(intPin, LOW);
@@ -97,124 +76,18 @@ void setup()
   digitalWrite(greenLed, HIGH);
   digitalWrite(blueLed, HIGH);
 
-  /**
-   * Set up an access point
-   * @param ssid          Pointer to the SSID (max 63 char).
-   * @param passphrase    (for WPA2 min 8 char, for open use NULL)
-   * @param channel       WiFi channel number, 1 - 13.
-   * @param ssid_hidden   Network cloaking (0 = broadcast SSID, 1 = hide SSID)
-   */
-  // now start the wifi
-  WiFi.mode(WIFI_AP_STA);
-#if AP_MODE
-  Serial.print("Configuring access point...");
-  /* You can remove the password parameter if you want the AP to be open. */
-  if (!WiFi.softAP(ssid, password)) {
-    Serial.println("Can't start softAP");
-    while(1); // Loop forever if setup didn't work
-  }
+	// Initialize Wifi and UDP.
+	initWifi();
 
-  IPAddress myIP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(myIP);
+	// Initialize and calibrate IMU.
+  EEPROM.begin(512);
+	initIMU();
 
-#else
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  IPAddress myIP = WiFi.localIP();
-  Serial.println(myIP);
-#endif
-
-  digitalWrite(greenLed, LOW);
-
-
-  Serial.println("Starting UDP");
-  if (!udp.begin(localPort)) {
-    Serial.println("Can't start UDP");
-    while(1); // Loop forever if setup didn't work
-  }
-  Serial.print("Local port: ");
-  Serial.println(udp.localPort());
-  digitalWrite(redLed, LOW);
-
-  WiFi.printDiag(Serial);
-  // Read the WHO_AM_I register, this is a good test of communication
-  byte c = myIMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
-  Serial.print("MPU9250 "); Serial.print("I AM "); Serial.print(c, HEX);
-  Serial.print(" I should be "); Serial.println(0x71, HEX);
-
-  if (c == 0x71) // WHO_AM_I should always be 0x68
-  {
-    Serial.println("MPU9250 is online...");
-
-    // Start by performing self test and reporting values
-    myIMU.MPU9250SelfTest(myIMU.SelfTest);
-    Serial.print("x-axis self test: acceleration trim within : ");
-    Serial.print(myIMU.SelfTest[0],1); Serial.println("% of factory value");
-    Serial.print("y-axis self test: acceleration trim within : ");
-    Serial.print(myIMU.SelfTest[1],1); Serial.println("% of factory value");
-    Serial.print("z-axis self test: acceleration trim within : ");
-    Serial.print(myIMU.SelfTest[2],1); Serial.println("% of factory value");
-    Serial.print("x-axis self test: gyration trim within : ");
-    Serial.print(myIMU.SelfTest[3],1); Serial.println("% of factory value");
-    Serial.print("y-axis self test: gyration trim within : ");
-    Serial.print(myIMU.SelfTest[4],1); Serial.println("% of factory value");
-    Serial.print("z-axis self test: gyration trim within : ");
-    Serial.print(myIMU.SelfTest[5],1); Serial.println("% of factory value");
-
-    // Calibrate gyro and accelerometers, load biases in bias registers
-    myIMU.calibrateMPU9250(myIMU.gyroBias, myIMU.accelBias);
-
-    myIMU.initMPU9250();
-    // Initialize device for active mode read of acclerometer, gyroscope, and
-    // temperature
-    Serial.println("MPU9250 initialized for active data mode....");
-
-    // Read the WHO_AM_I register of the magnetometer, this is a good test of
-    // communication
-    byte d = myIMU.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963);
-    Serial.print("AK8963 "); Serial.print("I AM "); Serial.print(d, HEX);
-    Serial.print(" I should be "); Serial.println(0x48, HEX);
-
-    // Get magnetometer calibration from AK8963 ROM
-    myIMU.initAK8963(myIMU.magCalibration);
-    // Initialize device for active mode read of magnetometer
-    Serial.println("AK8963 initialized for active data mode....");
-
-    magcalMPU9250(myIMU.magbias, magScale);
-    Serial.println("AK8963 mag biases (mG)"); Serial.println(myIMU.magbias[0]); Serial.println(myIMU.magbias[1]); Serial.println(myIMU.magbias[2]);
-    Serial.println("AK8963 mag scale (mG)"); Serial.println(magScale[0]); Serial.println(magScale[1]); Serial.println(magScale[2]);
-    delay(2000); // add delay to see results before serial spew of data
-
-    if (SerialDebug)
-    {
-      //  Serial.println("Calibration values: ");
-      Serial.print("X-Axis sensitivity adjustment value ");
-      Serial.println(myIMU.magCalibration[0], 2);
-      Serial.print("Y-Axis sensitivity adjustment value ");
-      Serial.println(myIMU.magCalibration[1], 2);
-      Serial.print("Z-Axis sensitivity adjustment value ");
-      Serial.println(myIMU.magCalibration[2], 2);
-    }
-
-  } // if (c == 0x71)
-  else
-  {
-    Serial.print("Could not connect to MPU9250: 0x");
-    Serial.println(c, HEX);
-    while(1) ; // Loop forever if communication doesn't happen
-  }
   digitalWrite(blueLed, LOW);
 
 }
+
+
 
 void loop()
 {
@@ -241,7 +114,8 @@ void loop()
       Serial.print(", port ");
       Serial.println(udp.remotePort());
     }
-    // read the packet
+
+    // Read the packet
     OSCMessage messIn;
     while (packetSize--) messIn.fill(udp.read());
 
@@ -280,6 +154,31 @@ void loop()
     }
   } //if (packetSize)
 
+	// Read IMU and send OSC messages.
+	processIMU();
+
+	// // Read motors. --> for now this is included in processIMU(), see NOTE below
+	// processMotors();
+
+	// Send bundle.
+  if (sendOSC) {
+
+    if (useUdp) {
+      udp.beginPacket(destIP, destPort);
+      bndl.send(udp); // send the bytes to the SLIP stream
+      udp.endPacket(); // mark the end of the OSC Packet
+    }
+    else {
+      SLIPSerial.beginPacket();
+      bndl.send(udp); // send the bytes to the SLIP stream
+      SLIPSerial.endPacket(); // mark the end of the OSC Packet
+    }
+    bndl.empty(); // empty the bundle to free room for a new one
+  }
+}
+
+void processIMU()
+{
   // If intPin goes high, all data registers have new data
   // On interrupt, check if data ready interrupt
   if (myIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
@@ -304,12 +203,12 @@ void loop()
 
     myIMU.readMagData(myIMU.magCount);  // Read the x/y/z adc values
     myIMU.getMres();
-    autoCalibrateMagMPU9250();
+//    autoCalibrateMagMPU9250();
 
-    Serial.println("bias/scale");
-    for (int i=0; i<3; i++) {
-      Serial.print(i); Serial.print(" : "); Serial.print(myIMU.magbias[i]); Serial.print(" "); Serial.println(magScale[i]);
-    }
+//    Serial.println("bias/scale");
+//    for (int i=0; i<3; i++) {
+//      Serial.print(i); Serial.print(" : "); Serial.print(myIMU.magbias[i]); Serial.print(" "); Serial.println(magScale[i]);
+//    }
     // // User environmental x-axis correction in milliGauss, should be
     // // automatically calculated
     // myIMU.magbias[0] = +470.;
@@ -335,6 +234,22 @@ void loop()
 
   // Must be called before updating quaternions!
   myIMU.updateTime();
+
+  // With these settings the filter is updating at a ~145 Hz rate using the
+  // Madgwick scheme and >200 Hz using the Mahony scheme even though the
+  // display refreshes at only 2 Hz. The filter update rate is determined
+  // mostly by the mathematical steps in the respective algorithms, the
+  // processor speed (8 MHz for the 3.3V Pro Mini), and the magnetometer ODR:
+  // an ODR of 10 Hz for the magnetometer produce the above rates, maximum
+  // magnetometer ODR of 100 Hz produces filter update rates of 36 - 145 and
+  // ~38 Hz for the Madgwick and Mahony schemes, respectively. This is
+  // presumably because the magnetometer read takes longer than the gyro or
+  // accelerometer reads. This filter update rate should be fast enough to
+  // maintain accurate platform orientation for stabilization control of a
+  // fast-moving robot or quadcopter. Compare to the update rate of 200 Hz
+  // produced by the on-board Digital Motion Processor of Invensense's MPU6050
+  // 6 DoF and MPU9150 9DoF sensors. The 3.3 V 8 MHz Pro Mini is doing pretty
+  // well!
 
   // Sensors x (y)-axis of the accelerometer is aligned with the y (x)-axis of
   // the magnetometer; the magnetometer z-axis (+ down) is opposite to z-axis
@@ -404,9 +319,9 @@ void loop()
 
       if (sendOSC) {
 
-        bndl.add("/accel/g").add(myIMU.ax).add(myIMU.ay).add(myIMU.az);
-        bndl.add("/gyro/ds").add(myIMU.gx).add(myIMU.gy).add(myIMU.gz);
-        bndl.add("/mag/mG").add(myIMU.mx).add(myIMU.my).add(myIMU.mz);
+//        bndl.add("/accel/g").add(myIMU.ax).add(myIMU.ay).add(myIMU.az);
+//        bndl.add("/gyro/ds").add(myIMU.gx).add(myIMU.gy).add(myIMU.gz);
+//        bndl.add("/mag/mG").add(myIMU.mx).add(myIMU.my).add(myIMU.mz);
       }
 
       if(SerialDebug)
@@ -482,7 +397,7 @@ void loop()
 
       if (sendOSC) {
         bndl.add("/ypr/deg").add(myIMU.yaw).add(myIMU.pitch).add(myIMU.roll);
-        bndl.add("/quat").add(q0).add(q1).add(q2).add(q3);
+//        bndl.add("/quat").add(q0).add(q1).add(q2).add(q3);
       }
       if(SerialDebug)
       {
@@ -498,83 +413,249 @@ void loop()
         Serial.println(" Hz");
       }
 
-      // With these settings the filter is updating at a ~145 Hz rate using the
-      // Madgwick scheme and >200 Hz using the Mahony scheme even though the
-      // display refreshes at only 2 Hz. The filter update rate is determined
-      // mostly by the mathematical steps in the respective algorithms, the
-      // processor speed (8 MHz for the 3.3V Pro Mini), and the magnetometer ODR:
-      // an ODR of 10 Hz for the magnetometer produce the above rates, maximum
-      // magnetometer ODR of 100 Hz produces filter update rates of 36 - 145 and
-      // ~38 Hz for the Madgwick and Mahony schemes, respectively. This is
-      // presumably because the magnetometer read takes longer than the gyro or
-      // accelerometer reads. This filter update rate should be fast enough to
-      // maintain accurate platform orientation for stabilization control of a
-      // fast-moving robot or quadcopter. Compare to the update rate of 200 Hz
-      // produced by the on-board Digital Motion Processor of Invensense's MPU6050
-      // 6 DoF and MPU9150 9DoF sensors. The 3.3 V 8 MHz Pro Mini is doing pretty
-      // well!
+			// NOTE: I left this here for now but it should be moved outside of the processIMU() method.
+			// However it was there when Martin coded it so I prefer to let it here and test it before
+			// moving it.
+			processMotors();
 
-      // get the motor 1 encoder count
-      byte incomingCount = Wire.requestFrom((uint8_t)MOTOR1_I2C_ADDRESS, (uint8_t)4);    // request 4 bytes from slave device #8
-      byte tick3 = Wire.read();
-      byte tick2 = Wire.read();
-      byte tick1 = Wire.read();
-      byte tick0 = Wire.read();
-      if(SerialDebug) {
-        Serial.print("received ");
-        Serial.print(incomingCount);
-        Serial.print(": (3)");
-        Serial.print(tick3, HEX);
-        Serial.print("(2)");
-        Serial.print(tick2, HEX);
-        Serial.print("(1)");
-        Serial.print(tick1, HEX);
-        Serial.print("(0)");
-        Serial.println(tick0, HEX);
-      }
-      int32_t motor1Ticks = (tick3<<24) + (tick2<<16) + (tick1<<8) + tick0;
-      if (sendOSC) bndl.add("/motor/1/ticks").add(motor1Ticks);
-
-      // get the motor 2 encoder count
-      incomingCount = Wire.requestFrom((uint8_t)MOTOR2_I2C_ADDRESS, (uint8_t)4);    // request 4 bytes from slave device #16
-      tick3 = Wire.read();
-      tick2 = Wire.read();
-      tick1 = Wire.read();
-      tick0 = Wire.read();
-      if(SerialDebug) {
-        Serial.print("received ");
-        Serial.print(incomingCount);
-        Serial.print(": (3)");
-        Serial.print(tick3, HEX);
-        Serial.print("(2)");
-        Serial.print(tick2, HEX);
-        Serial.print("(1)");
-        Serial.print(tick1, HEX);
-        Serial.print("(0)");
-        Serial.println(tick0, HEX);
-      }
-      int32_t motor2Ticks = (tick3<<24) + (tick2<<16) + (tick1<<8) + tick0;
-      if (sendOSC) {
-        bndl.add("/motor/2/ticks").add(motor2Ticks);
-
-        if (useUdp) {
-          udp.beginPacket(destIP, destPort);
-          bndl.send(udp); // send the bytes to the SLIP stream
-          udp.endPacket(); // mark the end of the OSC Packet
-        }
-        else {
-          SLIPSerial.beginPacket();
-          bndl.send(udp); // send the bytes to the SLIP stream
-          SLIPSerial.endPacket(); // mark the end of the OSC Packet
-        }
-        bndl.empty(); // empty the bundle to free room for a new one
-      }
       myIMU.count = millis();
       myIMU.sumCount = 0;
       myIMU.sum = 0;
     } // if (myIMU.delt_t > SEND_DATA_INTERVAL)
 
   } // if (AHRS)
+
+}
+
+void processMotors()
+{
+	// get the motor 1 encoder count
+	byte incomingCount = Wire.requestFrom((uint8_t)MOTOR1_I2C_ADDRESS, (uint8_t)4);    // request 4 bytes from slave device #8
+	byte tick3 = Wire.read();
+	byte tick2 = Wire.read();
+	byte tick1 = Wire.read();
+	byte tick0 = Wire.read();
+	if(SerialDebug) {
+	  Serial.print("received ");
+	  Serial.print(incomingCount);
+	  Serial.print(": (3)");
+	  Serial.print(tick3, HEX);
+	  Serial.print("(2)");
+	  Serial.print(tick2, HEX);
+	  Serial.print("(1)");
+	  Serial.print(tick1, HEX);
+	  Serial.print("(0)");
+	  Serial.println(tick0, HEX);
+	}
+	int32_t motor1Ticks = (tick3<<24) + (tick2<<16) + (tick1<<8) + tick0;
+//	if (sendOSC) bndl.add("/motor/1/ticks").add(motor1Ticks);
+
+	// get the motor 2 encoder count
+	incomingCount = Wire.requestFrom((uint8_t)MOTOR2_I2C_ADDRESS, (uint8_t)4);    // request 4 bytes from slave device #16
+	tick3 = Wire.read();
+	tick2 = Wire.read();
+	tick1 = Wire.read();
+	tick0 = Wire.read();
+	if(SerialDebug) {
+	  Serial.print("received ");
+	  Serial.print(incomingCount);
+	  Serial.print(": (3)");
+	  Serial.print(tick3, HEX);
+	  Serial.print("(2)");
+	  Serial.print(tick2, HEX);
+	  Serial.print("(1)");
+	  Serial.print(tick1, HEX);
+	  Serial.print("(0)");
+	  Serial.println(tick0, HEX);
+	}
+	int32_t motor2Ticks = (tick3<<24) + (tick2<<16) + (tick1<<8) + tick0;
+//	if (sendOSC) bndl.add("/motor/2/ticks").add(motor2Ticks);
+}
+
+void initWifi()
+{
+  /**
+   * Set up an access point
+   * @param ssid          Pointer to the SSID (max 63 char).
+   * @param passphrase    (for WPA2 min 8 char, for open use NULL)
+   * @param channel       WiFi channel number, 1 - 13.
+   * @param ssid_hidden   Network cloaking (0 = broadcast SSID, 1 = hide SSID)
+   */
+  // now start the wifi
+  WiFi.mode(WIFI_AP_STA);
+#if AP_MODE
+  Serial.print("Configuring access point...");
+  /* You can remove the password parameter if you want the AP to be open. */
+  if (!WiFi.softAP(ssid, password)) {
+    Serial.println("Can't start softAP");
+    while(1); // Loop forever if setup didn't work
+  }
+
+  IPAddress myIP = WiFi.softAPIP();
+  Serial.print("AP IP address: ");
+  Serial.println(myIP);
+
+#else
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  IPAddress myIP = WiFi.localIP();
+  Serial.println(myIP);
+#endif
+
+  digitalWrite(greenLed, LOW);
+
+
+  Serial.println("Starting UDP");
+  if (!udp.begin(localPort)) {
+    Serial.println("Can't start UDP");
+    while(1); // Loop forever if setup didn't work
+  }
+  Serial.print("Local port: ");
+  Serial.println(udp.localPort());
+  digitalWrite(redLed, LOW);
+
+  WiFi.printDiag(Serial);
+}
+
+void waitForInputSerial() {
+  while (!Serial.available()) delay(10);
+  flushInputSerial();
+}
+
+void flushInputSerial() {
+  while (Serial.available())
+    Serial.read();
+}
+
+void initIMU()
+{
+  // Read the WHO_AM_I register, this is a good test of communication
+  byte c = myIMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
+  Serial.print("MPU9250 "); Serial.print("I AM "); Serial.print(c, HEX);
+  Serial.print(" I should be "); Serial.println(0x71, HEX);
+
+  if (c == 0x71) // WHO_AM_I should always be 0x68
+  {
+    Serial.println("MPU9250 is online...");
+
+    // Start by performing self test and reporting values
+    myIMU.MPU9250SelfTest(myIMU.SelfTest);
+    Serial.print("x-axis self test: acceleration trim within : ");
+    Serial.print(myIMU.SelfTest[0],1); Serial.println("% of factory value");
+    Serial.print("y-axis self test: acceleration trim within : ");
+    Serial.print(myIMU.SelfTest[1],1); Serial.println("% of factory value");
+    Serial.print("z-axis self test: acceleration trim within : ");
+    Serial.print(myIMU.SelfTest[2],1); Serial.println("% of factory value");
+    Serial.print("x-axis self test: gyration trim within : ");
+    Serial.print(myIMU.SelfTest[3],1); Serial.println("% of factory value");
+    Serial.print("y-axis self test: gyration trim within : ");
+    Serial.print(myIMU.SelfTest[4],1); Serial.println("% of factory value");
+    Serial.print("z-axis self test: gyration trim within : ");
+    Serial.print(myIMU.SelfTest[5],1); Serial.println("% of factory value");
+
+    // Calibrate gyro and accelerometers, load biases in bias registers
+    myIMU.calibrateMPU9250(myIMU.gyroBias, myIMU.accelBias);
+
+    myIMU.initMPU9250();
+    // Initialize device for active mode read of acclerometer, gyroscope, and
+    // temperature
+    Serial.println("MPU9250 initialized for active data mode....");
+
+    // Read the WHO_AM_I register of the magnetometer, this is a good test of
+    // communication
+    byte d = myIMU.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963);
+    Serial.print("AK8963 "); Serial.print("I AM "); Serial.print(d, HEX);
+    Serial.print(" I should be "); Serial.println(0x48, HEX);
+
+    // Get magnetometer calibration from AK8963 ROM
+    myIMU.initAK8963(myIMU.magCalibration);
+    // Initialize device for active mode read of magnetometer
+    Serial.println("AK8963 initialized for active data mode....");
+
+    interactiveCalibrateMagMPU9250();
+  
+  } // if (c == 0x71)
+  else
+  {
+    Serial.print("Could not connect to MPU9250: 0x");
+    Serial.println(c, HEX);
+    while(1) ; // Loop forever if communication doesn't happen
+  }
+}
+
+void loadCalibrateMagMPU9250() {
+  for (int i=0, addr = EEPROM_ADDRESS_MAG_BIAS; i<3; i++, addr += sizeof(float)) {
+    EEPROM.get(addr,  myIMU.magbias[i]);
+  }
+  for (int i=0, addr = EEPROM_ADDRESS_MAG_SCALE; i<3; i++, addr += sizeof(float)) {
+    EEPROM.get(addr,  magScale[i]);
+  }
+}
+
+void saveCalibrateMagMPU9250() {
+  for (int i=0, addr = EEPROM_ADDRESS_MAG_BIAS; i<3; i++, addr += sizeof(float)) {
+    EEPROM.put(addr,  myIMU.magbias[i]);
+  }
+  for (int i=0, addr = EEPROM_ADDRESS_MAG_SCALE; i<3; i++, addr += sizeof(float)) {
+    EEPROM.put(addr,  magScale[i]);
+  }
+  EEPROM.commit();
+}
+
+void interactiveCalibrateMagMPU9250() {
+  
+  Serial.println("Press any key within 5 seconds if you wish to access calibration options");
+  
+  unsigned long startTime = millis();
+  while (!Serial.available())
+    if (millis() - startTime > 5000UL) {
+      loadCalibrateMagMPU9250();
+      Serial.println("Loading from EEPROM");
+      return;
+    }
+  flushInputSerial();
+
+  Serial.println("Do you wish to (e)rase values from EEPROM without calibrating (c)alibrate from scratch (r)ecalibrate based on values loaded from EEPROM?");
+  while (!Serial.available()) delay(10);
+  char c = (char) Serial.read();
+  
+  if (c == 'r') {
+    loadCalibrateMagMPU9250();
+  }
+
+  if (c == 'c' || c == 'r') {
+    magcalMPU9250(myIMU.magbias, magScale);
+  }
+
+  Serial.println("AK8963 mag biases (mG)"); Serial.println(myIMU.magbias[0]); Serial.println(myIMU.magbias[1]); Serial.println(myIMU.magbias[2]);
+  Serial.println("AK8963 mag scale (mG)"); Serial.println(magScale[0]); Serial.println(magScale[1]); Serial.println(magScale[2]);
+  delay(2000); // add delay to see results before serial spew of data    
+
+  Serial.println("Save new values to EEPROM (y/n)?");
+  while (!Serial.available()) delay(10);
+  if (Serial.read() == 'y') {
+    saveCalibrateMagMPU9250();  
+  }  
+  Serial.println("Done");
+ 
+  if (SerialDebug)
+  {
+    //  Serial.println("Calibration values: ");
+    Serial.print("X-Axis sensitivity adjustment value ");
+    Serial.println(myIMU.magCalibration[0], 2);
+    Serial.print("Y-Axis sensitivity adjustment value ");
+    Serial.println(myIMU.magCalibration[1], 2);
+    Serial.print("Z-Axis sensitivity adjustment value ");
+    Serial.println(myIMU.magCalibration[2], 2);
+  }
 }
 
 int32_t mag_bias[3] = {0, 0, 0}, mag_scale[3] = {0, 0, 0};
