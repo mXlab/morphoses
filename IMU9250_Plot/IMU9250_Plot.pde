@@ -2,7 +2,7 @@ import oscP5.*;
 import netP5.*;
 
 final int OSC_SEND_PORT = 8765;
-final int OSC_RECV_PORT = 8766;
+final int OSC_RECV_PORT = 8767;
 final String OSC_IP     = "192.168.4.1";
 
 final int MAX_ABS_VALUE       = 1200;

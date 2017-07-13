@@ -2,10 +2,19 @@ class RoboBall {
   
   float yaw, pitch, roll;
   float yOffset, pOffset, rOffset;
-
+  
+  PVector mag;
+  
   RoboBall() {
+    mag = new PVector();
   }
 
+  void reset() {
+    setYaw(0);
+    setPitch(0);
+    setRoll(0);
+  }
+  
   float getYaw()   { return yaw; }
   float getAdjustedYaw()   { return yaw+yOffset; }
   void setYaw(float yaw) {
@@ -24,10 +33,16 @@ class RoboBall {
     this.roll  = _wrap(roll, -180, 180);
   }
   
+  void setMag(float mx, float my, float mz) {
+    this.mag.x = mx;
+    this.mag.y = my;
+    this.mag.z = mz;
+  }
+  
   float _wrap(float a, float min, float max) {
     float diff = max-min;
     while (a < min) a += diff;
-    while (a > min) a -= diff;
+    while (a > max) a -= diff;
     return a;
   }
   
@@ -41,9 +56,21 @@ class RoboBall {
   }
   
   void draw() {
+    
+    // Draw text.
+    stroke(255, 255, 255);
+    strokeWeight(1);
+    textAlign(LEFT);
+    textSize(24);
+    text("YAW:\nPITCH:\nROLL:\n", width*.7, height*.8);
+    text(nf(getYaw(), 3, 2) + "\n" + nf(getPitch(), 3, 2) + "\n" + nf(getRoll(), 3, 2) + "\n", width*.85, height*.8);
+   
     noStroke();
 
+    // Draw 3D objects.
     pushMatrix();
+    translate(width/2, height/2);
+    lights();
 
     rotateY(radians(90));
 
@@ -64,7 +91,7 @@ class RoboBall {
     noFill();
     sphere(100);
     
-    // Draw axis.
+    // Draw arrows.
     strokeWeight(5);
     
     int ARROW_HEAD_LENGTH = 20;
@@ -87,7 +114,9 @@ class RoboBall {
     stroke(0, 0, 255);
     arrow(0, 0, ARROW_LENGTH, 0, ARROW_HEAD_LENGTH);    
     popMatrix();
-
+    
+    stroke(255, 255, 255);
+    line(0, 0, 0, mag.x, mag.y, mag.z);
     popMatrix();
   }
   

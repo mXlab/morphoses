@@ -1,7 +1,7 @@
 #ifndef MORPHOSES_CONFIG_
 #define MORPHOSES_CONFIG_
 
-#define MAIN_BOARD false
+#define MAIN_BOARD true
 
 #define AHRS true         // Set to false for basic data read
 #define SerialDebug false  // Set to true to get Serial output for debugging
@@ -10,9 +10,11 @@ boolean sendOSC = true; // set to true to stream samples
 #define useUdp true
 #define AP_MODE false
 
-
+// ATTENTION: If these values are too low it seems to consume too much current causing the
+// ESP8266 Thing to reset
 //#define SEND_DATA_INTERVAL 500
-#define SEND_DATA_INTERVAL 100
+#define SEND_DATA_INTERVAL 200
+//#define SEND_DATA_INTERVAL 100
 
 //const char *ssid = "ball"; // Pointer to the SSID (max 63 char)
 //const char *password = "roller"; // for WPA2 min 8 char, for open use NULL
@@ -22,13 +24,27 @@ boolean sendOSC = true; // set to true to stream samples
 //#define DEST_IP_2 0
 //#define DEST_IP_3 100
 
-const char *ssid = "Echo"; // Pointer to the SSID (max 63 char)
-const char *password = "010203040506070809"; // for WPA2 min 8 char, for open use NULL
+//const char *ssid = "Echo"; // Pointer to the SSID (max 63 char)
+//const char *password = "010203040506070809"; // for WPA2 min 8 char, for open use NULL
+//#define DEST_IP_0 192
+//#define DEST_IP_1 168
+//#define DEST_IP_2 1
+//#define DEST_IP_3 103
 
+//const char *ssid = "Patats"; // Pointer to the SSID (max 63 char)
+//const char *password = "P0ch3c0n5"; // for WPA2 min 8 char, for open use NULL
+//#define DEST_IP_0 192
+//#define DEST_IP_1 168
+//#define DEST_IP_2 0
+//#define DEST_IP_3 100
+
+const char *ssid = "0Tatsnet"; // Pointer to the SSID (max 63 char)
+const char *password = "pochecon"; // for WPA2 min 8 char, for open use NULL
 #define DEST_IP_0 192
 #define DEST_IP_1 168
-#define DEST_IP_2 1
-#define DEST_IP_3 103
+#define DEST_IP_2 43
+#define DEST_IP_3 229
+
 
 #if MAIN_BOARD
 unsigned int localPort = 8765; // local port to listen for UDP packets

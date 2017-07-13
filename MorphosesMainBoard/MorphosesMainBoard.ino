@@ -66,6 +66,7 @@ void setup()
   }
 
   
+#if MAIN_BOARD
   // Set up the interrupt pin, it's set as active high, push-pull
   pinMode(intPin, INPUT); // interrupt out from the IMU
   digitalWrite(intPin, LOW);
@@ -75,6 +76,7 @@ void setup()
   digitalWrite(redLed, HIGH);
   digitalWrite(greenLed, HIGH);
   digitalWrite(blueLed, HIGH);
+#endif
 
 	// Initialize Wifi and UDP.
 	initWifi();
@@ -83,8 +85,9 @@ void setup()
   EEPROM.begin(512);
 	initIMU();
 
+#if MAIN_BOARD
   digitalWrite(blueLed, LOW);
-
+#endif
 }
 
 
@@ -157,8 +160,10 @@ void loop()
 	// Read IMU and send OSC messages.
 	processIMU();
 
-	// // Read motors. --> for now this is included in processIMU(), see NOTE below
-	// processMotors();
+#if MAIN_BOARD
+	// Read motors. --> for now this is included in processIMU(), see NOTE below
+	processMotors();
+#endif
 
 	// Send bundle.
   if (sendOSC) {
@@ -188,9 +193,9 @@ void processIMU()
 
     // Now we'll calculate the accleration value into actual g's
     // This depends on scale being set
-    myIMU.ax = (float)myIMU.accelCount[0]*myIMU.aRes; // - accelBias[0];
-    myIMU.ay = (float)myIMU.accelCount[1]*myIMU.aRes; // - accelBias[1];
-    myIMU.az = (float)myIMU.accelCount[2]*myIMU.aRes; // - accelBias[2];
+    myIMU.ax = (float)myIMU.accelCount[0]*myIMU.aRes - myIMU.accelBias[0];
+    myIMU.ay = (float)myIMU.accelCount[1]*myIMU.aRes - myIMU.accelBias[1];
+    myIMU.az = (float)myIMU.accelCount[2]*myIMU.aRes - myIMU.accelBias[2];
 
     myIMU.readGyroData(myIMU.gyroCount);  // Read the x/y/z adc values
     myIMU.getGres();
@@ -203,7 +208,7 @@ void processIMU()
 
     myIMU.readMagData(myIMU.magCount);  // Read the x/y/z adc values
     myIMU.getMres();
-//    autoCalibrateMagMPU9250();
+    autoCalibrateMagMPU9250();
 
 //    Serial.println("bias/scale");
 //    for (int i=0; i<3; i++) {
@@ -321,7 +326,7 @@ void processIMU()
 
 //        bndl.add("/accel/g").add(myIMU.ax).add(myIMU.ay).add(myIMU.az);
 //        bndl.add("/gyro/ds").add(myIMU.gx).add(myIMU.gy).add(myIMU.gz);
-//        bndl.add("/mag/mG").add(myIMU.mx).add(myIMU.my).add(myIMU.mz);
+        bndl.add("/mag/mG").add(myIMU.mx).add(myIMU.my).add(myIMU.mz);
       }
 
       if(SerialDebug)
@@ -365,6 +370,7 @@ void processIMU()
       // which has additional links.
       float q0 = *getQ(); float q1 = *(getQ()+1); float q2 = *(getQ()+2); float q3 = *(getQ()+3);
 
+      // Prevent Gimball lock.
 			float test = q0*q2 - q3*q1;
 			if (test > 0.499f) {
 				myIMU.yaw   =   2 * atan2(q0, q3);
@@ -396,8 +402,8 @@ void processIMU()
       myIMU.yaw   -= -14.47;
 
       if (sendOSC) {
-        bndl.add("/ypr/deg").add(myIMU.yaw).add(myIMU.pitch).add(myIMU.roll);
-//        bndl.add("/quat").add(q0).add(q1).add(q2).add(q3);
+//        bndl.add("/ypr/deg").add(myIMU.yaw).add(myIMU.pitch).add(myIMU.roll);
+        bndl.add("/quat").add(q0).add(q1).add(q2).add(q3);
       }
       if(SerialDebug)
       {
@@ -413,10 +419,12 @@ void processIMU()
         Serial.println(" Hz");
       }
 
+#if MAIN_BOARD
 			// NOTE: I left this here for now but it should be moved outside of the processIMU() method.
 			// However it was there when Martin coded it so I prefer to let it here and test it before
 			// moving it.
 			processMotors();
+#endif
 
       myIMU.count = millis();
       myIMU.sumCount = 0;
@@ -427,6 +435,7 @@ void processIMU()
 
 }
 
+#if MAIN_BOARD
 void processMotors()
 {
 	// get the motor 1 encoder count
@@ -448,7 +457,7 @@ void processMotors()
 	  Serial.println(tick0, HEX);
 	}
 	int32_t motor1Ticks = (tick3<<24) + (tick2<<16) + (tick1<<8) + tick0;
-//	if (sendOSC) bndl.add("/motor/1/ticks").add(motor1Ticks);
+	if (sendOSC) bndl.add("/motor/1/ticks").add(motor1Ticks);
 
 	// get the motor 2 encoder count
 	incomingCount = Wire.requestFrom((uint8_t)MOTOR2_I2C_ADDRESS, (uint8_t)4);    // request 4 bytes from slave device #16
@@ -469,8 +478,9 @@ void processMotors()
 	  Serial.println(tick0, HEX);
 	}
 	int32_t motor2Ticks = (tick3<<24) + (tick2<<16) + (tick1<<8) + tick0;
-//	if (sendOSC) bndl.add("/motor/2/ticks").add(motor2Ticks);
+	if (sendOSC) bndl.add("/motor/2/ticks").add(motor2Ticks);
 }
+#endif
 
 void initWifi()
 {
@@ -561,6 +571,7 @@ void initIMU()
     Serial.print("z-axis self test: gyration trim within : ");
     Serial.print(myIMU.SelfTest[5],1); Serial.println("% of factory value");
 
+    Serial.println("Calibrating PLEASE LEAVE DEVICE AT REST");
     // Calibrate gyro and accelerometers, load biases in bias registers
     myIMU.calibrateMPU9250(myIMU.gyroBias, myIMU.accelBias);
 
@@ -767,15 +778,6 @@ void processMessage(OSCMessage& messIn) {
       sendOSC = (val != 0);
     }
   }
-  else if (messIn.fullMatch("/power")) {
-    if (OSCDebug) Serial.println("POWER");
-    if (argIsNumber(messIn, 0)) {
-      if (OSCDebug) Serial.print("power value ");
-      int32_t val = getArgAsInt(messIn, 0);
-      if (OSCDebug) Serial.println(val);
-      digitalWrite(power, val ? LOW : HIGH);
-    }
-  }
   else if (messIn.fullMatch("/replyto")) {
     if (OSCDebug) Serial.println("REPLYTO");
     if (argIsNumber(messIn, 0)) {
@@ -783,6 +785,24 @@ void processMessage(OSCMessage& messIn) {
       int32_t val = getArgAsInt(messIn, 0);
       if (OSCDebug) Serial.println(val);
       destIP[3] = val;
+    }
+  }
+  else if (messIn.fullMatch("/magcal/save")) {
+    if (OSCDebug) Serial.println("SAVE MAGCAL");
+    saveCalibrateMagMPU9250();
+  }
+  else if (messIn.fullMatch("/magcal/load")) {
+    if (OSCDebug) Serial.println("LOAD MAGCAL");
+    loadCalibrateMagMPU9250();
+  }  
+#if MAIN_BOARD
+  else if (messIn.fullMatch("/power")) {
+    if (OSCDebug) Serial.println("POWER");
+    if (argIsNumber(messIn, 0)) {
+      if (OSCDebug) Serial.print("power value ");
+      int32_t val = getArgAsInt(messIn, 0);
+      if (OSCDebug) Serial.println(val);
+      digitalWrite(power, val ? LOW : HIGH);
     }
   }
   else if (messIn.fullMatch("/motor/1")) {
@@ -852,4 +872,5 @@ void processMessage(OSCMessage& messIn) {
       analogWrite(blueLed, (val%256));
     }
   }
+#endif
 }
