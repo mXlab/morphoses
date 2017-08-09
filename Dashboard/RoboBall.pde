@@ -58,7 +58,7 @@ class RoboBall {
     msg.add(speed);
     mainOscP5.send(msg, mainLocation);
     rollerMotorSpeed = speed;
-    saveState();
+    recordState();
   }
 
   void setTilterMotorPosition(int pos) {
@@ -67,7 +67,7 @@ class RoboBall {
     msg.add(pos);
     mainOscP5.send(msg, mainLocation);
     tilterMotorPosition = pos;
-    saveState();
+    recordState();
   }
 
   void setMag(float mx, float my, float mz) {

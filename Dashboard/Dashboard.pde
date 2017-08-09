@@ -18,10 +18,10 @@ OscP5 positionOscP5;
 NetAddress mainLocation;
 NetAddress positionLocation;
 
-PrintWriter output;  
+DataLogger logger;
+String outputFileName = "data.csv";
 
 RoboBall robot;
-
 
 void setup() {
   size(1440, 960, P3D);
@@ -52,7 +52,7 @@ void setup() {
   
   robot = new RoboBall();
   
-  output = createWriter("data.csv");
+  logger = new DataLogger();
   
   createGui();
 }
@@ -93,8 +93,7 @@ void keyPressed() {
     case '6': robot.setTilterMotorPosition(40); break;
     case '4': robot.setTilterMotorPosition(-40); break;
     case 'q': {
-      output.flush(); // Writes the remaining data to the file
-      output.close(); // Finishes the file
+      saveOutput();
       exit(); // Stops the program
     }
     break;
@@ -102,29 +101,28 @@ void keyPressed() {
   }
 }
 
-void saveState() {
-  String state = millis() + "," + 
-                  robot.getYaw() + "," + robot.getPitch() + "," + robot.getRoll() + "," + 
-                  robot.getRollerMotorSpeed() + "," + robot.getRollerMotorTicks() + "," +
-                  robot.getTilterMotorPosition() + "," + robot.getTilterMotorTicks() + "," ;
-  output.println(state );
-  println(state);
+void recordState() {
+  logger.recordState();
+}
+
+void saveOutput() {
+  logger.save(outputFileName);
 }
 
 //void acceleration(float ax, float ay, float az) {
 //  println("Acceleration:      " + ax + " " + ay + " " + az);
-//  saveState();
+//  recordState();
 //}
 
 //void gyro(float gx, float gy, float gz) {
 //  println("Gyro:              " + gx + " " + gy + " " + gz);
-//  saveState();
+//  recordState();
 //}
 
 void magnetism(float mx, float my, float mz) {
   println("Magnetism:         " + mx + " " + my + " " + mz);
   robot.setMag(mx, my, mz);
-  saveState();
+  recordState();
 }
 
 void quaternion(float q0, float q1, float q2, float q3) {
@@ -164,7 +162,7 @@ void quaternion(float q0, float q1, float q2, float q3) {
   robot.setPitch(pitch);
   robot.setRoll(roll);
   
-  saveState();
+  recordState();
 }
 
 void yawPitchRoll(float yaw, float pitch, float roll) {
@@ -173,17 +171,17 @@ void yawPitchRoll(float yaw, float pitch, float roll) {
   robot.setPitch(pitch);
   robot.setRoll(roll);
 
-  saveState();
+  recordState();
 }
 
 void rollerMotorTicks(int t) {
   robot.setRollerMotorTicks(t); 
-  saveState();
+  recordState();
 }
 
 void tilterMotorTicks(int t) {
   robot.setTilterMotorTicks(t); 
-  saveState();
+  recordState();
 }
 
 void oscEvent(OscMessage msg) {
