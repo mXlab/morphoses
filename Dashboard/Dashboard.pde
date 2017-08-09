@@ -1,3 +1,5 @@
+import controlP5.*;
+
 import oscP5.*;
 import netP5.*;
 
@@ -20,8 +22,9 @@ PrintWriter output;
 
 RoboBall robot;
 
+
 void setup() {
-  size(720, 480, P3D);
+  size(1440, 960, P3D);
   lights();
   smooth();
  
@@ -50,12 +53,14 @@ void setup() {
   robot = new RoboBall();
   
   output = createWriter("data.csv");
+  
+  createGui();
 }
 
 void draw() {
-  processInteractive();
-  background(0);
-  robot.draw();
+//  processInteractive();
+//  background(0);
+//  robot.draw(width/2, height/2, height);
 }
 
 void processInteractive() {
