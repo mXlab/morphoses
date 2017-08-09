@@ -54,20 +54,24 @@ class RoboBall {
 
   void setRollerMotorSpeed(int speed) {
     speed = constrain(speed, -255, 255);
-    OscMessage msg = new OscMessage("/motor/1");
-    msg.add(speed);
-    mainOscP5.send(msg, mainLocation);
-    rollerMotorSpeed = speed;
-    recordState();
+    if (rollerMotorSpeed != speed) {
+      OscMessage msg = new OscMessage("/motor/1");
+      msg.add(speed);
+      mainOscP5.send(msg, mainLocation);
+      rollerMotorSpeed = speed;
+      recordState();
+    }
   }
 
   void setTilterMotorPosition(int pos) {
     pos = constrain(pos, -255, 255);
-    OscMessage msg = new OscMessage("/motor/2");
-    msg.add(pos);
-    mainOscP5.send(msg, mainLocation);
-    tilterMotorPosition = pos;
-    recordState();
+    if (tilterMotorPosition != pos) {
+      OscMessage msg = new OscMessage("/motor/2");
+      msg.add(pos);
+      mainOscP5.send(msg, mainLocation);
+      tilterMotorPosition = pos;
+      recordState();
+    }
   }
 
   void setMag(float mx, float my, float mz) {
