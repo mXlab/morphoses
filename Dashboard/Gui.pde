@@ -8,9 +8,6 @@ void createGui() {
   int columnInternalWidth = columnWidth-2*borderWidth;
   int columnInternalHeight = height-2*borderWidth;
   
-  robotCanvas = new RoboBallCanvas(robot, 0, 0, columnInternalWidth);
-//  cp5.addCanvas(robotCanvas);
-
   float columnX = borderWidth;
   Group left = cp5.addGroup("left")
                         .setPosition(columnX, borderWidth)
@@ -45,6 +42,19 @@ void createGui() {
      .setWidth(buttonWidth)
      .moveTo(left)
      ;
+  x += buttonWidth+borderWidth;
+
+  cp5.addButton("clearData")
+     .setPosition(x, borderWidth)
+     .setLabel("Clear data")
+     .setWidth(buttonWidth)
+     .moveTo(left)
+     ;
+  x += buttonWidth+borderWidth*2;
+  
+  cp5.addTextlabel("nData")
+     .setPosition(x, borderWidth*2.5)
+     ;
 
   Group middle = cp5.addGroup("middle")
                         .setPosition(columnX, borderWidth)
@@ -70,19 +80,34 @@ void createGui() {
      .moveTo(middle)
      ;
 
-  right.addDrawable(robotCanvas);
+  right.addDrawable(new RoboBallCanvas(robot, 0, 0, columnInternalWidth));
+  right.addDrawable(new RoboBallValuesCanvas(robot, 0, columnInternalWidth+borderWidth, columnInternalWidth));
+  
+  updateDisplay();
+}
+
+void updateDisplay() {
+  ((Textlabel)cp5.get("nData")).setText("N RECORDS: " + nf(logger.count(), 5, 0));
 }
 
 void motorSlider(float dummy) {
   float[] values = ((Slider2D)cp5.get("motorSlider")).getArrayValue();
-  float tilt = values[0];
-  float speed = values[1];
-  robot.setTilterMotorPosition(round(tilt));
-  robot.setRollerMotorSpeed(round(speed));
+  int tilt  = round(values[0]);
+  int speed = round(values[1]);
+  robot.setTilterMotorPosition(tilt);
+  robot.setRollerMotorSpeed(speed);
+  updateDisplay();
 }
 
 void recordData(boolean rec) {
   logger.setRecording(rec);
+  updateDisplay();
+}
+
+void clearData() {
+  recordData(false);
+  logger.clear();
+  updateDisplay();
 }
 
 void saveData() {
@@ -90,6 +115,7 @@ void saveData() {
     saveDataAs();
   else
     saveOutput();
+  updateDisplay();
 }
 
 void saveDataAs() {
