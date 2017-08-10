@@ -1,5 +1,6 @@
 ControlP5 cp5;
 RoboBallCanvas robotCanvas;
+Slider2D motorSlider;
 
 void createGui() {
   cp5 = new ControlP5(this);
@@ -16,12 +17,12 @@ void createGui() {
                         .setWidth(columnInternalWidth);
   columnX += columnWidth;
 
-  // create a toggle
   float x = borderWidth;
+  float y = borderWidth;
   int buttonWidth = 50;
   
   cp5.addToggle("recordData")
-     .setPosition(x, borderWidth)
+     .setPosition(x, y)
      .setLabel("Record")
      .setWidth(buttonWidth)
      .moveTo(left)
@@ -29,7 +30,7 @@ void createGui() {
   x += buttonWidth+borderWidth;
   
   cp5.addButton("saveData")     
-     .setPosition(x, borderWidth)
+     .setPosition(x, y)
      .setLabel("Save")
      .setWidth(buttonWidth)
      .moveTo(left)
@@ -37,7 +38,7 @@ void createGui() {
   x += buttonWidth+borderWidth;
 
   cp5.addButton("saveDataAs")     
-     .setPosition(x, borderWidth)
+     .setPosition(x, y)
      .setLabel("Save as...")
      .setWidth(buttonWidth)
      .moveTo(left)
@@ -45,7 +46,7 @@ void createGui() {
   x += buttonWidth+borderWidth;
 
   cp5.addButton("clearData")
-     .setPosition(x, borderWidth)
+     .setPosition(x, y)
      .setLabel("Clear data")
      .setWidth(buttonWidth)
      .moveTo(left)
@@ -53,7 +54,7 @@ void createGui() {
   x += buttonWidth+borderWidth*2;
   
   cp5.addTextlabel("nData")
-     .setPosition(x, borderWidth*2.5)
+     .setPosition(x, y+borderWidth*1.5)
      ;
 
   Group middle = cp5.addGroup("middle")
@@ -63,22 +64,45 @@ void createGui() {
                         .setWidth(columnInternalWidth);
   columnX+=columnWidth;
   
-  Group right = cp5.addGroup("right")
-                        .setPosition(columnX, borderWidth)
-                        .setBackgroundHeight(columnInternalHeight)
-                        .setBackgroundColor(128)
-                        .setWidth(columnInternalWidth);
-                        
+  x = borderWidth;
+  y = borderWidth;
+  
+  motorSlider =
   cp5.addSlider2D("motorSlider")
      .setPosition(0, 0)
      .setSize(columnInternalWidth, columnInternalWidth)
-     .setMinMax(-255, -255, +255, +255)
+     .setMinMax(TILTER_MIN, ROLLER_MAX, TILTER_MAX, ROLLER_MIN)
      .setValue(0, 0)
      .setGroup(middle)
      .setBroadcast(true)
      //.disableCrosshair()
      .moveTo(middle)
      ;
+
+  y += columnInternalWidth+borderWidth;
+  
+  cp5.addToggle("power")
+     .setPosition(x, y)
+     .setLabel("Power")
+     .setSize(buttonWidth, buttonWidth)
+     .moveTo(middle)
+     ;
+  x += buttonWidth+borderWidth;
+
+  cp5.addButton("motorReset")
+     .setPosition(x, y)
+     .setLabel("Reset")
+     .setSize(buttonWidth, buttonWidth)
+     .moveTo(middle)
+     ;
+  x += buttonWidth+borderWidth;
+
+  Group right = cp5.addGroup("right")
+                        .setPosition(columnX, borderWidth)
+                        .setBackgroundHeight(columnInternalHeight)
+                        .setBackgroundColor(128)
+                        .setWidth(columnInternalWidth);
+                        
 
   right.addDrawable(new RoboBallCanvas(robot, 0, 0, columnInternalWidth));
   right.addDrawable(new RoboBallValuesCanvas(robot, 0, columnInternalWidth+borderWidth, columnInternalWidth));
@@ -91,12 +115,21 @@ void updateDisplay() {
 }
 
 void motorSlider(float dummy) {
-  float[] values = ((Slider2D)cp5.get("motorSlider")).getArrayValue();
+  float[] values = motorSlider.getArrayValue();
   int tilt  = round(values[0]);
   int speed = round(values[1]);
   robot.setTilterMotorPosition(tilt);
   robot.setRollerMotorSpeed(speed);
   updateDisplay();
+}
+
+void power(boolean pow) {
+  robot.setPower(pow);
+  updateDisplay();
+}
+
+void motorReset() {
+  motorSlider.setValue(0, 0);
 }
 
 void recordData(boolean rec) {

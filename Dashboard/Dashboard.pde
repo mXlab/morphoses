@@ -9,8 +9,15 @@ final int MAIN_OSC_RECV_PORT = 8766;
 final int POSITION_OSC_SEND_PORT = 8765;
 final int POSITION_OSC_RECV_PORT = 8767;
 
-final String MAIN_OSC_IP     = "192.168.43.28";
-final String POSITION_OSC_IP = "192.168.1.108";
+//final String MAIN_OSC_IP     = "192.168.43.28";
+final String MAIN_OSC_IP     = "172.20.10.9";
+//final String POSITION_OSC_IP = "192.168.1.108";
+final String POSITION_OSC_IP     = "172.20.10.8";
+
+final int ROLLER_MAX = 255;
+final int ROLLER_MIN = -255;
+final int TILTER_MAX = 30;
+final int TILTER_MIN = -30;
 
 OscP5 mainOscP5;
 OscP5 positionOscP5;
@@ -48,7 +55,7 @@ void setup() {
 //  mainOscP5.plug(this, "gyro", "/gyro/ds");
 //  positionOscP5.plug(this, "magnetism", "/mag/mG");
   positionOscP5.plug(this, "quaternion", "/quat");
-  positionOscP5.plug(this, "yawPitchRoll", "/ypr/deg");
+//  positionOscP5.plug(this, "yawPitchRoll", "/ypr/deg");
   
   robot = new RoboBall();
   
