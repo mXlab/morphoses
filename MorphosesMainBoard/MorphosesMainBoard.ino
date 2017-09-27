@@ -1,3 +1,6 @@
+// INSTRUCTIONS: Copy MorphosesConfig.h.default to MorphosesConfig.h 
+// and adjust according to your own Wifi setup.
+// 
 /* 20170116 add /motor/2 position with i2c send*/
 /* 20161205 add /motor/1 speed with i2c send*/
 /* mp_esp8266MPU9250 was */
