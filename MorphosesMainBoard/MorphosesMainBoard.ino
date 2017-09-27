@@ -507,7 +507,10 @@ void initWifi()
 
 #else
   WiFi.begin(ssid, password);
-
+  Serial.print("Connecting to access point: \"");
+  Serial.print(ssid);
+  Serial.println("\"");
+  
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
