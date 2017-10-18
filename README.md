@@ -6,6 +6,7 @@
 * Install latest version of [Arduino](https://www.arduino.cc/en/Main/Software)
   * Install library [CNMAT OSC](https://github.com/CNMAT/OSC)
   * Install library [Sparkfun MPU9250](http://www.arduinolibraries.info/libraries/sparkfun-mpu-9250)
+  * Install library [UM7](https://github.com/sofian/UM7-Arduino)
 * Follow instructions to install [ESP8266 Thing Addon to Arduino](https://learn.sparkfun.com/tutorials/esp8266-thing-hookup-guide/installing-the-esp8266-arduino-addon)
 * Install latest version of [Processing](https://processing.org/download/)
   * Install library [OSCP5](http://www.sojamo.de/libraries/oscP5/)
