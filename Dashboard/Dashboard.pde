@@ -3,9 +3,11 @@ import controlP5.*;
 import oscP5.*;
 import netP5.*;
 
+// Main board (motor control).
 final int MAIN_OSC_SEND_PORT = 8765;
 final int MAIN_OSC_RECV_PORT = 8766;
 
+// IMU board.
 final int POSITION_OSC_SEND_PORT = 8765;
 final int POSITION_OSC_RECV_PORT = 8767;
 
