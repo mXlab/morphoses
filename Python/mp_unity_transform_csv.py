@@ -64,3 +64,7 @@ if __name__ == "__main__":
             data[i].append( [ new_pos[0], new_pos[2], new_quat[0], new_quat[1], new_quat[2], new_quat[3]] )
 
     
+    # Merge all data in a single CSV file
+    for version in data:
+        for row in version:
+            csv_writer.writerow(row)
