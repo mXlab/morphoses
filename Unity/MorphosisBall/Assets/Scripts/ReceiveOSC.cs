@@ -1,21 +1,22 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class ReceiveOSC : MonoBehaviour {
-    
+
    	public OSC osc;
 
 
 	// Use this for initialization
 	void Start () {
-	   osc.SetAddressHandler("/motor/1", OnMotor1);
+	     osc.SetAddressHandler("/motor/1", OnMotor1);
        osc.SetAddressHandler("/motor/2", OnMotor2);
        osc.SetAddressHandler("/morphoses/data", OnDirectData);
     }
-	
+
 	// Update is called once per frame
 	void Update () {
-	
+
 	}
 
 	void OnMotor1(OscMessage message) {
