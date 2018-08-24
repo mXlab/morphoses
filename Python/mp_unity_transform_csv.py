@@ -36,8 +36,8 @@ if __name__ == "__main__":
 #    csv_writer = csv.DictWriter(csv_file, fieldnames=['x', 'y', 'qx', 'qy', 'qz', 'qw'])
 #    csv_writer.writeheader()
 
-    data = [[]] * n_rotations
-    print(data)
+    # Create *n_rotations* versions of original data.
+    data = [[] for i in range(n_rotations)]
 
     for row in csv_reader:
         # Get positional and quaternion values.
