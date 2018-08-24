@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     # Open CSV input file.
     csv_input_file = open(args.input_file, "r")
-    csv_reader = csv.reader(csv_input_file)
+    csv_reader = csv.reader(csv_input_file, quoting=csv.QUOTE_NONNUMERIC)
 
     # Create CSV file.
     csv_output_file = open(args.output_file, "w")
@@ -42,8 +42,8 @@ if __name__ == "__main__":
     for row in csv_reader:
         # Get positional and quaternion values.
         x, z, qx, qy, qz, qw = row
-        pos  = np.array([x, 0, z]).reshape((3, 1)).astype(float)
-        quat = np.array([qx, qy, qz, qw]).astype(float)
+        pos  = np.array([x, 0, z]).reshape((3, 1))
+        quat = np.array([qx, qy, qz, qw])
 
         # Apply transformations
         for i in range(n_rotations):
