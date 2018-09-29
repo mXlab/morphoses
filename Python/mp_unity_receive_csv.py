@@ -5,8 +5,8 @@ import csv
 from pythonosc import dispatcher
 from pythonosc import osc_server
 
-def handle_data(unused_addr, x, y, qx, qy, qz, qw):
-    csv_writer.writerow([x, y, qx, qy, qz, qw])
+def handle_data(unused_addr, id, t, x, y, qx, qy, qz, qw):
+    csv_writer.writerow([id, t, x, y, qx, qy, qz, qw])
 
 if __name__ == "__main__":
     # Create parser
