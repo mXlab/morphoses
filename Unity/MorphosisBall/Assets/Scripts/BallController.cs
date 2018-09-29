@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -41,7 +41,8 @@ public class BallController : MonoBehaviour {
 	void SetCenterOfMass() {
 		float phiRad = Mathf.Deg2Rad * phi;
 		float thetaRad = Mathf.Deg2Rad * theta;
-		rb.centerOfMass = new Vector3(- radius * Mathf.Cos (phiRad), - radius * Mathf.Sin (phiRad), - radius * Mathf.Sin (thetaRad));
+		rb.centerOfMass = new Vector3(- radius * Mathf.Cos (phiRad), radius * Mathf.Sin (thetaRad), - radius * Mathf.Sin (phiRad) );
+		//rb.centerOfMass = new Vector3(- radius * Mathf.Cos (phiRad), - radius * Mathf.Sin (phiRad), - radius * Mathf.Sin (thetaRad));
 		//com.Set(- radius * Mathf.Cos (phiRad), - radius * Mathf.Sin (phiRad), radius * Mathf.Sin (thetaRad));
 	}
 }
