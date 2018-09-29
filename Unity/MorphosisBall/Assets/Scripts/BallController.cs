@@ -1,13 +1,14 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// Simulates the robo-ball dynamics by controlling the speed and steering.
 public class BallController : MonoBehaviour {
 
 	public float radius;
 
 	public float phi;
-    public float theta;
+  public float theta;
 
 	// Speed (in degrees per second).
 	public float speed;
