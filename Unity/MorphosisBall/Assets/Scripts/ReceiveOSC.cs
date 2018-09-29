@@ -2,9 +2,10 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
+// Receives OSC messages (x, z, qx, qy, qz, qw) and directly assigns them to the object.
 public class ReceiveOSC : MonoBehaviour {
 
-   	public OSC osc;
+  public OSC osc;
 
 
 	// Use this for initialization
