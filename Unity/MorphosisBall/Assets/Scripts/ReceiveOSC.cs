@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -11,7 +11,7 @@ public class ReceiveOSC : MonoBehaviour {
 	void Start () {
 	     osc.SetAddressHandler("/motor/1", OnMotor1);
        osc.SetAddressHandler("/motor/2", OnMotor2);
-       osc.SetAddressHandler("/morphoses/data", OnDirectData);
+       osc.SetAddressHandler("/morphoses/transform", OnDirectData);
     }
 
 	// Update is called once per frame

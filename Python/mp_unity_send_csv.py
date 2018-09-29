@@ -26,5 +26,5 @@ if __name__ == "__main__":
     for row in csv_reader:
 #        builder = osc_message_builder.OscMessageBuilder(address="/mophoses/data")
 
-        client.send_message("/morphoses/data", row)
+        client.send_message("/morphoses/transform", row)
         time.sleep(0.0005)
