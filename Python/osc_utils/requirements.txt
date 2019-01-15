@@ -1,0 +1,5 @@
+Package    Version
+---------- -------
+pip        18.1   
+python-osc 1.7.0  
+setuptools 40.6.2 
