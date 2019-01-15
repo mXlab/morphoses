@@ -1,48 +1,49 @@
 using UnityEngine;
 using System.Collections;
 
-public class CameraFollow : MonoBehaviour {
+public class CameraFollow : MonoBehaviour
+{
 
-    public Transform target;
+  public Transform target;
 
-    public Vector3 offsetPosition;
+  public Vector3 offsetPosition;
 
-    public Space offsetPositionSpace = Space.Self;
+  public Space offsetPositionSpace = Space.Self;
 
-    public bool lookAt = true;
+  public bool lookAt = true;
 
-    private void LateUpdate()
+  private void LateUpdate()
+  {
+    Refresh();
+  }
+
+  public void Refresh()
+  {
+    if (target == null)
     {
-        Refresh();
+      Debug.LogWarning("Missing target ref !", this);
+
+      return;
     }
 
-    public void Refresh()
+    // compute position
+    if (offsetPositionSpace == Space.Self)
     {
-        if (target == null)
-        {
-            Debug.LogWarning("Missing target ref !", this);
-
-            return;
-        }
-
-        // compute position
-        if (offsetPositionSpace == Space.Self)
-        {
-            transform.position = target.TransformPoint(offsetPosition);
-        }
-        else
-        {
-            transform.position = target.position + offsetPosition;
-        }
-
-        // compute rotation
-        if (lookAt)
-        {
-            transform.LookAt(target);
-        }
-        else
-        {
-            transform.rotation = target.rotation;
-        }
+      transform.position = target.TransformPoint(offsetPosition);
     }
+    else
+    {
+      transform.position = target.position + offsetPosition;
+    }
+
+    // compute rotation
+    if (lookAt)
+    {
+      transform.LookAt(target);
+    }
+    else
+    {
+      transform.rotation = target.rotation;
+    }
+  }
 }
