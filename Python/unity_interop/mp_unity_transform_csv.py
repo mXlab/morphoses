@@ -36,7 +36,7 @@ if __name__ == "__main__":
     # Create CSV file.
     csv_output_file = open(args.output_file, "w")
     csv_writer = csv.DictWriter(
-        csv_output_file, fieldnames=['id', 'time' 'x', 'y', 'qx', 'qy', 'qz', 'qw', 'steering', 'speed'])
+        csv_output_file, fieldnames=['id', 'time', 'x', 'y', 'qx', 'qy', 'qz', 'qw', 'steering', 'speed'])
     csv_writer.writeheader()
 
     # Create *n_rotations* versions of original data.
@@ -46,8 +46,8 @@ if __name__ == "__main__":
         # Get positional and quaternion values.
         exp_id, time, x, z, qx, qy, qz, qw, speed, steering = row
         #print(exp_id, time, x, z, qx, qy, qz, qw, speed, steering)
-        pos = np.array([x, 0, z]).reshape((3, 1))
-        quat = np.array([qx, qy, qz, qw])
+        pos = np.array([x, 0, z]).reshape((3, 1)).astype(float)
+        quat = np.array([qx, qy, qz, qw]).astype(float)
 
         # Apply transformations
         for i in range(n_rotations):
@@ -56,8 +56,6 @@ if __name__ == "__main__":
             rot = quat2mat(rot_quat)
 
             # Rotate object.
-            print(rot, pos)
-            rot = np.array(rot)
             new_pos = np.dot(rot, pos).reshape(3)
             #rot = np.array(rot).astype(np.float64)
             new_quat = qmult(quat, rot_quat)
