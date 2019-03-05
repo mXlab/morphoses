@@ -1,6 +1,6 @@
 # Workspaces
 
-There are several Python virtual environments which contain the scripts.
+There are several Python virtual environments which contain the scripts. They are using python3.
 
 To setup the virtual environment:
 

@@ -29,20 +29,23 @@ if __name__ == "__main__":
 
     # Open CSV input file.
     csv_input_file = open(args.input_file, "r")
-    csv_reader = csv.reader(csv_input_file, quoting=csv.QUOTE_NONNUMERIC)
+    csv_reader = csv.reader(csv_input_file)
+    # discard the header row with column names
+    next(csv_reader)
 
     # Create CSV file.
     csv_output_file = open(args.output_file, "w")
-    csv_writer = csv.writer(csv_output_file)
-#    csv_writer = csv.DictWriter(csv_file, fieldnames=['x', 'y', 'qx', 'qy', 'qz', 'qw'])
-#    csv_writer.writeheader()
+    csv_writer = csv.DictWriter(
+        csv_output_file, fieldnames=['id', 'time' 'x', 'y', 'qx', 'qy', 'qz', 'qw', 'steering', 'speed'])
+    csv_writer.writeheader()
 
     # Create *n_rotations* versions of original data.
     data = [[] for i in range(n_rotations)]
 
     for row in csv_reader:
         # Get positional and quaternion values.
-        x, z, qx, qy, qz, qw = row
+        exp_id, time, x, z, qx, qy, qz, qw, speed, steering = row
+        #print(exp_id, time, x, z, qx, qy, qz, qw, speed, steering)
         pos = np.array([x, 0, z]).reshape((3, 1))
         quat = np.array([qx, qy, qz, qw])
 
@@ -53,6 +56,8 @@ if __name__ == "__main__":
             rot = quat2mat(rot_quat)
 
             # Rotate object.
+            print(rot, pos)
+            rot = np.array(rot)
             new_pos = np.dot(rot, pos).reshape(3)
             #rot = np.array(rot).astype(np.float64)
             new_quat = qmult(quat, rot_quat)
@@ -61,11 +66,22 @@ if __name__ == "__main__":
             # print(new_quat)
 
             # Create new row.
-#            print([ new_pos[0], new_pos[2], new_quat[0], new_quat[1], new_quat[2], new_quat[3]])
-            data[i].append([new_pos[0], new_pos[2], new_quat[0],
-                            new_quat[1], new_quat[2], new_quat[3]])
+            # print([ new_pos[0], new_pos[2], new_quat[0], new_quat[1], new_quat[2], new_quat[3]])
+            data[i].append([exp_id, time, new_pos[0], new_pos[2], new_quat[0],
+                            new_quat[1], new_quat[2], new_quat[3], speed, steering])
 
     # Merge all data in a single CSV file
     for version in data:
         for row in version:
-            csv_writer.writerow(row)
+            csv_writer.writerow({
+                "id": row[0],
+                "time": row[1],
+                "x": row[2],
+                "y": row[3],
+                "qx": row[4],
+                "qy": row[5],
+                "qz": row[6],
+                "qw": row[7],
+                "steering": row[8],
+                "speed": row[9]
+            })

@@ -28,14 +28,14 @@ if __name__ == "__main__":
     notify_recv = False
     rows = 0
 
-    def handle_data(unused_addr, id, t, x, y, qx, qy, qz, qw, speed, steer):
+    def handle_data(unused_addr, exp_id, t, x, y, qx, qy, qz, qw, speed, steer):
         global notify_recv
         global rows
         if not(notify_recv):
             print("Recieved initial packets from unity!")
             notify_recv = True
         csv_writer.writerow({
-            "id": id,
+            "id": exp_id,
             "time": t,
             "x": x,
             "y": y,
