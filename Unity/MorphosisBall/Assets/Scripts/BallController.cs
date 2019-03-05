@@ -7,7 +7,6 @@ public class BallController : MonoBehaviour
 {
 
   public float radius;
-
   public float phi;
   public float theta;
 

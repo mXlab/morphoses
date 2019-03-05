@@ -1,11 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-// Sends OSC data from the robot (x, z, qx, qy, qz, qw).
+// Sends OSC data from the robot (x, z, qx, qy, qz, qw, speed, steering).
 public class SendOSC : MonoBehaviour
 {
 
   public OSC osc;
+
+  private BallController ball_controller;
 
   // Use this for initialization
   void Start()
@@ -20,6 +22,8 @@ public class SendOSC : MonoBehaviour
     ExperimentRunner exp = GetComponent<ExperimentRunner>();
     if (exp.IsStarted())
     {
+      ball_controller = GetComponent<BallController>();
+
       OscMessage message = new OscMessage();
 
       message.address = "/morphoses/data";
@@ -35,6 +39,8 @@ public class SendOSC : MonoBehaviour
       message.values.Add(transform.rotation.y);
       message.values.Add(transform.rotation.z);
       message.values.Add(transform.rotation.w);
+      message.values.Add(ball_controller.speed);
+      message.values.Add(ball_controller.steering);
       osc.Send(message);
     }
   }

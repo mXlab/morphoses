@@ -1,6 +1,7 @@
 import argparse
 import math
 import csv
+import sys
 
 from pythonosc import dispatcher
 from pythonosc import osc_server
@@ -20,10 +21,32 @@ if __name__ == "__main__":
 
     # Create CSV file.
     csv_file = open(args.output_file, "w")
-    csv_writer = csv.writer(csv_file)
+    csv_writer = csv.DictWriter(
+        csv_file, ["id", "time", "x", "y", "qx", "qy", "qz", "qw", "speed", "steer"])
+    csv_writer.writeheader()
 
-    def handle_data(unused_addr, id, t, x, y, qx, qy, qz, qw):
-        csv_writer.writerow([id, t, x, y, qx, qy, qz, qw])
+    notify_recv = False
+    rows = 0
+
+    def handle_data(unused_addr, id, t, x, y, qx, qy, qz, qw, speed, steer):
+        global notify_recv
+        global rows
+        if not(notify_recv):
+            print("Recieved initial packets from unity!")
+            notify_recv = True
+        csv_writer.writerow({
+            "id": id,
+            "time": t,
+            "x": x,
+            "y": y,
+            "qx": qx,
+            "qy": qy,
+            "qz": qz,
+            "qw": qw,
+            "speed": speed,
+            "steer": steer
+        })
+        rows += 1
 
     # Create OSC dispatcher.
     dispatcher = dispatcher.Dispatcher()
@@ -33,4 +56,12 @@ if __name__ == "__main__":
     server = osc_server.ThreadingOSCUDPServer((args.ip, args.port), dispatcher)
 
     print(f"Serving on {server.server_address}")
-    server.serve_forever()
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("Exiting program...")
+        print(f"saved {rows} rows of data")
+        csv_file.close()
+        server.server_close()
+        sys.exit()
