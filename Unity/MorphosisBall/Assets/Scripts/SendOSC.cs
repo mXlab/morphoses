@@ -7,12 +7,15 @@ public class SendOSC : MonoBehaviour
 
   public OSC osc;
 
+  public bool recieving_osc = false;
   private BallController ball_controller;
 
   // Use this for initialization
   void Start()
   {
-
+    if (GetComponent("RecieveOSC") != null) {
+      recieving_osc = true;
+    }
   }
 
   // Update is called once per frame
@@ -42,7 +45,20 @@ public class SendOSC : MonoBehaviour
       // inputs
       message.values.Add(ball_controller.speed);
       message.values.Add(ball_controller.steering);
-      osc.Send(message);
+      //osc.Send(message);
+      
+      if (recieving_osc) {
+        ReceiveOSC reciever = GetComponent<ReceiveOSC>();
+        if (reciever.canSendPacket()) {
+          osc.Send(message);
+          reciever.sentPacket();
+          Debug.Log("send packet");
+        } else {
+          Debug.Log("cannot send packet!");
+        }
+      } else {
+        osc.Send(message);
+      }
     }
   }
 

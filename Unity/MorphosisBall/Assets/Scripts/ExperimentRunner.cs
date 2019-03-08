@@ -47,6 +47,11 @@ public class ExperimentRunner : MonoBehaviour
   {
     isStarted = true;
     startTime = Time.time;
+    if (GetComponent("ReceiveOSC")) {
+      Debug.Log("buffer += 1");
+      ReceiveOSC recv = GetComponent("ReceiveOSC") as ReceiveOSC;
+      recv.newExperiment();
+    }
   }
 
   public bool IsStarted() { return isStarted; }

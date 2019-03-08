@@ -59,8 +59,8 @@ if __name__ == "__main__":
     dataset = dataframe.values
 
     # Create input matrix X.
-    pos_X = np.array(dataset[:,2:4],dtype='float64')
-    quat_X = np.array(dataset[:,4:8],dtype='float64')
+    pos_X = np.array(dataset[:,2:4], dtype='float64')
+    quat_X = np.array(dataset[:,4:8], dtype='float64')
     euler_X = np.matrix([ quaternion_to_euler(q[0], q[1], q[2], q[3]) for q in quat_X ])
 
     # Join blocks.
@@ -85,8 +85,9 @@ if __name__ == "__main__":
 
     def standardize_data(data):
         global scalerX
-        print("Standardizeing")
-        print(data)
+        # we can't print every frame or it slows down too much
+        #print("Standardizeing")
+        #print(data)
         data = scalerX.transform([data])
         return data
 
@@ -108,12 +109,11 @@ if __name__ == "__main__":
         # Generate prediction.
         target = model.predict(data)
         action = scalerY.inverse_transform(target).astype('float')
-        print("Chosen action: ")
-        print(action)
+        #print("Chosen action: ")
+        #print(action)
 
         # Send OSC message.
         client.send_message("/morphoses/action", action[0])
-        time.sleep(0.0005) # necessary???
 
     # Create OSC dispatcher.
     dispatcher = dispatcher.Dispatcher()
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     server = osc_server.ThreadingOSCUDPServer((args.ip, args.receive_port), dispatcher)
     client = udp_client.SimpleUDPClient(args.ip, args.send_port)
 
-    print(f"Serving on {server.server_address}")
+    print(f"Serving on {server.server_address}. Program ready.")
 
     try:
         server.serve_forever()

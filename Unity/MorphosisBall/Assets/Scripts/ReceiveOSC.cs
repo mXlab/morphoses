@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public class ReceiveOSC : MonoBehaviour {
 
   public OSC osc;
-
+  public int buffer = 1;
 
   public float maxSpeed = 15.0f;
   public float maxSteering = 45.0f;
@@ -37,6 +37,7 @@ public class ReceiveOSC : MonoBehaviour {
 	}
 
 	void OnAction(OscMessage message) {
+		buffer += 1;
 		float speed = message.GetFloat (0);
 		float steering = message.GetFloat (1);
 
@@ -57,4 +58,16 @@ public class ReceiveOSC : MonoBehaviour {
     transform.rotation = new Quaternion (qx, qy, qz, qw);
   }
 
+	public void newExperiment() {
+		Debug.Log("new!");
+		buffer = 1;
+	}
+
+	public void sentPacket() {
+  	buffer -= 1;
+  }
+
+	public bool canSendPacket() {
+		return buffer > 0;
+	}
 }
