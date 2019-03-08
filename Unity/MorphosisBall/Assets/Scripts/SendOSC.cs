@@ -39,6 +39,7 @@ public class SendOSC : MonoBehaviour
       message.values.Add(transform.rotation.y);
       message.values.Add(transform.rotation.z);
       message.values.Add(transform.rotation.w);
+      // inputs
       message.values.Add(ball_controller.speed);
       message.values.Add(ball_controller.steering);
       osc.Send(message);

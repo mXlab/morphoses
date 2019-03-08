@@ -55,7 +55,7 @@ public class ExperimentRunner : MonoBehaviour
 
   public double GetTime()
   {
-    Debug.Log(Time.time - startTime);
+    // Debug.Log(Time.time - startTime);
     return Time.time - startTime;
   }
 

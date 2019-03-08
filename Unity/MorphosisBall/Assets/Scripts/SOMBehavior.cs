@@ -49,7 +49,7 @@ public class SOMBehavior : MonoBehaviour
     input.Add(transform.rotation.y);
     input.Add(transform.rotation.z);
     input.Add(transform.rotation.w);
-    Debug.Log("Quaternion : " + transform.rotation.x + "," + transform.rotation.y + "," + transform.rotation.z + "," + transform.rotation.w);
+    // Debug.Log("Quaternion : " + transform.rotation.x + "," + transform.rotation.y + "," + transform.rotation.z + "," + transform.rotation.w);
 
     // Distance covered.
 

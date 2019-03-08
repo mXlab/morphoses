@@ -8,10 +8,14 @@ public class ReceiveOSC : MonoBehaviour {
   public OSC osc;
 
 
+  public float maxSpeed = 15.0f;
+  public float maxSteering = 45.0f;
+
 	// Use this for initialization
 	void Start () {
-	     osc.SetAddressHandler("/motor/1", OnMotor1);
+	   osc.SetAddressHandler("/motor/1", OnMotor1);
        osc.SetAddressHandler("/motor/2", OnMotor2);
+       osc.SetAddressHandler("/morphoses/action", OnAction);
        osc.SetAddressHandler("/morphoses/transform", OnDirectData);
     }
 
@@ -23,12 +27,22 @@ public class ReceiveOSC : MonoBehaviour {
 	void OnMotor1(OscMessage message) {
 		int speed = message.GetInt (0);
 
-		GetComponent<BallController>().speed = (speed / 255.0f) * 10.0f;
+		GetComponent<BallController>().speed = (speed / 255.0f) * maxSpeed;
 	}
 
 	void OnMotor2(OscMessage message) {
 		int steering = message.GetInt (0);
 
+		GetComponent<BallController>().steering = steering;
+	}
+
+	void OnAction(OscMessage message) {
+		float speed = message.GetFloat (0);
+		float steering = message.GetFloat (1);
+
+		Debug.Log("Received new speed: " + speed + " and steering: " + steering);
+
+		GetComponent<BallController>().speed = speed;
 		GetComponent<BallController>().steering = steering;
 	}
 

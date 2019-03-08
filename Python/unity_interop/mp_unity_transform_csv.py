@@ -29,7 +29,11 @@ if __name__ == "__main__":
 
     # Open CSV input file.
     csv_input_file = open(args.input_file, "r")
-    csv_reader = csv.reader(csv_input_file)
+    total = 0; records = []
+    for line in csv_input_file:
+        total += 1
+        records.append(line)
+    csv_reader = csv.reader(records)
     # discard the header row with column names
     next(csv_reader)
 
@@ -42,7 +46,14 @@ if __name__ == "__main__":
     # Create *n_rotations* versions of original data.
     data = [[] for i in range(n_rotations)]
 
-    for row in csv_reader:
+    print(f"transforming {total -1} records")
+    alerted = 0
+    for counter, row in enumerate(csv_reader):
+        percent_complete = math.floor(counter / total * 100)
+        if (percent_complete > alerted * 10):
+            print(f"{percent_complete} percent complete")
+            alerted = alerted + 1
+
         # Get positional and quaternion values.
         exp_id, time, x, z, qx, qy, qz, qw, speed, steering = row
         #print(exp_id, time, x, z, qx, qy, qz, qw, speed, steering)
@@ -69,6 +80,7 @@ if __name__ == "__main__":
                             new_quat[1], new_quat[2], new_quat[3], speed, steering])
 
     # Merge all data in a single CSV file
+    print("writing file")
     for version in data:
         for row in version:
             csv_writer.writerow({
