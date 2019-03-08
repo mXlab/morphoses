@@ -6,3 +6,7 @@ lib64
 
 .DS_Store
 .vscode
+
+results*
+*results*
+
