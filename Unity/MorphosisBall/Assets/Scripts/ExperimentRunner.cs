@@ -20,13 +20,15 @@ public class ExperimentRunner : MonoBehaviour
   // Update is called once per frame
   void Update()
   {
-    if (Input.GetButtonDown("Fire2"))
+    // We may want to run the simulation without the joystick,
+    // so we will support using keys instead
+    if (Input.GetButtonDown("Fire2") || Input.GetKeyDown("q"))
     {
       Debug.Log("new experiment");
       NewExperiment();
     }
 
-    if (Input.GetButtonDown("Fire3"))
+    if (Input.GetButtonDown("Fire3") || Input.GetKeyDown("w"))
     {
       Debug.Log("Starting experiment. Will now send data.");
       StartExperiment();
@@ -47,8 +49,9 @@ public class ExperimentRunner : MonoBehaviour
   {
     isStarted = true;
     startTime = Time.time;
-    if (GetComponent("ReceiveOSC")) {
-      Debug.Log("buffer += 1");
+    if (GetComponent("ReceiveOSC"))
+    {
+      Debug.Log("Listening for incoming OSC");
       ReceiveOSC recv = GetComponent("ReceiveOSC") as ReceiveOSC;
       recv.newExperiment();
     }
