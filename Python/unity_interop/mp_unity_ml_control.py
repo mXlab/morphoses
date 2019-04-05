@@ -39,6 +39,7 @@ if __name__ == "__main__":
     model._make_predict_function()
 
     notify_recv = False
+    perf_measurements = []
     rows = 0
 
     # Load database.
@@ -51,6 +52,9 @@ if __name__ == "__main__":
     def handle_data(unused_addr, exp_id, t, x, y, qx, qy, qz, qw, speed, steer):
         global notify_recv
         global model
+        global perf_measurements
+        start_time = time.perf_counter()
+
         if not(notify_recv):
             print("Recieved initial packets from unity!")
             notify_recv = True
@@ -70,6 +74,7 @@ if __name__ == "__main__":
 
         # Send OSC message.
         client.send_message("/morphoses/action", action[0])
+        perf_measurements.append(time.perf_counter() - start_time)
 
     # Create OSC dispatcher.
     dispatcher = dispatcher.Dispatcher()
