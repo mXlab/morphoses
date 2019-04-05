@@ -70,3 +70,8 @@ sysinfo.txt
 *.apk
 *.unitypackage
 */share
+
+# Other
+*.hdf5
+*.hd5
+__pycache__
