@@ -13,24 +13,11 @@ from pythonosc import osc_server
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 
+# This is to allow the inclusion of common python code in the ../mp folder
+import sys
+sys.path.append('../')
 
-
-def quaternion_to_euler(x, y, z, w):
-    import math
-    t0 = +2.0 * (w * x + y * z)
-    t1 = +1.0 - 2.0 * (x * x + y * y)
-    X = math.degrees(math.atan2(t0, t1))
-
-    t2 = +2.0 * (w * y - z * x)
-    t2 = +1.0 if t2 > +1.0 else t2
-    t2 = -1.0 if t2 < -1.0 else t2
-    Y = math.degrees(math.asin(t2))
-
-    t3 = +2.0 * (w * z + x * y)
-    t4 = +1.0 - 2.0 * (y * y + z * z)
-    Z = math.degrees(math.atan2(t3, t4))
-
-    return X, Y, Z    
+import mp.preprocessing as mpp
 
 if __name__ == "__main__":
     # Create parser
@@ -58,39 +45,8 @@ if __name__ == "__main__":
     dataframe = pandas.read_csv(args.data)
     dataset = dataframe.values
 
-    # Create input matrix X.
-    pos_X = np.array(dataset[:,2:4], dtype='float64')
-    quat_X = np.array(dataset[:,4:8], dtype='float64')
-    euler_X = np.matrix([ quaternion_to_euler(q[0], q[1], q[2], q[3]) for q in quat_X ])
-
-    # Join blocks.
-    X = np.concatenate((pos_X, quat_X, euler_X), axis=1)
-
-    # Normalize X.
-    scalerX = MinMaxScaler()
-    scalerX.fit(X)
-    X = scalerX.transform(X)
-
-    # Create target matrix Y.
-    speed_y = np.array(dataset[:,8],dtype='float64')
-    steering_y = np.array(dataset[:,9],dtype='float64')
-
-    # Join blocks.
-    Y = np.column_stack((speed_y, steering_y))
-
-    # Normalize Y.
-    scalerY = MinMaxScaler()
-    scalerY.fit(Y)
-    Y = scalerY.transform(Y)
-
-    def standardize_data(data):
-        global scalerX
-        # we can't print every frame or it slows down too much
-        #print("Standardizeing")
-        #print(data)
-        data = scalerX.transform([data])
-        return data
-
+    # Pre-process.
+    X, Y, scalerX, scalerY = mpp.preprocess_data(dataset, prune_experiments=True)
 
     def handle_data(unused_addr, exp_id, t, x, y, qx, qy, qz, qw, speed, steer):
         global notify_recv
@@ -102,9 +58,9 @@ if __name__ == "__main__":
         # Process input data.
         pos = np.array([x, y])
         quat = np.array([qx, qy, qz, qw])
-        euler = np.array(quaternion_to_euler(qx, qy, qz, qw))
+        euler = np.array(mpp.quaternion_to_euler(qx, qy, qz, qw))
         data = np.concatenate((pos, quat, euler))
-        data = standardize_data(data)
+        data = mpp.standardize(data, scalerX)
 
         # Generate prediction.
         target = model.predict(data)
