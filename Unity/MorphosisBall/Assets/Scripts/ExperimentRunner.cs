@@ -43,6 +43,11 @@ public class ExperimentRunner : MonoBehaviour
     transform.rotation = Random.rotation;
     id = System.DateTime.Now.ToString("yyyy-MM-ddTHH:MM:ss");
     isStarted = false;
+
+    // Reset speed an steering.
+    GetComponent<BallController>().speed = 0; //up & down
+    GetComponent<BallController>().steering = 0; // left and right
+
   }
 
   void StartExperiment()
