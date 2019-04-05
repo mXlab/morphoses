@@ -76,8 +76,9 @@ if __name__ == "__main__":
 
             # Create new row.
             # print([ new_pos[0], new_pos[2], new_quat[0], new_quat[1], new_quat[2], new_quat[3]])
-            data[i].append([exp_id, time, new_pos[0], new_pos[2], new_quat[0],
-                            new_quat[1], new_quat[2], new_quat[3], speed, steering])
+            data[i].append([exp_id, time, new_pos[0], new_pos[2],
+                            new_quat[0], new_quat[1], new_quat[2], new_quat[3],
+                            speed, steering])
 
     # Merge all data in a single CSV file
     print("writing file")
