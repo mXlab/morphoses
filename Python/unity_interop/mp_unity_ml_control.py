@@ -56,7 +56,7 @@ if __name__ == "__main__":
         start_time = time.perf_counter()
 
         if not(notify_recv):
-            print("Recieved initial packets from unity!")
+            print("Received initial packets from unity!")
             notify_recv = True
 
         # Process input data.
@@ -69,8 +69,7 @@ if __name__ == "__main__":
         # Generate prediction.
         target = model.predict(data)
         action = scalerY.inverse_transform(target).astype('float')
-        #print("Chosen action: ")
-        #print(action)
+        print("Chosen action: {}".format(action))
 
         # Send OSC message.
         client.send_message("/morphoses/action", action[0])
@@ -89,6 +88,6 @@ if __name__ == "__main__":
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("Exiting program...")
+        print(f"Exiting program... {np.mean(perf_measurements)}")
         server.server_close()
         sys.exit()
