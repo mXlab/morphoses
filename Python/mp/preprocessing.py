@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, KBinsDiscretizer
 
 MIN_SPEED = -15
 MAX_SPEED = 15
@@ -77,31 +77,26 @@ def preprocess_data(dataset, prune_experiments = False, bins = None):
     # Join blocks.
     Y = np.column_stack((speed_y, steering_y))
 
-    # Normalize Y.
-    scalerY = MinMaxScaler()
-    scalerY.fit(Y)
-    Y = scalerY.transform(Y)
-
     # Classification.
     # This has been UNTESTED.
     if bins != None:
-        if (type(bins) is tuple or type(bins) is list):
-            n_bins_speed = bins[0]
-            n_bins_steering = bins[1]
-        else:
-            n_bins_speed = n_bins_steering = bins
-
-        # Generate bins.
-        bins_speed    = np.histogram_bin_edges(speed_y, n_bins_speed)
-        bins_steering = np.histogram_bin_edges(steering_y, n_bins_steering)
-
-        # Convert to classes.
-        speed_y = np.digitize(speed_y, bins_speed)
-        steering_y = np.digitize(steering_y, bins_steering)
-
-        Y = np.column_stack((speed_y, steering_y))
+        scalerY = KBinsDiscretizer(n_bins=bins, encode='ordinal', strategy='uniform')
+        scalerY.fit(Y)
+        Y = scalerY.transform(Y)
+    else:
+        # Normalize Y.
+        scalerY = MinMaxScaler()
+        scalerY.fit(Y)
+        Y = scalerY.transform(Y)
 
     return X, Y, scalerX, scalerY
+
+def speed_steering_to_class(y, bins):
+    return y[0]*bins + y[1]
+
+def class_to_speed_steering(y, bins):
+    print("{} {}".format((y/bins), (y%bins)))
+    return [ int(y/bins), int(y%bins) ]
 
 # def standardize(value, min, max):
 #     return (value - min) / (max - min)

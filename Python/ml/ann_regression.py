@@ -14,6 +14,9 @@ parser.add_argument("-b", "--batch-size", type=int, default=128, help="The batch
 #parser.add_argument("-p", "--batch-save-period", type=int, default=0, help="Period at which to save weights (ie. after every X batch, 0 = no batch save)")
 #parser.add_argument("-fp", "--first-epoch-params", type=str, default=None, help="A formatted string describing the evolution of batch size and save period during the first epoch")
 
+parser.add_argument("-c", "--classification", default=False, action='store_true', help="Treat as a classification problem instead of regression")
+parser.add_argument("--n-bins", type=int, default=5, help="Number of bins to use for classification (only valid if used with --classification)")
+
 args = parser.parse_args()
 
 # This is to allow the inclusion of common python code in the ../mp folder
@@ -25,6 +28,7 @@ import pandas
 import os
 from keras.models import Sequential
 from keras.layers import Dense
+from keras.utils import np_utils
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.model_selection import train_test_split
 
@@ -35,7 +39,16 @@ dataframe = pandas.read_csv(args.data)
 dataset = dataframe.values
 
 # Pre-process.
-X, Y, _, _ = mpp.preprocess_data(dataset, prune_experiments=True)
+if args.classification:
+    bins = args.n_bins
+else:
+    bins = None
+X, Y, _, _ = mpp.preprocess_data(dataset, prune_experiments=True, bins = bins)
+
+if args.classification:
+    Y = [ mpp.speed_steering_to_class(y, bins) for y in Y ]
+    print(np.histogram(Y))
+    Y = np_utils.to_categorical(Y, bins*bins)
 
 print(X.shape)
 print(Y.shape)
@@ -48,11 +61,18 @@ n_hidden = args.n_hidden
 
 model = Sequential()
 model.add(Dense(n_hidden, input_dim=9, kernel_initializer='normal', activation='relu'))
-model.add(Dense(2, kernel_initializer='normal', activation='tanh'))
-#model.add(Dense(2, kernel_initializer='normal', activation='linear'))
 
-# Compile model
-model.compile(loss='mean_squared_error', optimizer='adam', metrics=["mse", "mae"])
+if args.classification:
+    print(Y.shape)
+    model.add(Dense(Y.shape[1], kernel_initializer='normal', activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+else:
+    model.add(Dense(2, kernel_initializer='normal', activation='tanh'))
+    #model.add(Dense(2, kernel_initializer='normal', activation='linear'))
+
+    # Compile model
+    model.compile(loss='mean_squared_error', optimizer='adam', metrics=["mse", "mae"])
 
 
 # Create callbacks.

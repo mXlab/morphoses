@@ -31,6 +31,11 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--receive-port", default="8767",
                         type=int, help="Specify the port number to listen on.")
 
+    parser.add_argument("-c", "--classification", default=False, action='store_true',
+                        help="Treat as a classification problem instead of regression")
+    parser.add_argument("--n-bins", type=int, default=5,
+                        help="Number of bins to use for classification (only valid if used with --classification)")
+
     # Parse arguments.
     args = parser.parse_args()
 
@@ -47,7 +52,11 @@ if __name__ == "__main__":
     dataset = dataframe.values
 
     # Pre-process.
-    X, Y, scalerX, scalerY = mpp.preprocess_data(dataset, prune_experiments=True)
+    if args.classification:
+        bins = args.n_bins
+    else:
+        bins = None
+    X, Y, scalerX, scalerY = mpp.preprocess_data(dataset, prune_experiments=True, bins=bins)
 
     def handle_data(unused_addr, exp_id, t, x, y, qx, qy, qz, qw, speed, steer):
         global notify_recv
@@ -68,6 +77,14 @@ if __name__ == "__main__":
 
         # Generate prediction.
         target = model.predict(data)
+        print(target)
+        if args.classification:
+            print(target.squeeze())
+            target = np.argmax(target) # pick max target from one-hot encodings
+            print(target)
+            target = [ mpp.class_to_speed_steering(target, bins) ]
+            print("final: {}" % target)
+
         action = scalerY.inverse_transform(target).astype('float')
         print("Chosen action: {}".format(action))
 
