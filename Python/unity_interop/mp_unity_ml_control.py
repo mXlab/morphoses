@@ -80,7 +80,8 @@ if __name__ == "__main__":
     dispatcher.map("/morphoses/data", handle_data)
 
     # Launch OSC server & client.
-    server = osc_server.ThreadingOSCUDPServer((args.ip, args.receive_port), dispatcher)
+
+    server = osc_server.BlockingOSCUDPServer(("0.0.0.0", args.receive_port), dispatcher)
     client = udp_client.SimpleUDPClient(args.ip, args.send_port)
 
     print(f"Serving on {server.server_address}. Program ready.")
