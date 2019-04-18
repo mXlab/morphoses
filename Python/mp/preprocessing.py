@@ -94,9 +94,11 @@ def preprocess_data(dataset, prune_experiments = False, bins = None):
 def speed_steering_to_class(y, bins):
     return y[0]*bins + y[1]
 
-def class_to_speed_steering(y, bins):
-    print("{} {}".format((y/bins), (y%bins)))
-    return [ int(y/bins), int(y%bins) ]
+def class_to_speed_steering(y, bins, normalize=False):
+    array = [ int(y/bins), int(y%bins) ]
+    if normalize:
+        array = [ x/float(bins-1) for x in array]
+    return array
 
 # def standardize(value, min, max):
 #     return (value - min) / (max - min)
