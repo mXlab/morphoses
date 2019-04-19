@@ -148,6 +148,9 @@ if __name__ == "__main__":
         else:
             action = np.argmax(model.predict(state))
 
+        # Save action for next iteration.
+        prev_action = action
+
         target = [mpp.class_to_speed_steering(action, n_bins, True)]
 #        print("Choice made {} {} {}".format(action, model.predict(state), target))
 
