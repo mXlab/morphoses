@@ -71,7 +71,7 @@ if __name__ == "__main__":
     prev_state = None
     prev_action = -1
     eps = 0.1
-    y = 0.1
+    y = 0.5
 #    y = 0.95
 
     avg_r = None
@@ -125,7 +125,8 @@ if __name__ == "__main__":
             state = np.reshape(state, (1, 6))
 
             # Reward (equal to inverse sum of motion).
-            r = 1 - abs(sum(delta_data[6:9]))
+            r = 1 - abs(sum(delta_data[6:9])) # reward no movement
+            #r = abs(sum(delta_data[6:9])) # reward max movement
 
             if avg_r is None:
                 avg_r = r
