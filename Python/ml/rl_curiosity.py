@@ -1,6 +1,7 @@
 import argparse
 import sys
 import time
+import math
 
 import pandas
 import numpy as np
@@ -21,6 +22,19 @@ import sys
 sys.path.append('../')
 
 import mp.preprocessing as mpp
+
+# Returns the signed difference between two angles.
+def dist_angles(a1, a2):
+    return math.atan2(math.sin(a1-a2), math.cos(a1-a2))
+
+# Returns the difference between current and previous datapoints.
+def delta(data, prev_data):
+    two_pi = 2*math.pi
+    d = data - prev_data
+    d[6] = dist_angles(data[6]*two_pi, prev_data[6]*two_pi)
+    d[7] = dist_angles(data[7]*math.pi, prev_data[7]*math.pi)
+    d[8] = dist_angles(data[8]*two_pi, prev_data[8]*two_pi)
+    return d
 
 if __name__ == "__main__":
     # Create parser
@@ -104,7 +118,7 @@ if __name__ == "__main__":
         # Else: one step of Q-learning loop.
         else:
             # Compute deltas.
-            delta_data = (data - prev_data) / (t - prev_time)
+            delta_data = delta(data, prev_data) / (t - prev_time)
 
             # Create state vector.
             state = np.concatenate((data[6:9], delta_data[6:9])) # euler + d_euler
