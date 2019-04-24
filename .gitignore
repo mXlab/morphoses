@@ -75,3 +75,4 @@ sysinfo.txt
 *.hdf5
 *.hd5
 __pycache__
+trash/
