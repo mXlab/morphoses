@@ -37,17 +37,39 @@ def delta(data, prev_data):
     d[8] = dist_angles(data[8]*two_pi, prev_data[8]*two_pi)
     return d
 
+# Returns the state from complete datapoint (including both data and deltas).
+def get_state(complete_data, columns):
+    return np.reshape(complete_data[columns], (1, len(columns)))
+
 if __name__ == "__main__":
     # Create parser
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("-nq", "--n-hidden-q", type=int, default=64, help="Number of hidden units per layer for the Q-function")
+    parser.add_argument("-nf", "--n-hidden-forward", type=int, default=64, help="Number of hidden units per layer for the forward function")
+
+    parser.add_argument("-eps", "--epsilon", type=float, default=0.1, help="Epsilon value for the e-greedy policy")
+    parser.add_argument("-gam", "--gamma", type=float, default=0.95, help="Gamma value for the Q-learning")
+
+    parser.add_argument("--use-position", default=False, action='store_true', help="Add position to the input data")
+    parser.add_argument("--use-delta-position", default=False, action='store_true', help="Add delta position to the input data")
+    parser.add_argument("--use-quaternion", default=False, action='store_true', help="Add quaternion to the input data")
+    parser.add_argument("--use-delta-quaternion", default=False, action='store_true', help="Add delta quaternion to the input data")
+    parser.add_argument("--use-euler", default=False, action='store_true', help="Add euler angles to the input data")
+    parser.add_argument("--use-delta-euler", default=False, action='store_true', help="Add delta euler angles to the input data")
+
+    parser.add_argument("--n-bins", type=int, default=3,
+                        help="Number of bins to use for classification (only valid if used with --classification)")
+
+#    parser.add_argument("-D", "--model-directory", type=str, default=".", help="The directory where to save models")
+#    parser.add_argument("-P", "--prefix", type=str, default="ann-regression-", help="Prefix to use for saving files")
+
     parser.add_argument("-i", "--ip", default="127.0.0.1",
                         help="Specify the ip address to send data to.")
     parser.add_argument("-s", "--send-port", default="8765",
                         type=int, help="Specify the port number to listen on.")
     parser.add_argument("-r", "--receive-port", default="8767",
                         type=int, help="Specify the port number to listen on.")
-    parser.add_argument("--n-bins", type=int, default=3,
-                        help="Number of bins to use for classification (only valid if used with --classification)")
 
     # Parse arguments.
     args = parser.parse_args()
@@ -58,37 +80,58 @@ if __name__ == "__main__":
 
     n_bins = args.n_bins
     n_actions = n_bins*n_bins
-    n_inputs = 6
 
-    n_hidden = 64
-    n_hidden_state = 64
+    eps = args.epsilon
+    gamma = args.gamma
+
+    # Build filtering columns and n_inputs.
+    state_columns = []
+    if args.use_position:
+        state_columns += [0, 1]
+    if args.use_quaternion:
+        state_columns += [2, 3, 4, 5]
+    if args.use_euler:
+        state_columns += [6, 7, 8]
+    if args.use_delta_position:
+        state_columns += [9, 10]
+    if args.use_delta_quaternion:
+        state_columns += [11, 12, 13, 14]
+    if args.use_delta_euler:
+        state_columns += [15, 16, 17]
+    n_inputs = len(state_columns)
+    if n_inputs <= 0:
+        exit("You have no inputs! Make sure to specify some inputs using the --use-* options.")
+
+    n_inputs_q = n_inputs
+    n_inputs_forward = n_inputs + n_actions
+
+    n_hidden_q = args.n_hidden_q
+    n_hidden_forward = args.n_hidden_forward
 
     # Compile model Q(state_t, action_t)
-    model = Sequential()
-    model.add(InputLayer(batch_input_shape=(1, n_inputs)))
-    model.add(Dense(n_hidden, activation='relu'))
-    model.add(Dense(n_actions, activation='softmax'))
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    print(model.summary())
+    model_q = Sequential()
+    model_q.add(InputLayer(batch_input_shape=(1, n_inputs_q)))
+    model_q.add(Dense(n_hidden_q, activation='relu'))
+    model_q.add(Dense(n_actions, activation='softmax'))
+    model_q.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    print(model_q.summary())
 
     # Predicts state_{t+1} = f(state_t, action_t)
-    state_model = Sequential()
-    state_model.add(InputLayer(batch_input_shape=(1, n_inputs + n_actions)))
-    state_model.add(Dense(n_hidden_state, activation='relu'))
-    state_model.add(Dense(n_inputs, activation='linear'))
-    state_model.compile(loss='mse', optimizer='adam', metrics=['mae'])
-    print(state_model.summary())
+    model_forward = Sequential()
+    model_forward.add(InputLayer(batch_input_shape=(1, n_inputs_forward)))
+    model_forward.add(Dense(n_hidden_forward, activation='relu'))
+    model_forward.add(Dense(n_inputs_q, activation='linear'))
+    model_forward.compile(loss='mse', optimizer='adam', metrics=['mae'])
+    print(model_forward.summary())
 
+    # Initialize stuff.
     prev_data = None
     prev_time = -1
     prev_state = None
     prev_action = -1
-    eps = 0.1
-    y = 0.5
-#    y = 0.95
-
     avg_r = None
 
+    # Create rescalers.
     scalerX = MinMaxScaler()
     scalerX.fit([[-25, -25, -1, -1, -1, -1, -180, -90, -180],
                  [+25, +25, +1, +1, +1, +1, +180, +90, +180]])
@@ -100,10 +143,11 @@ if __name__ == "__main__":
     iter = 0
     def handle_data(unused_addr, exp_id, t, x, y, qx, qy, qz, qw, speed, steer):
         global notify_recv
-        global model
-        global perf_measurements
+        # global model_q
+        # global perf_measurements
         global prev_data, prev_time, prev_state, prev_action
         global avg_r, iter
+        # global state_columns
 
         start_time = time.perf_counter()
 
@@ -116,34 +160,33 @@ if __name__ == "__main__":
         quat = np.array([qx, qy, qz, qw])
         euler = np.array(mpp.quaternion_to_euler(qx, qy, qz, qw))
         data = np.concatenate((pos, quat, euler))
-
-        data = mpp.standardize(data, scalerX)[0]
+        data = mpp.standardize(data, scalerX)[0] # normalize
 
         # If this is the first time we receive something: save as initial values and skip
         if prev_data is None:
             # Reset.
             prev_data = data
             prev_time = t
-            state = np.concatenate((data[6:9], [ 0, 0, 0 ]))
-            state = np.reshape(state, (1, n_inputs))
+            delta_data = delta(data, data) # ie. 0
+            complete_data = np.concatenate((data, delta_data))
+            state = get_state(complete_data, state_columns)
             prev_state = state
-            prev_action = 0
+            prev_action = 0 # dummy
+
         # Else: one step of Q-learning loop.
         else:
-            # Compute deltas.
+            # Compute state.
             delta_data = delta(data, prev_data) / (t - prev_time)
-
-            # Create state vector.
-            state = np.concatenate((data[6:9], delta_data[6:9])) # euler + d_euler
-            state = np.reshape(state, (1, n_inputs))
+            complete_data = np.concatenate((data, delta_data))
+            state = get_state(complete_data, state_columns)
 
             # Adjust state model.
             state_model_input = np.concatenate((prev_state[0], to_categorical(prev_action, n_actions)))
-            state_model_input = np.reshape(state_model_input, (1, n_inputs+n_actions))
-            state_model.fit(state_model_input, state, epochs=1, verbose=0)
+            state_model_input = np.reshape(state_model_input, (1, n_inputs_forward))
+            model_forward.fit(state_model_input, state, epochs=1, verbose=0)
 
             # Calculate intrinsic reward (curiosity).
-            predicted_state = state_model.predict(state_model_input)
+            predicted_state = model_forward.predict(state_model_input)
             prediction_error = np.linalg.norm(state - predicted_state)
 
             # Reward (equal to inverse sum of motion).
@@ -165,17 +208,16 @@ if __name__ == "__main__":
             prev_time = t
 
             # Perform one step.
-            target = r + y * np.max(model.predict(state))
-            target_vec = model.predict(prev_state)[0]
+            target = r + gamma * np.max(model_q.predict(state))
+            target_vec = model_q.predict(prev_state)[0]
             target_vec[prev_action] = target
-            model.fit(prev_state, target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
-
+            model_q.fit(prev_state, target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
 
         # Choose action.
         if np.random.random() < eps:
             action = np.random.randint(n_actions)
         else:
-            action = np.argmax(model.predict(state))
+            action = np.argmax(model_q.predict(state))
 
         # Save action for next iteration.
         prev_action = action
