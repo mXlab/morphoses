@@ -60,11 +60,12 @@ if __name__ == "__main__":
     n_inputs = 6
     n_hidden = 10
 
+    # Compile model
     model = Sequential()
     model.add(InputLayer(batch_input_shape=(1, n_inputs)))
     model.add(Dense(n_hidden, activation='relu'))
-    model.add(Dense(n_actions, activation='sigmoid'))
-    model.compile(loss='mse', optimizer='adam', metrics=['mae'])
+    model.add(Dense(n_actions, activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     prev_data = None
     prev_time = -1
