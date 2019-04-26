@@ -41,6 +41,59 @@ def delta(data, prev_data):
 def get_state(complete_data, columns):
     return np.reshape(complete_data[columns], (1, len(columns)))
 
+# Extrinsic reward function helpers.
+def reward_sum(complete_data, columns, absolute=True, invert=False):
+    complete_data = complete_data[ columns ]
+    if absolute:
+        complete_data = abs(complete_data)
+    r = sum(complete_data) / len(complete_data)
+    if invert:
+        r = 1 - r
+    return r
+
+def reward_position_center(complete_data):
+    return reward_sum(complete_data-0.5, [0, 1], absolute=True, invert=True)
+
+def reward_inv_position_border(complete_data):
+    complete_data = (complete_data - 0.5) * 2 # remap to [-1, +1]
+    x = complete_data[0]
+    y = complete_data[1]
+    dist = np.sqrt(x*x + y*y) # get the distance from center
+    if dist > 0.5:
+        return -10
+    else:
+        return 0
+
+def reward_delta_euler(complete_data):
+    return reward_sum(complete_data, [15, 16, 17], absolute=True, invert=False)
+
+def reward_inv_delta_euler(complete_data):
+    return reward_sum(complete_data, [15, 16, 17], absolute=True, invert=True)
+
+def reward(complete_data, reward_functions):
+    n_functions = len(reward_functions)
+    if n_functions == 0:
+        return 0
+    else:
+        r = 0
+        for f in reward_functions:
+            r += f(complete_data)
+        r /= n_functions
+        return r
+
+def choose_action_argmax(prediction):
+    return np.argmax(prediction)
+
+def choose_action_random(n_actions):
+    return np.random.randint(n_actions)
+
+def choose_action_softmax(prediction, temperature=1):
+    # Source: https://gist.github.com/alceufc/f3fd0cd7d9efb120195c
+    if (temperature != 1):
+        prediction = np.power(prediction, 1. / temperature)
+        prediction /= prediction.sum(0)
+    return np.asscalar(np.random.choice(np.arange(len(prediction)), 1, p=prediction))
+
 if __name__ == "__main__":
     # Create parser
     parser = argparse.ArgumentParser()
@@ -48,15 +101,27 @@ if __name__ == "__main__":
     parser.add_argument("-nq", "--n-hidden-q", type=int, default=64, help="Number of hidden units per layer for the Q-function")
     parser.add_argument("-nf", "--n-hidden-forward", type=int, default=64, help="Number of hidden units per layer for the forward function")
 
-    parser.add_argument("-eps", "--epsilon", type=float, default=0.1, help="Epsilon value for the e-greedy policy")
+    parser.add_argument("-p", "--policy", type=str, default="greedy", choices=["greedy", "boltzmann", "mixed"], help="Agent policy")
+    parser.add_argument("-eps", "--epsilon", type=float, default=0.1, help="Epsilon value for the 'greedy' policy")
+    parser.add_argument("-temp", "--temperature", type=float, default=1, help="Temperature value for the 'boltzmann' policy [0, +inf] (higher: more uniform, lower: more greedy")
+
     parser.add_argument("-gam", "--gamma", type=float, default=0.95, help="Gamma value for the Q-learning")
+
+    parser.add_argument("-cw", "--curiosity-weight", type=float, default=0.5, help="Weight of curiosity intrinsic reward (as %)")
+
+    parser.add_argument("-t", "--time-step", type=float, default=0, help="Period (in seconds) of each step (0 = as fast as possible)")
 
     parser.add_argument("--use-position", default=False, action='store_true', help="Add position to the input data")
     parser.add_argument("--use-delta-position", default=False, action='store_true', help="Add delta position to the input data")
     parser.add_argument("--use-quaternion", default=False, action='store_true', help="Add quaternion to the input data")
     parser.add_argument("--use-delta-quaternion", default=False, action='store_true', help="Add delta quaternion to the input data")
-    parser.add_argument("--use-euler", default=False, action='store_true', help="Add euler angles to the input data")
-    parser.add_argument("--use-delta-euler", default=False, action='store_true', help="Add delta euler angles to the input data")
+    parser.add_argument("--use-euler", default=False, action='store_true', help="Add Euler angles to the input data")
+    parser.add_argument("--use-delta-euler", default=False, action='store_true', help="Add delta Euler angles to the input data")
+
+    parser.add_argument("--reward-position-center", default=False, action='store_true', help="Reward being close to center (0, 0)")
+    parser.add_argument("--reward-inv-position-border", default=False, action='store_true', help="Punish heavily being too close to the edges")
+    parser.add_argument("--reward-delta-euler", default=False, action='store_true', help="Reward Euler motion")
+    parser.add_argument("--reward-inv-delta-euler", default=False, action='store_true', help="Reward no Euler motion")
 
     parser.add_argument("--n-bins", type=int, default=3,
                         help="Number of bins to use for classification (only valid if used with --classification)")
@@ -81,8 +146,15 @@ if __name__ == "__main__":
     n_bins = args.n_bins
     n_actions = n_bins*n_bins
 
-    eps = args.epsilon
-    gamma = args.gamma
+    time_step = args.time_step
+
+    policy = args.policy
+
+    epsilon = np.clip(args.epsilon, 0, 1)
+    temperature = np.max(args.temperature, 0)
+
+    gamma = np.clip(args.gamma, 0, 1)
+    curiosity_weight = np.clip(args.curiosity_weight, 0, 1)
 
     # Build filtering columns and n_inputs.
     state_columns = []
@@ -102,6 +174,18 @@ if __name__ == "__main__":
     if n_inputs <= 0:
         exit("You have no inputs! Make sure to specify some inputs using the --use-* options.")
 
+    # Build array of extrinsic rewards.
+    extrinsic_reward_functions = []
+    if args.reward_position_center:
+        extrinsic_reward_functions += [reward_position_center]
+    if args.reward_inv_position_border:
+        extrinsic_reward_functions += [reward_inv_position_border]
+    if args.reward_delta_euler:
+        extrinsic_reward_functions += [reward_delta_euler]
+    if args.reward_inv_delta_euler:
+        extrinsic_reward_functions += [reward_inv_delta_euler]
+
+    # Initialize stuff.
     n_inputs_q = n_inputs
     n_inputs_forward = n_inputs + n_actions
 
@@ -189,19 +273,20 @@ if __name__ == "__main__":
             predicted_state = model_forward.predict(state_model_input)
             prediction_error = np.linalg.norm(state - predicted_state)
 
-            # Reward (equal to inverse sum of motion).
+            # Intrinsic reward = curiosity.
             r_int = prediction_error
 
-            r_ext = abs(sum(delta_data[6:9])) # reward max movement
-            #r = 1 - abs(sum(delta_data[6:9])) # reward no movement
-            #r = abs(sum(delta_data[6:9])) # reward max movement
+            # Extrinsic reward.
+            r_ext = reward(complete_data, extrinsic_reward_functions)
 
-            r = r_int + r_ext
+            r = curiosity_weight * r_int + (1 - curiosity_weight) * r_ext
+
+            r_array = np.array([ r_int, r_ext, r ])
 
             if avg_r is None:
-                avg_r = r
+                avg_r = r_array
             else:
-                avg_r -= 0.01 * (avg_r - r)
+                avg_r -= 0.01 * (avg_r - r_array)
 
             # Save previous data information.
             prev_data = data
@@ -213,11 +298,24 @@ if __name__ == "__main__":
             target_vec[prev_action] = target
             model_q.fit(prev_state, target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
 
+        # Get prediction table.
+        prediction = model_q.predict(state, verbose=0).squeeze()
+
         # Choose action.
-        if np.random.random() < eps:
-            action = np.random.randint(n_actions)
-        else:
-            action = np.argmax(model_q.predict(state))
+        if policy == "greedy":
+            if np.random.random() < epsilon:
+                action = choose_action_random(n_actions)
+            else:
+                action = choose_action_argmax(prediction)
+
+        elif policy == "boltzmann":
+            action = choose_action_softmax(prediction, temperature)
+
+        elif policy == "mixed":
+            if np.random.random() < epsilon:
+                action = choose_action_random(n_actions)
+            else:
+                action = choose_action_softmax(prediction, temperature)
 
         # Save action for next iteration.
         prev_action = action
@@ -228,8 +326,8 @@ if __name__ == "__main__":
         # Send OSC message of action.
         action = scalerY.inverse_transform(target).astype('float')
 #        print("Target {} Action {}".format(target, action))
-        if iter % 1000 == 0:
-            print("t={} average reward = {}".format(iter, avg_r))
+        if iter % 100 == 0:
+            print("t={} average reward = (int: {} ext: {} total: {})".format(iter, avg_r[0], avg_r[1], avg_r[2]))
 
         # Send OSC message.
         client.send_message("/morphoses/action", action[0])
@@ -238,6 +336,10 @@ if __name__ == "__main__":
         prev_state = state
 
         iter += 1
+
+        # Wait
+        if time_step > 0:
+            time.sleep(time_step)
 
     # Create OSC dispatcher.
     dispatcher = dispatcher.Dispatcher()
