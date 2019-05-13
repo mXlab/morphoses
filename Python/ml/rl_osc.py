@@ -21,14 +21,22 @@ parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFo
 parser.add_argument("n_actions", type=int, help="Number of different action")
 parser.add_argument("n_observations", type=int, help="Number of different action")
 
+#parser.add_argument("--observation-min", type=float, default=0, help="Minimum value of observation")
+#parser.add_argument("--observation-max", type=float, default=0, help="Maximum value of observation")
+#parser.add_argument("--observation-ip", default="127.0.0.1", help="Specify the ip address to listen on for observations and reward.")
+#parser.add_argument("--observation-port", default=8000, type=int, help="Specify the port number to listen on.")
+parser.add_argument("--action-ip", default="127.0.0.1", help="Specify the ip address to send actions.")
+#parser.add_argument("--action-port", default=8001, type=int, help="Specify the port number to send.")
+#parser.add_argument("--observation-address", default="/env/observation", help="The OSC address to send observations.")
+#parser.add_argument("--action_address", default="/env/action", help="The OSC address to send actions.")
+
 parser.add_argument("--observation-min", type=float, default=0, help="Minimum value of observation")
 parser.add_argument("--observation-max", type=float, default=0, help="Maximum value of observation")
-#parser.add_argument("--observation-ip", default="127.0.0.1", help="Specify the ip address to listen on for observations and reward.")
-parser.add_argument("--observation-port", default=8000, type=int, help="Specify the port number to listen on.")
-parser.add_argument("--action-ip", default="127.0.0.1", help="Specify the ip address to send actions.")
-parser.add_argument("--action-port", default=8001, type=int, help="Specify the port number to send.")
-parser.add_argument("--observation-address", default="/env/observation", help="The OSC address to send observations.")
-parser.add_argument("--action_address", default="/env/action", help="The OSC address to send actions.")
+parser.add_argument("--observation-port", default=8767, type=int, help="Specify the port number to listen on.")
+parser.add_argument("--observation-address", default="/morphoses/data", help="The OSC address to send observations.")
+parser.add_argument("--action-port", default=8765, type=int, help="Specify the port number to send.")
+parser.add_argument("--action_address", default="/morphoses/action", help="The OSC address to send actions.")
+
 
 parser.add_argument("--use-sarsa", default=False, action='store_true', help="Use SARSA instead of Q-Learning")
 parser.add_argument("--n-steps", type=int, default=50000, help="Max. number of steps")

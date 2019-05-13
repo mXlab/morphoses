@@ -50,6 +50,7 @@ public class SendOSC : MonoBehaviour
       if (recieving_osc) {
         ReceiveOSC reciever = GetComponent<ReceiveOSC>();
         if (reciever.canSendPacket()) {
+          Debug.Log(message);
           osc.Send(message);
           reciever.sentPacket();
           Debug.Log("send packet");

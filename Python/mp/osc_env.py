@@ -63,6 +63,8 @@ class OscEnv(Env):
         return self._current_observation, self._current_reward
 
     def step(self, action):
+        print('action', action)
+
         # Take action.
         self.client.send_message(self.action_address, int(action))
 
@@ -70,6 +72,7 @@ class OscEnv(Env):
         observation, reward = self._get_observation()
 
         # Accumulate reward.
+        print('reward', reward)
         self._average_reward += reward
         if self._iter % self._n_steps_reward_check == 0:
             self._average_reward /= self._n_steps_reward_check

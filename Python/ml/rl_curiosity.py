@@ -70,6 +70,14 @@ def reward_delta_euler(complete_data):
 def reward_inv_delta_euler(complete_data):
     return reward_sum(complete_data, [15, 16, 17], absolute=True, invert=True)
 
+def reward_euler_state(complete_data):
+    goal_euler_state = [0.25, 0.5, 0.5]
+    dist = abs(complete_data[6] - goal_euler_state[0])**2
+    dist += abs(complete_data[7] - goal_euler_state[1])**2
+    #dist += abs(complete_data[8] - goal_euler_state[2])
+    dist = -dist
+    return dist
+
 def reward(complete_data, reward_functions):
     n_functions = len(reward_functions)
     if n_functions == 0:
@@ -107,7 +115,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-gam", "--gamma", type=float, default=0.95, help="Gamma value for the Q-learning")
 
-    parser.add_argument("-cw", "--curiosity-weight", type=float, default=0.5, help="Weight of curiosity intrinsic reward (as %)")
+    parser.add_argument("-cw", "--curiosity-weight", type=float, default=0.5, help="Weight of curiosity intrinsic reward (as %%)")
 
     parser.add_argument("-t", "--time-step", type=float, default=0, help="Period (in seconds) of each step (0 = as fast as possible)")
 
@@ -116,12 +124,14 @@ if __name__ == "__main__":
     parser.add_argument("--use-quaternion", default=False, action='store_true', help="Add quaternion to the input data")
     parser.add_argument("--use-delta-quaternion", default=False, action='store_true', help="Add delta quaternion to the input data")
     parser.add_argument("--use-euler", default=False, action='store_true', help="Add Euler angles to the input data")
+    parser.add_argument("--use-euler-2", default=False, action='store_true', help="Add Euler angles to the input data")
     parser.add_argument("--use-delta-euler", default=False, action='store_true', help="Add delta Euler angles to the input data")
 
     parser.add_argument("--reward-position-center", default=False, action='store_true', help="Reward being close to center (0, 0)")
     parser.add_argument("--reward-inv-position-border", default=False, action='store_true', help="Punish heavily being too close to the edges")
     parser.add_argument("--reward-delta-euler", default=False, action='store_true', help="Reward Euler motion")
     parser.add_argument("--reward-inv-delta-euler", default=False, action='store_true', help="Reward no Euler motion")
+    parser.add_argument("--reward-euler-state", default=False, action='store_true', help="Reward static Euler state")
 
     parser.add_argument("--n-bins", type=int, default=3,
                         help="Number of bins to use for classification (only valid if used with --classification)")
@@ -155,6 +165,7 @@ if __name__ == "__main__":
 
     gamma = np.clip(args.gamma, 0, 1)
     curiosity_weight = np.clip(args.curiosity_weight, 0, 1)
+    print('curiosity_weight ', curiosity_weight)
 
     # Build filtering columns and n_inputs.
     state_columns = []
@@ -164,6 +175,8 @@ if __name__ == "__main__":
         state_columns += [2, 3, 4, 5]
     if args.use_euler:
         state_columns += [6, 7, 8]
+    if args.use_euler_2:
+        state_columns += [6, 7]
     if args.use_delta_position:
         state_columns += [9, 10]
     if args.use_delta_quaternion:
@@ -184,6 +197,8 @@ if __name__ == "__main__":
         extrinsic_reward_functions += [reward_delta_euler]
     if args.reward_inv_delta_euler:
         extrinsic_reward_functions += [reward_inv_delta_euler]
+    if args.reward_euler_state:
+        extrinsic_reward_functions += [reward_euler_state]
 
     # Initialize stuff.
     n_inputs_q = n_inputs
@@ -214,6 +229,7 @@ if __name__ == "__main__":
     prev_state = None
     prev_action = -1
     avg_r = None
+    avg_r = np.array([ 0., 0., 0. ])
 
     # Create rescalers.
     scalerX = MinMaxScaler()
@@ -263,11 +279,13 @@ if __name__ == "__main__":
             delta_data = delta(data, prev_data) / (t - prev_time)
             complete_data = np.concatenate((data, delta_data))
             state = get_state(complete_data, state_columns)
+            #print('state', state)
 
             # Adjust state model.
             state_model_input = np.concatenate((prev_state[0], to_categorical(prev_action, n_actions)))
             state_model_input = np.reshape(state_model_input, (1, n_inputs_forward))
             model_forward.fit(state_model_input, state, epochs=1, verbose=0)
+            #print('state_model_input', state_model_input)
 
             # Calculate intrinsic reward (curiosity).
             predicted_state = model_forward.predict(state_model_input)
@@ -321,13 +339,18 @@ if __name__ == "__main__":
         prev_action = action
 
         target = [mpp.class_to_speed_steering(action, n_bins, True)]
+        #target = [[0., 0.5]]
+       # print('target ', target)
 #        print("Choice made {} {} {}".format(action, model.predict(state), target))
 
         # Send OSC message of action.
         action = scalerY.inverse_transform(target).astype('float')
+        #print('send action', action)
 #        print("Target {} Action {}".format(target, action))
         if iter % 100 == 0:
+            print('--- + 100')
             print("t={} average reward = (int: {} ext: {} total: {})".format(iter, avg_r[0], avg_r[1], avg_r[2]))
+            print("state = ", state)
 
         # Send OSC message.
         client.send_message("/morphoses/action", action[0])

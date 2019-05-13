@@ -1,7 +1,7 @@
-#Morphosis Project Code and Resources
+# Morphosis Project Code and Resources
 This repository features scripts and resources for the ongoing Morphosis project.
 
-#Subfolders
+# Subfolders
 
 ### Python
 
@@ -63,3 +63,33 @@ Setup IP address of HOST here:
 # Tech notes
 
 The relay pin needs to be put to HIGH in order to cut the current to the motors. This was done because when the ESP8266 is launched, there is a "spike" on pin 0 which would have triggered the motor initialization process (where it goes from side to side once). However, there is a way to fix it, by reprogramming the motor-control arduinos to wait (ie. adding a delay() in their setup()) so that they are not affected by the spike.
+
+# Mac installation
+
+Below are specific instructions to follow when installing the project on MacOS 10.11.6 (as the project was initially developed on Ubuntu).
+
+## Unity
+
+Resolve C# compatibility issue:
+
+- Install Unity 2019.1.1f1 Personal
+- Go to `Edit > Project Settings > Player > Other Settings > Configuration`
+- Set Scripting Runtime Version to `.NET 4.x equivalent` 
+
+## Python
+
+Resolve package installation issue:
+
+- From the root of the project: `cd ./Python`
+- Install Python virtual environment: `python3 -m venv Python`
+- Launch environment: `source ./bin/activate`
+- In a text editor, open `./Python/requirements.txt`
+- Delete line `pkg-resources==0.0.0`
+- Install requirements: `pip install -r requirements.txt`
+
+Resolve TensorFlow issue with AVX instruction sets:
+
+- From the root of the project: `cd ./Python`
+- Launch Python virtual environment: `source ./bin/activate`
+- Install TensorFlow 1.5: `pip install tensorflow==1.5`
+
