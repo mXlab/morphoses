@@ -5,9 +5,10 @@ using UnityEngine;
 // Simulates the robo-ball dynamics by controlling the speed and steering.
 public class BallController : MonoBehaviour
 {
-  public float rate = 1.0f; // rate multipler (bigger = faster)
-
+  //public float rate = 1.0f; // rate multipler (bigger = faster)
+  public float rate = 2.0f; // Hugo: chose bigger multipler
   public float radius;
+
   public float phi;
   public float theta;
 
@@ -27,8 +28,10 @@ public class BallController : MonoBehaviour
   void Update()
   {
     // Update new center of mass according to dynamics.
-    phi += speed * Time.deltaTime * rate;
+    //phi += speed * Time.deltaTime * rate;
+    phi = speed * rate; // Hugo: changed dynamic speed action into static angular action
     theta = steering;
+    Debug.Log(Time.deltaTime);
     //        speed    = Input.GetAxis("Vertical")   * Mathf.PI * 0.1f * Time.deltaTime;//up & Down
     //        steering = Input.GetAxis("Horizontal") * Mathf.PI * 0.25f;//Left and right
   }

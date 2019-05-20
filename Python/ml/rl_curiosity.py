@@ -70,13 +70,34 @@ def reward_delta_euler(complete_data):
 def reward_inv_delta_euler(complete_data):
     return reward_sum(complete_data, [15, 16, 17], absolute=True, invert=True)
 
-def reward_euler_state(complete_data):
-    goal_euler_state = [0.25, 0.5, 0.5]
+def reward_euler_state_1(complete_data):
+    goal_euler_state = [0.25, 0.5, 0.5] # do not care about third Euler angle
+
     dist = abs(complete_data[6] - goal_euler_state[0])**2
     dist += abs(complete_data[7] - goal_euler_state[1])**2
-    #dist += abs(complete_data[8] - goal_euler_state[2])
     dist = -dist
     return dist
+
+def reward_euler_state_2(complete_data):
+    goal_euler_state = [0.25, 0.5, 0.75] # do not care about second Euler angle
+
+    dist = abs(complete_data[6] - goal_euler_state[0])**2
+    dist += abs(complete_data[8] - goal_euler_state[2])**2
+    dist = np.sqrt(dist)
+    if dist > 0.1:
+        return -10.
+    else:
+        return 0.
+
+def reward_euler_state_3(complete_data):
+    goal_euler_state = [0.25, 0.5, 0.75] # do not care about second Euler angle
+
+    dist_1 = abs(complete_data[6] - goal_euler_state[0])
+    dist_3 = abs(complete_data[8] - goal_euler_state[2])
+    if dist_3 > 0.025:
+        return -100.
+    else:
+        return -10. * dist_1
 
 def reward(complete_data, reward_functions):
     n_functions = len(reward_functions)
@@ -124,14 +145,17 @@ if __name__ == "__main__":
     parser.add_argument("--use-quaternion", default=False, action='store_true', help="Add quaternion to the input data")
     parser.add_argument("--use-delta-quaternion", default=False, action='store_true', help="Add delta quaternion to the input data")
     parser.add_argument("--use-euler", default=False, action='store_true', help="Add Euler angles to the input data")
-    parser.add_argument("--use-euler-2", default=False, action='store_true', help="Add Euler angles to the input data")
+    parser.add_argument("--use-euler-firsts", default=False, action='store_true', help="Add first two Euler angles to the input data")
+    parser.add_argument("--use-euler-extremes", default=False, action='store_true', help="Add first and last Euler angles to the input data")
     parser.add_argument("--use-delta-euler", default=False, action='store_true', help="Add delta Euler angles to the input data")
 
     parser.add_argument("--reward-position-center", default=False, action='store_true', help="Reward being close to center (0, 0)")
     parser.add_argument("--reward-inv-position-border", default=False, action='store_true', help="Punish heavily being too close to the edges")
     parser.add_argument("--reward-delta-euler", default=False, action='store_true', help="Reward Euler motion")
     parser.add_argument("--reward-inv-delta-euler", default=False, action='store_true', help="Reward no Euler motion")
-    parser.add_argument("--reward-euler-state", default=False, action='store_true', help="Reward static Euler state")
+    parser.add_argument("--reward-euler-state-1", default=False, action='store_true', help="Reward static Euler state using 1st experiment reward")
+    parser.add_argument("--reward-euler-state-2", default=False, action='store_true', help="Reward static Euler state using 2nd experiment reward")
+    parser.add_argument("--reward-euler-state-3", default=False, action='store_true', help="Reward static Euler state using 3rd experiment reward")
 
     parser.add_argument("--n-bins", type=int, default=3,
                         help="Number of bins to use for classification (only valid if used with --classification)")
@@ -175,8 +199,10 @@ if __name__ == "__main__":
         state_columns += [2, 3, 4, 5]
     if args.use_euler:
         state_columns += [6, 7, 8]
-    if args.use_euler_2:
+    if args.use_euler_firsts:
         state_columns += [6, 7]
+    if args.use_euler_extremes:
+        state_columns += [6, 8]
     if args.use_delta_position:
         state_columns += [9, 10]
     if args.use_delta_quaternion:
@@ -197,8 +223,12 @@ if __name__ == "__main__":
         extrinsic_reward_functions += [reward_delta_euler]
     if args.reward_inv_delta_euler:
         extrinsic_reward_functions += [reward_inv_delta_euler]
-    if args.reward_euler_state:
-        extrinsic_reward_functions += [reward_euler_state]
+    if args.reward_euler_state_1:
+        extrinsic_reward_functions += [reward_euler_state_1]
+    if args.reward_euler_state_2:
+        extrinsic_reward_functions += [reward_euler_state_2]
+    if args.reward_euler_state_3:
+        extrinsic_reward_functions += [reward_euler_state_3]
 
     # Initialize stuff.
     n_inputs_q = n_inputs
@@ -239,6 +269,8 @@ if __name__ == "__main__":
     scalerY = MinMaxScaler()
     scalerY.fit([[-15, -45],
                  [+15, +45]])
+    #scalerY.fit([[-15, -45],
+    #             [+15, +45]])
 
     iter = 0
     def handle_data(unused_addr, exp_id, t, x, y, qx, qy, qz, qw, speed, steer):
@@ -298,6 +330,7 @@ if __name__ == "__main__":
             r_ext = reward(complete_data, extrinsic_reward_functions)
 
             r = curiosity_weight * r_int + (1 - curiosity_weight) * r_ext
+            print(r)
 
             r_array = np.array([ r_int, r_ext, r ])
 
@@ -339,7 +372,7 @@ if __name__ == "__main__":
         prev_action = action
 
         target = [mpp.class_to_speed_steering(action, n_bins, True)]
-        #target = [[0., 0.5]]
+        #target = [[0.5, 1]] # 0.5 correponds to zero speed/steer.
        # print('target ', target)
 #        print("Choice made {} {} {}".format(action, model.predict(state), target))
 
@@ -347,8 +380,10 @@ if __name__ == "__main__":
         action = scalerY.inverse_transform(target).astype('float')
         #print('send action', action)
 #        print("Target {} Action {}".format(target, action))
-        if iter % 100 == 0:
-            print('--- + 100')
+
+        print("state = ", state)
+        if iter % 10 == 0:
+            print('--- + 10')
             print("t={} average reward = (int: {} ext: {} total: {})".format(iter, avg_r[0], avg_r[1], avg_r[2]))
             print("state = ", state)
 
