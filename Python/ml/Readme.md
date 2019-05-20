@@ -77,4 +77,4 @@ I dropped reinforcement learning time step to 0.5 seconds (--time-step .5).
 
 The ball gets very close ([0.23110006 0.75000171]) to the goal state ([0.25 0.75]) after t=330.
 Interestingly, the ball seems to converge toward the (0., 0.) action, which visually correponds to a still ball. Sometimes, the ball explores an action, but the huge penalty toward the steering makes the ball expressively move back to its previous zero steering state.
-A next goal could be to try different intrinsic reward strategies, or different implementations for reinforcement learning time steps, to witness different expressive ball behaviours around its goal state.
+A next goal could be to try different action formalizations, as well as time step implementations, to witness different expressive ball behaviours around its angular goal state. One could also investigate intrinsic reward strategies to better control the exploration behaviour of the ball.
