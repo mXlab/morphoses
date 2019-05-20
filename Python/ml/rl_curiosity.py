@@ -64,11 +64,32 @@ def reward_inv_position_border(complete_data):
     else:
         return 0
 
+def reward_delta_roll(complete_data):
+    return reward_sum(complete_data, [15], absolute=True, invert=False)
+
+def reward_inv_delta_roll(complete_data):
+    return reward_sum(complete_data, [15], absolute=True, invert=True)
+
+def reward_delta_pitch(complete_data):
+    return reward_sum(complete_data, [16], absolute=True, invert=False)
+
+def reward_inv_delta_pitch(complete_data):
+    return reward_sum(complete_data, [16], absolute=True, invert=True)
+
+def reward_delta_yaw(complete_data):
+    return reward_sum(complete_data, [17], absolute=True, invert=False)
+
+def reward_inv_delta_yaw(complete_data):
+    return reward_sum(complete_data, [17], absolute=True, invert=True)
+
 def reward_delta_euler(complete_data):
     return reward_sum(complete_data, [15, 16, 17], absolute=True, invert=False)
 
 def reward_inv_delta_euler(complete_data):
     return reward_sum(complete_data, [15, 16, 17], absolute=True, invert=True)
+
+def reward_move_straight(complete_data):
+    return 0.8*reward_delta_pitch(complete_data) + 0.1*reward_inv_delta_roll(complete_data) + 0.1*reward_inv_delta_yaw(complete_data)
 
 def reward(complete_data, reward_functions):
     n_functions = len(reward_functions)
@@ -122,6 +143,14 @@ if __name__ == "__main__":
     parser.add_argument("--reward-inv-position-border", default=False, action='store_true', help="Punish heavily being too close to the edges")
     parser.add_argument("--reward-delta-euler", default=False, action='store_true', help="Reward Euler motion")
     parser.add_argument("--reward-inv-delta-euler", default=False, action='store_true', help="Reward no Euler motion")
+    parser.add_argument("--reward-delta-roll", default=False, action='store_true', help="Reward Euler motion (roll)")
+    parser.add_argument("--reward-inv-delta-roll", default=False, action='store_true', help="Reward no Euler motion (roll)")
+    parser.add_argument("--reward-delta-pitch", default=False, action='store_true', help="Reward Euler motion (pitch)")
+    parser.add_argument("--reward-inv-delta-pitch", default=False, action='store_true', help="Reward no Euler motion (pitch)")
+    parser.add_argument("--reward-delta-yaw", default=False, action='store_true', help="Reward Euler motion (yaw)")
+    parser.add_argument("--reward-inv-delta-yaw", default=False, action='store_true', help="Reward no Euler motion (yaw)")
+
+    parser.add_argument("--reward-move-straight", default=False, action='store_true', help="Reward for moving straight")
 
     parser.add_argument("--n-bins", type=int, default=3,
                         help="Number of bins to use for classification (only valid if used with --classification)")
@@ -184,6 +213,20 @@ if __name__ == "__main__":
         extrinsic_reward_functions += [reward_delta_euler]
     if args.reward_inv_delta_euler:
         extrinsic_reward_functions += [reward_inv_delta_euler]
+    if args.reward_delta_roll:
+        extrinsic_reward_functions += [reward_delta_roll]
+    if args.reward_inv_delta_roll:
+        extrinsic_reward_functions += [reward_inv_delta_roll]
+    if args.reward_delta_pitch:
+        extrinsic_reward_functions += [reward_delta_pitch]
+    if args.reward_inv_delta_pitch:
+        extrinsic_reward_functions += [reward_inv_delta_pitch]
+    if args.reward_delta_yaw:
+        extrinsic_reward_functions += [reward_delta_yaw]
+    if args.reward_inv_delta_yaw:
+        extrinsic_reward_functions += [reward_inv_delta_yaw]
+    if args.reward_move_straight:
+        extrinsic_reward_functions += [reward_move_straight]
 
     # Initialize stuff.
     n_inputs_q = n_inputs
