@@ -299,6 +299,7 @@ if __name__ == "__main__":
             state = get_state(complete_data, state_columns)
             prev_state = state
             prev_action = 0 # dummy
+            r = 0
 
         # Else: one step of Q-learning loop.
         else:
@@ -335,12 +336,6 @@ if __name__ == "__main__":
             prev_data = data
             prev_time = t
 
-            # Perform one step.
-            target = r + gamma * np.max(model_q.predict(state))
-            target_vec = model_q.predict(prev_state)[0]
-            target_vec[prev_action] = target
-            model_q.fit(prev_state, target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
-
         # Get prediction table.
         prediction = model_q.predict(state, verbose=0).squeeze()
 
@@ -360,20 +355,30 @@ if __name__ == "__main__":
             else:
                 action = choose_action_softmax(prediction, temperature)
 
+        use_sarsa = True
+        # Perform one step.
+        if use_sarsa:
+            target = r + gamma * prediction[action]
+        else:
+            target = r + gamma * np.max(prediction)
+        target_vec = model_q.predict(prev_state)[0]
+        target_vec[prev_action] = target
+        model_q.fit(prev_state, target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
+
         # Save action for next iteration.
         prev_action = action
 
-        target = [mpp.class_to_speed_steering(action, n_bins, True)]
+        action_impl = [mpp.class_to_speed_steering(action, n_bins, True)]
 #        print("Choice made {} {} {}".format(action, model.predict(state), target))
 
         # Send OSC message of action.
-        action = scalerY.inverse_transform(target).astype('float')
+        action_impl = scalerY.inverse_transform(action_impl).astype('float')
 #        print("Target {} Action {}".format(target, action))
-        if iter % 100 == 0:
+        if iter > 0 and iter % 100 == 0:
             print("t={} average reward = (int: {} ext: {} total: {})".format(iter, avg_r[0], avg_r[1], avg_r[2]))
 
         # Send OSC message.
-        client.send_message("/morphoses/action", action[0])
+        client.send_message("/morphoses/action", action_impl[0])
 
         # Update state.
         prev_state = state
