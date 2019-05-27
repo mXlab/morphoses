@@ -99,6 +99,18 @@ def reward_euler_state_3(complete_data):
     else:
         return -10. * dist_1
 
+def reward_position_state(complete_data):
+    goal_euler_state = [0.5, 0.5]
+
+    dist = abs(complete_data[0] - goal_euler_state[0])**2
+    dist += abs(complete_data[1] - goal_euler_state[1])**2
+    dist = np.sqrt(dist)
+    print('dist', dist)
+    if dist > 0.25:
+        return -100. * dist
+    else:
+        return -10. * dist
+
 def reward(complete_data, reward_functions):
     n_functions = len(reward_functions)
     if n_functions == 0:
@@ -156,6 +168,7 @@ if __name__ == "__main__":
     parser.add_argument("--reward-euler-state-1", default=False, action='store_true', help="Reward static Euler state using 1st experiment reward")
     parser.add_argument("--reward-euler-state-2", default=False, action='store_true', help="Reward static Euler state using 2nd experiment reward")
     parser.add_argument("--reward-euler-state-3", default=False, action='store_true', help="Reward static Euler state using 3rd experiment reward")
+    parser.add_argument("--reward-position-state", default=False, action='store_true', help="Reward static position state")
 
     parser.add_argument("--n-bins", type=int, default=3,
                         help="Number of bins to use for classification (only valid if used with --classification)")
@@ -229,6 +242,8 @@ if __name__ == "__main__":
         extrinsic_reward_functions += [reward_euler_state_2]
     if args.reward_euler_state_3:
         extrinsic_reward_functions += [reward_euler_state_3]
+    if args.reward_position_state:
+        extrinsic_reward_functions += [reward_position_state]
 
     # Initialize stuff.
     n_inputs_q = n_inputs

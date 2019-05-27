@@ -78,3 +78,28 @@ I dropped reinforcement learning time step to 0.5 seconds (--time-step .5).
 The ball gets very close ([0.23110006 0.75000171]) to the goal state ([0.25 0.75]) after t=330.
 Interestingly, the ball seems to converge toward the (0., 0.) action, which visually correponds to a still ball. Sometimes, the ball explores an action, but the huge penalty toward the steering makes the ball expressively move back to its previous zero steering state.
 A next goal could be to try different action formalizations, as well as time step implementations, to witness different expressive ball behaviours around its angular goal state. One could also investigate intrinsic reward strategies to better control the exploration behaviour of the ball.
+
+# 4th experiment
+
+### Goal behaviour
+
+Move toward the center of the environment.
+
+### Algorithm
+
+Deep-Q network (with default parameters in rl_curiosity.py).
+
+### Formalization
+
+I took the two position coordinates plus the three Euler angles as state representation. This makes a quite big state space, but here, we cannot only take the position as input state. Indeed, the ball has to know more than only its position in the plane to learn to take good actions. For example, for a given position in the plane, the same action could lead the ball to a completely different state, depending on the initial orientation of the ball.
+
+I dropped reinforcement learning time step to 0.5 seconds (--time-step .5).
+
+- States: Continuous states: Two position coordinates in the plane + Three Euler angles (--use-position --use-euler)
+- Actions: 9 discrete actions: Speed (0, +/-15) & Steer (0, +/-45)
+- Reward function: I give a huge penalty to the ball (-100.\*dist) if dist between instantaneous position and goal position (center of the map) > 0.25. I give a least huge penalty to the bal (-10.\*dist) else. (--reward-position-state)
+- Curiosity: Only extrinsic reward (--curiosity-weight 0.).
+
+### Results
+
+As expected, the ball has more difficulties to learn to get close to the center (still unstable at t=2000). My opinion is that the state space is now really big to learn something in a short amount of time. Pre-training could be an option, or letting the ball learn during more time. Another option would be to engineer actions that would reduce the state space explored (for example, forcing the ball to move inside a grid).
