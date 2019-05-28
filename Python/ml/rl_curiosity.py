@@ -423,11 +423,11 @@ if __name__ == "__main__":
     server = osc_server.BlockingOSCUDPServer(("0.0.0.0", args.receive_port), dispatcher)
     client = udp_client.SimpleUDPClient(args.ip, args.send_port)
 
-    print(f"Serving on {server.server_address}. Program ready.")
+    print("Serving on {server.server_address}. Program ready.")
 
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print(f"Exiting program... {np.mean(perf_measurements)}")
+        print("Exiting program... {np.mean(perf_measurements)}")
         server.server_close()
         sys.exit()
