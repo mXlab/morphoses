@@ -314,7 +314,7 @@ if __name__ == "__main__":
             #print('state', state)
 
             # Adjust state model.
-            state_model_input = np.concatenate((prev_state[0], to_categorical(prev_action, n_actions)))
+            state_model_input = np.concatenate((prev_state[0], to_categorical(prev_action, n_actions)[0]))
             state_model_input = np.reshape(state_model_input, (1, n_inputs_forward))
             model_forward.fit(state_model_input, state, epochs=1, verbose=0)
             #print('state_model_input', state_model_input)
