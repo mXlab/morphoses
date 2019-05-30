@@ -12,6 +12,7 @@ from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
 from keras.layers import Dense, InputLayer
 from keras.utils.np_utils import to_categorical
+from keras import optimizers
 
 from pythonosc import dispatcher
 from pythonosc import osc_server
@@ -155,19 +156,22 @@ if __name__ == "__main__":
     # Create parser
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-nq", "--n-hidden-q", type=int, default=64, help="Number of hidden units per layer for the Q-function")
-    parser.add_argument("-nf", "--n-hidden-forward", type=int, default=64, help="Number of hidden units per layer for the forward function")
-
     parser.add_argument("-p", "--policy", type=str, default="greedy", choices=["greedy", "boltzmann", "mixed"], help="Agent policy")
     parser.add_argument("-eps", "--epsilon", type=float, default=0.1, help="Epsilon value for the 'greedy' policy")
     parser.add_argument("-temp", "--temperature", type=float, default=1, help="Temperature value for the 'boltzmann' policy [0, +inf] (higher: more uniform, lower: more greedy")
 
     parser.add_argument("-gam", "--gamma", type=float, default=0.95, help="Gamma value for the Q-learning")
+    parser.add_argument("-lr", "--learning-rate", type=float, default=0.01, help="The learning rate")
 
     parser.add_argument("-cw", "--curiosity-weight", type=float, default=0.5, help="Weight of curiosity intrinsic reward (as %%)")
 
     parser.add_argument("-t", "--time-step", type=float, default=0, help="Period (in seconds) of each step (0 = as fast as possible)")
 
+    # Arguments for Neural networks.
+    parser.add_argument("-nq", "--n-hidden-q", type=int, default=64, help="Number of hidden units per layer for the Q-function")
+    parser.add_argument("-nf", "--n-hidden-forward", type=int, default=64, help="Number of hidden units per layer for the forward function")
+
+    # Arguments for tile coding.
     parser.add_argument("--use-tile-coding", default=False, action='store_true', help="Use tile coding for Q function")
     parser.add_argument("--n-state-tiles", type=int, default=10, help="Number of tiles to use for each state dimension")
     parser.add_argument("--n-state-tilings", type=int, default=1, help="Number of tilings to use for each state dimension")
@@ -291,7 +295,7 @@ if __name__ == "__main__":
     if (n_hidden_q > 0):
         model_q.add(Dense(n_hidden_q, activation='relu'))
     model_q.add(Dense(n_actions, activation='softmax'))
-    model_q.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model_q.compile(loss='categorical_crossentropy', optimizer=optimizers.SGD(lr=args.learning_rate), metrics=['accuracy'])
     print(model_q.summary())
 
     # Predicts state_{t+1} = f(state_t, action_t)
