@@ -405,7 +405,7 @@ void processIMU()
       myIMU.yaw   -= -14.47;
 
       if (sendOSC) {
-//        bndl.add("/ypr/deg").add(myIMU.yaw).add(myIMU.pitch).add(myIMU.roll);
+        bndl.add("/ypr/deg").add(myIMU.yaw).add(myIMU.pitch).add(myIMU.roll);
         bndl.add("/quat").add(q0).add(q1).add(q2).add(q3);
       }
       if(SerialDebug)
