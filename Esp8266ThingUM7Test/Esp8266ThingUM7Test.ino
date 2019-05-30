@@ -15,8 +15,8 @@ OSCBundle bndl;
 
 IPAddress destIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, DEST_IP_3); // remote IP
 
-int nIMU;
-int iter;
+//int nIMU;
+//int iter;
 
 void setup() {
   Serial.begin(115200);
@@ -28,28 +28,31 @@ void setup() {
   // Initialize Wifi and UDP.
   initWifi();
 
-  nIMU = 0;
-  iter = 0;
+//  nIMU = 0;
+//  iter = 0;
 }
 
 void loop() {
 
   // Tick.
 //  bndl.add("/tick").add(iter++).add(millis()/1000.0f).add(Serial.available()).add(nIMU);
+//  sendOscBundle();
   
   // Send IMU.
   processImu();
+  
 }
 
 void processImu() {
   if (Serial.available() > 0) {
+//    Serial.println("Receiving data");
     if (imu.encode(Serial.read())) {
       if (sendOSC) {
 //        bndl.add("/ypr/deg").add(imu.yaw/100.0).add(imu.pitch/100.0).add(imu.roll/100.0);
-        bndl.add("/ypr/deg").add(imu.yaw()).add(imu.pitch()).add(imu.roll());
+//        bndl.add("/ypr/deg").add(imu.yaw()).add(imu.pitch()).add(imu.roll());
         bndl.add("/quat").add(imu.q_a()).add(imu.q_b()).add(imu.q_c()).add(imu.q_d());
         sendOscBundle();
-        nIMU ++;
+//        nIMU ++;
       }    
     }
   }
@@ -109,4 +112,3 @@ void sendOscBundle() {
   }
   bndl.empty(); // empty the bundle to free room for a new one
 }
-
