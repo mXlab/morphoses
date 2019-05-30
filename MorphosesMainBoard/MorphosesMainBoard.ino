@@ -598,6 +598,7 @@ void initIMU()
     Serial.println("AK8963 initialized for active data mode....");
 
     interactiveCalibrateMagMPU9250();
+    Serial.println("Calibration over.");
   
   } // if (c == 0x71)
   else
