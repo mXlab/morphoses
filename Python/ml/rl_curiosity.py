@@ -391,7 +391,7 @@ if __name__ == "__main__":
             if avg_r is None:
                 avg_r = r_array
             else:
-                avg_r -= 0.01 * (avg_r - r_array)
+                avg_r -= (1-gamma) * (avg_r - r_array)
 
             # Save previous data information.
             prev_data = data
