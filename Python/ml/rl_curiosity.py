@@ -2,6 +2,7 @@ import argparse
 import sys
 import time
 import math
+import signal
 
 import pandas
 import numpy as np
@@ -423,11 +424,15 @@ if __name__ == "__main__":
     server = osc_server.BlockingOSCUDPServer(("0.0.0.0", args.receive_port), dispatcher)
     client = udp_client.SimpleUDPClient(args.ip, args.send_port)
 
-    print("Serving on {server.server_address}. Program ready.")
-
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
+    def interrupt(signup, frame):
+        global client, server
         print("Exiting program... {np.mean(perf_measurements)}")
+        client.send_message("/morphoses/end", [])
         server.server_close()
         sys.exit()
+
+    signal.signal(signal.SIGINT, interrupt)
+
+    print("Serving on {server.server_address}. Program ready.")
+
+    server.serve_forever()
