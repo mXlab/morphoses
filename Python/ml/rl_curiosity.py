@@ -24,6 +24,7 @@ import sys
 sys.path.append('../')
 
 import mp.preprocessing as mpp
+import tilecoding.representation as rep
 
 # Returns the signed difference between two angles.
 def dist_angles(a1, a2):
@@ -41,6 +42,20 @@ def delta(data, prev_data):
 # Returns the state from complete datapoint (including both data and deltas).
 def get_state(complete_data, columns):
     return np.reshape(complete_data[columns], (1, len(columns)))
+
+# State to tile coding - one hot encoding
+def state_to_tile_coding(state, tc):
+    if (tc != None):
+        one_hot = np.zeros(tc.size)
+        code = tc(state[0])
+        if isinstance(code, list):
+            one_hot_value = 1/len(code)
+        else:
+            one_hot_value = 1
+        one_hot[code] = one_hot_value
+        return np.reshape(one_hot, (1, tc.size))
+    else:
+        return state
 
 # Extrinsic reward function helpers.
 def reward_sum(complete_data, columns, absolute=True, invert=False):
@@ -153,6 +168,12 @@ if __name__ == "__main__":
 
     parser.add_argument("-t", "--time-step", type=float, default=0, help="Period (in seconds) of each step (0 = as fast as possible)")
 
+    parser.add_argument("--use-tile-coding", default=False, action='store_true', help="Use tile coding for Q function")
+    parser.add_argument("--n-state-tiles", type=int, default=10, help="Number of tiles to use for each state dimension")
+    parser.add_argument("--n-state-tilings", type=int, default=1, help="Number of tilings to use for each state dimension")
+
+    parser.add_argument("--n-action-bins", type=int, default=3, help="Number of bins to use for each action dimension")
+
     parser.add_argument("--use-position", default=False, action='store_true', help="Add position to the input data")
     parser.add_argument("--use-delta-position", default=False, action='store_true', help="Add delta position to the input data")
     parser.add_argument("--use-quaternion", default=False, action='store_true', help="Add quaternion to the input data")
@@ -171,8 +192,6 @@ if __name__ == "__main__":
     parser.add_argument("--reward-euler-state-3", default=False, action='store_true', help="Reward static Euler state using 3rd experiment reward")
     parser.add_argument("--reward-position-state", default=False, action='store_true', help="Reward static position state")
 
-    parser.add_argument("--n-bins", type=int, default=3,
-                        help="Number of bins to use for classification (only valid if used with --classification)")
 
 #    parser.add_argument("-D", "--model-directory", type=str, default=".", help="The directory where to save models")
 #    parser.add_argument("-P", "--prefix", type=str, default="ann-regression-", help="Prefix to use for saving files")
@@ -191,8 +210,8 @@ if __name__ == "__main__":
     perf_measurements = []
     rows = 0
 
-    n_bins = args.n_bins
-    n_actions = n_bins*n_bins
+    n_action_bins = args.n_action_bins
+    n_actions = n_action_bins*n_action_bins
 
     time_step = args.time_step
 
@@ -246,8 +265,21 @@ if __name__ == "__main__":
     if args.reward_position_state:
         extrinsic_reward_functions += [reward_position_state]
 
+    # Tile coding.
+    if args.use_tile_coding:
+        tile_coding = rep.TileCoding(input_indices = [np.arange(n_inputs)],
+						             ntiles = [args.n_state_tiles],
+						             ntilings = [args.n_state_tilings],
+						             hashing = None,
+                                     bias_term = False,
+						             state_range = [np.full(n_inputs, 0), np.full(n_inputs, 1)],
+						             rnd_stream = np.random.RandomState())
+        n_inputs_q = tile_coding.size
+    else:
+        tile_coding = None
+        n_inputs_q = n_inputs
+
     # Initialize stuff.
-    n_inputs_q = n_inputs
     n_inputs_forward = n_inputs + n_actions
 
     n_hidden_q = args.n_hidden_q
@@ -256,7 +288,8 @@ if __name__ == "__main__":
     # Compile model Q(state_t, action_t)
     model_q = Sequential()
     model_q.add(InputLayer(batch_input_shape=(1, n_inputs_q)))
-    model_q.add(Dense(n_hidden_q, activation='relu'))
+    if (n_hidden_q > 0):
+        model_q.add(Dense(n_hidden_q, activation='relu'))
     model_q.add(Dense(n_actions, activation='softmax'))
     model_q.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     print(model_q.summary())
@@ -264,8 +297,9 @@ if __name__ == "__main__":
     # Predicts state_{t+1} = f(state_t, action_t)
     model_forward = Sequential()
     model_forward.add(InputLayer(batch_input_shape=(1, n_inputs_forward)))
-    model_forward.add(Dense(n_hidden_forward, activation='relu'))
-    model_forward.add(Dense(n_inputs_q, activation='linear'))
+    if (n_hidden_forward > 0):
+        model_forward.add(Dense(n_hidden_forward, activation='relu'))
+    model_forward.add(Dense(n_inputs, activation='linear'))
     model_forward.compile(loss='mse', optimizer='adam', metrics=['mae'])
     print(model_forward.summary())
 
@@ -360,13 +394,17 @@ if __name__ == "__main__":
             prev_time = t
 
             # Perform one step.
-            target = r + gamma * np.max(model_q.predict(state))
-            target_vec = model_q.predict(prev_state)[0]
+            # Source: https://keon.io/deep-q-learning/
+            # learned value = r + gamma * max_a Q(s_{t+1}, a)
+            target = r + gamma * np.max(model_q.predict(state_to_tile_coding(state, tile_coding)))
+            target_vec = model_q.predict(state_to_tile_coding(prev_state, tile_coding))[0] # Q(s_t, a_t)
             target_vec[prev_action] = target
-            model_q.fit(prev_state, target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
+            model_q.fit(state_to_tile_coding(prev_state, tile_coding), target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
 
+
+        # print("State: {} => Coding: {}".format(state, state_to_tile_coding(state, tile_coding)))
         # Get prediction table.
-        prediction = model_q.predict(state, verbose=0).squeeze()
+        prediction = model_q.predict(state_to_tile_coding(state, tile_coding), verbose=0).squeeze()
 
         # Choose action.
         if policy == "greedy":
@@ -387,7 +425,7 @@ if __name__ == "__main__":
         # Save action for next iteration.
         prev_action = action
 
-        target = [mpp.class_to_speed_steering(action, n_bins, True)]
+        target = [mpp.class_to_speed_steering(action, n_action_bins, True)]
         #target = [[0.5, 1]] # 0.5 correponds to zero speed/steer.
        # print('target ', target)
 #        print("Choice made {} {} {}".format(action, model.predict(state), target))
