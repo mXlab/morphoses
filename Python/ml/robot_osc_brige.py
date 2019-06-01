@@ -65,10 +65,11 @@ def receive_rgb(unused_addr, r, g, b):
 
 # Preserve state value for next call.
 def receive_quaternion(unused_addr, q0, q1, q2, q3):
-    global current_quaternion, current_timestamp, start_time
+    global current_quaternion, current_timestamp, start_time, next_data_requested
 #    print("Received quaternion: {}".format([q0, q1, q2, q3]))
     if next_data_requested:
         bridge_osc.send_message("/morphoses/data", [ 0, time.time() - start_time, 0, 0, q0, q1, q2, q3, current_speed, current_steer ])
+        next_data_requested = False
 
 # Create parser
 parser = argparse.ArgumentParser()
