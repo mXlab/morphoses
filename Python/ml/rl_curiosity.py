@@ -198,6 +198,8 @@ if __name__ == "__main__":
     parser.add_argument("--n-state-tiles", type=int, default=10, help="Number of tiles to use for each state dimension")
     parser.add_argument("--n-state-tilings", type=int, default=1, help="Number of tilings to use for each state dimension")
 
+    parser.add_argument("--use-robot", default=False, action='store_true', help="Use real robot")
+
     parser.add_argument("--n-action-bins", type=int, default=3, help="Number of bins to use for each action dimension")
 
     parser.add_argument("--use-position", default=False, action='store_true', help="Add position to the input data")
@@ -512,5 +514,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, interrupt)
 
     print("Serving on {server.server_address}. Program ready.")
+    if args.use_robot:
+        time.sleep(10) # Give time to the robot to do its starting sequence
 
     server.serve_forever()
