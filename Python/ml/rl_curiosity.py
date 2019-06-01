@@ -58,6 +58,27 @@ def state_to_tile_coding(state, tc):
     else:
         return state
 
+# Returns an array of estimated Q values for state "state" for each action.
+def q_table_predict(q_table, state, tc):
+    code = tc(state[0])
+    if not isinstance(code, list):
+        code = [code]
+    q_sum = np.zeros(q_table.shape[1])
+    for c in code:
+        q_sum += q_table[c]
+    return q_sum
+
+def q_table_update(q_table, state, tc, target, action, lr):
+    code = tc(state[0])
+    if not isinstance(code, list):
+        code = [code]
+    n_bins = len(code)
+    x = 0
+    for c in code:
+        # print("Update Q({},{}): {} to target {} with lr {}".format(c, action, q_table[c][action], target / n_bins, lr))
+        q_table[c,action] -= lr * (q_table[c][action] - target / n_bins)
+        # print("==> {}".format(q_table[c][action]))
+
 # Extrinsic reward function helpers.
 def reward_sum(complete_data, columns, absolute=True, invert=False):
     complete_data = complete_data[ columns ]
@@ -172,6 +193,7 @@ if __name__ == "__main__":
     parser.add_argument("-nf", "--n-hidden-forward", type=int, default=64, help="Number of hidden units per layer for the forward function")
 
     # Arguments for tile coding.
+    parser.add_argument("-m", "--model", type=str, default="ann", choices=["ann", "ann-tiles", "tables"], help="Model type")
     parser.add_argument("--use-tile-coding", default=False, action='store_true', help="Use tile coding for Q function")
     parser.add_argument("--n-state-tiles", type=int, default=10, help="Number of tiles to use for each state dimension")
     parser.add_argument("--n-state-tilings", type=int, default=1, help="Number of tilings to use for each state dimension")
@@ -269,8 +291,11 @@ if __name__ == "__main__":
     if args.reward_position_state:
         extrinsic_reward_functions += [reward_position_state]
 
+    use_ann = not args.model == "tables"
+    use_tile_coding = not args.model == "ann"
+
     # Tile coding.
-    if args.use_tile_coding:
+    if use_tile_coding:
         tile_coding = rep.TileCoding(input_indices = [np.arange(n_inputs)],
 						             ntiles = [args.n_state_tiles],
 						             ntilings = [args.n_state_tilings],
@@ -289,14 +314,19 @@ if __name__ == "__main__":
     n_hidden_q = args.n_hidden_q
     n_hidden_forward = args.n_hidden_forward
 
+    learning_rate = args.learning_rate
+
     # Compile model Q(state_t, action_t)
-    model_q = Sequential()
-    model_q.add(InputLayer(batch_input_shape=(1, n_inputs_q)))
-    if (n_hidden_q > 0):
-        model_q.add(Dense(n_hidden_q, activation='relu'))
-    model_q.add(Dense(n_actions, activation='softmax'))
-    model_q.compile(loss='categorical_crossentropy', optimizer=optimizers.SGD(lr=args.learning_rate), metrics=['accuracy'])
-    print(model_q.summary())
+    if use_ann:
+        model_q = Sequential()
+        model_q.add(InputLayer(batch_input_shape=(1, n_inputs_q)))
+        if (n_hidden_q > 0):
+            model_q.add(Dense(n_hidden_q, activation='relu'))
+        model_q.add(Dense(n_actions, activation='softmax'))
+        model_q.compile(loss='categorical_crossentropy', optimizer=optimizers.SGD(lr=learning_rate), metrics=['accuracy'])
+        print(model_q.summary())
+    else:
+        model_q = np.zeros((n_inputs_q, n_actions))
 
     # Predicts state_{t+1} = f(state_t, action_t)
     model_forward = Sequential()
@@ -328,12 +358,9 @@ if __name__ == "__main__":
 
     iter = 0
     def handle_data(unused_addr, exp_id, t, x, y, qx, qy, qz, qw, speed, steer):
-        global notify_recv
-        # global model_q
-        # global perf_measurements
+        global notify_recv, use_ann
         global prev_data, prev_time, prev_state, prev_action
         global avg_r, iter
-        # global state_columns
 
         start_time = time.perf_counter()
 
@@ -400,15 +427,24 @@ if __name__ == "__main__":
             # Perform one step.
             # Source: https://keon.io/deep-q-learning/
             # learned value = r + gamma * max_a Q(s_{t+1}, a)
-            target = r + gamma * np.max(model_q.predict(state_to_tile_coding(state, tile_coding)))
-            target_vec = model_q.predict(state_to_tile_coding(prev_state, tile_coding))[0] # Q(s_t, a_t)
-            target_vec[prev_action] = target
-            model_q.fit(state_to_tile_coding(prev_state, tile_coding), target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
+            if use_ann:
+                target = r + gamma * np.max(model_q.predict(state_to_tile_coding(state, tile_coding)))
+                target_vec = model_q.predict(state_to_tile_coding(prev_state, tile_coding))[0] # Q(s_t, a_t)
+                target_vec[prev_action] = target
+                model_q.fit(state_to_tile_coding(prev_state, tile_coding), target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
+            else:
+                target = r + gamma * np.max(q_table_predict(model_q, state, tile_coding))
+                target_vec = q_table_predict(model_q, prev_state, tile_coding)
+                q_table_update(model_q, state, tile_coding, target, prev_action, learning_rate)
 
 
         # print("State: {} => Coding: {}".format(state, state_to_tile_coding(state, tile_coding)))
         # Get prediction table.
-        prediction = model_q.predict(state_to_tile_coding(state, tile_coding), verbose=0).squeeze()
+
+        if use_ann:
+            prediction = model_q.predict(state_to_tile_coding(state, tile_coding), verbose=0).squeeze()
+        else:
+            prediction = q_table_predict(model_q, state, tile_coding)
 
         # Choose action.
         if policy == "greedy":
