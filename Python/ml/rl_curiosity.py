@@ -410,7 +410,7 @@ if __name__ == "__main__":
         # Else: one step of Q-learning loop.
         else:
             # Compute state.
-            delta_data = delta(data, prev_data) / (t - prev_time)
+            delta_data = 10 * delta(data, prev_data) / (t - prev_time)
             complete_data = np.concatenate((data, delta_data))
             state = get_state(complete_data, state_columns)
             #print('state', state)
