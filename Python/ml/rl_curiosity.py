@@ -109,7 +109,7 @@ def reward_inv_delta_euler(complete_data):
     return reward_sum(complete_data, [15, 16, 17], absolute=True, invert=True)
 
 def reward_euler_state_1(complete_data):
-    goal_euler_state = [0.25, 0.5, 0.5] # do not care about third Euler angle
+    goal_euler_state = [0.25, 0.5, 0.75] # do not care about third Euler angle
 
     dist = abs(complete_data[6] - goal_euler_state[0])**2
     dist += abs(complete_data[7] - goal_euler_state[1])**2
