@@ -363,6 +363,8 @@ if __name__ == "__main__":
     prev_action = -1
     avg_r = None
     max_r = -1000
+    min_r = 1000
+    #avg_r = np.array([ 0., 0., 0. ])
 
     # Create rescalers.
     scalerX = MinMaxScaler()
@@ -379,7 +381,7 @@ if __name__ == "__main__":
     def handle_data(unused_addr, exp_id, t, x, y, qx, qy, qz, qw, speed, steer):
         global notify_recv, use_ann
         global prev_data, prev_time, prev_state, prev_action
-        global avg_r, iter
+        global avg_r, iter, max_r, min_r
 
         start_time = time.perf_counter()
 
@@ -430,7 +432,15 @@ if __name__ == "__main__":
             r_ext = reward(complete_data, extrinsic_reward_functions)
 
             r = curiosity_weight * r_int + (1 - curiosity_weight) * r_ext
-            print(r)
+            if r > max_r:
+                max_r = r
+            if r < min_r:
+                min_r = r
+            scaled_r = (r - min_r) / (max_r - min_r + 0.000001)
+            brightness = round(scaled_r * 255)
+            client.send_message("/morphoses/rgb", [(255 - brightness), brightness, 0])
+
+#            print(r)
 
             r_array = np.array([ r_int, r_ext, r ])
 
