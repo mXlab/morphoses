@@ -362,7 +362,7 @@ if __name__ == "__main__":
     prev_state = None
     prev_action = -1
     avg_r = None
-    avg_r = np.array([ 0., 0., 0. ])
+    max_r = -1000
 
     # Create rescalers.
     scalerX = MinMaxScaler()
