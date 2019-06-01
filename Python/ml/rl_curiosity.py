@@ -411,13 +411,14 @@ if __name__ == "__main__":
         else:
             # Compute state.
             delta_data = 10 * delta(data, prev_data) / (t - prev_time)
+#            delta_data = 100 * delta(data, prev_data) / (t - prev_time)
             complete_data = np.concatenate((data, delta_data))
             state = get_state(complete_data, state_columns)
-            #print('state', state)
 
             # Adjust state model.
             state_model_input = np.concatenate((prev_state[0], to_categorical(prev_action, n_actions)[0]))
             state_model_input = np.reshape(state_model_input, (1, n_inputs_forward))
+#            print(state_model_input)
             model_forward.fit(state_model_input, state, epochs=1, verbose=0)
             #print('state_model_input', state_model_input)
 
