@@ -1,7 +1,7 @@
 # Morphosis Project Code and Resources
 This repository features scripts and resources for the ongoing Morphosis project.
 
-# Subfolders
+## Subfolders
 
 ### Python
 
@@ -62,7 +62,57 @@ Setup IP address of HOST here:
 
 # Tech notes
 
+## Relay pin
+
 The relay pin needs to be put to HIGH in order to cut the current to the motors. This was done because when the ESP8266 is launched, there is a "spike" on pin 0 which would have triggered the motor initialization process (where it goes from side to side once). However, there is a way to fix it, by reprogramming the motor-control arduinos to wait (ie. adding a delay() in their setup()) so that they are not affected by the spike.
+
+## Programming of microcontrollers
+
+There are two kinds of microcontrollers on the robot:
+ * ESP8266 Thing
+ * Arduino Mini
+
+Both types need to be programmed using a 3.3V FTDI cable. *Do NOT use a 5V FTDI cable/interface because the ESP8266 runs at 3.3V and you could break it.*
+
+### ESP8266 Thing
+
+Step 1: Connect the FTDI cable to the right input pins.
+
+```
+          |
+GREEN --- | DTR
+YELLOW -- | TX0
+ORANGE -- | RX1
+RED ----- | 3V3
+BROWN --- | NC
+BLACK --- | GND
+          |
+```
+
+Step 2: Connect the DTR jumper.
+
+Step 3: Select Boards > ESP8266 Thing and upload sketch.
+
+If you have trouble with the ESP8266 please see [Troubleshooting the ESP8266](https://morphoseis.wordpress.com/2017/08/09/troubleshooting-the-esp8266/).
+
+### Arduino Mini
+
+Step 1: Connect the FTDI cable to the right input pins.
+
+```
+          -----------
+GREEN --- | DTR
+YELLOW -- | TX0
+ORANGE -- | RX1
+RED ----- | VCC
+BROWN --- | GND
+BLACK --- | GND
+          -----------
+```
+
+Step 2: Select Boards > *Arduino Nano* and Processor > *ATmega328P (Old Bootloader)*
+
+*Do NOT select Boards > Arduino Mini as it seems to be causing problems of the kind "avrdude: stk500_getsync() attempt ... of 10: not in sync: resp=0x0d" at upload.*
 
 # Mac installation
 
@@ -74,7 +124,7 @@ Resolve C# compatibility issue:
 
 - Install Unity 2019.1.1f1 Personal
 - Go to `Edit > Project Settings > Player > Other Settings > Configuration`
-- Set Scripting Runtime Version to `.NET 4.x equivalent` 
+- Set Scripting Runtime Version to `.NET 4.x equivalent`
 
 ## Python
 
@@ -92,4 +142,3 @@ Resolve TensorFlow issue with AVX instruction sets:
 - From the root of the project: `cd ./Python`
 - Launch Python virtual environment: `source ./bin/activate`
 - Install TensorFlow 1.5: `pip install tensorflow==1.5`
-
