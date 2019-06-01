@@ -86,7 +86,7 @@ def reward_sum(complete_data, columns, absolute=True, invert=False):
         complete_data = abs(complete_data)
     r = sum(complete_data) / len(complete_data)
     if invert:
-        r = 1 - r
+        r = -r
     return r
 
 def reward_position_center(complete_data):
