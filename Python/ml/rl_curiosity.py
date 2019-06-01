@@ -137,6 +137,20 @@ def reward_euler_state_3(complete_data):
     else:
         return -10. * dist_1
 
+# Calculate distance between two angles normalized in [0, 1]
+def normalized_angle_dist(x1, x2):
+    return min( abs(x2-x1), abs(x2-x1+1))
+
+def reward_euler_state_robot_1(complete_data):
+    goal_euler_state = [ 0.7138384425182009, 0.8537683086573894, 0.14679902767144734 ]
+    # goal_euler_state = [ 0.07599221,  0.11881516,  0.4418379 ]
+
+    dist = normalized_angle_dist(complete_data[6], goal_euler_state[0])**2
+    dist += normalized_angle_dist(complete_data[7], goal_euler_state[1])**2
+    dist += normalized_angle_dist(complete_data[8], goal_euler_state[2])**2
+    dist = 1 / (dist + 1)
+    return dist
+
 def reward_position_state(complete_data):
     goal_euler_state = [0.5, 0.5]
 
@@ -218,6 +232,7 @@ if __name__ == "__main__":
     parser.add_argument("--reward-euler-state-1", default=False, action='store_true', help="Reward static Euler state using 1st experiment reward")
     parser.add_argument("--reward-euler-state-2", default=False, action='store_true', help="Reward static Euler state using 2nd experiment reward")
     parser.add_argument("--reward-euler-state-3", default=False, action='store_true', help="Reward static Euler state using 3rd experiment reward")
+    parser.add_argument("--reward-euler-state-robot-1", default=False, action='store_true', help="Reward static robot Euler state using 1st experiment reward")
     parser.add_argument("--reward-position-state", default=False, action='store_true', help="Reward static position state")
 
 
@@ -290,6 +305,8 @@ if __name__ == "__main__":
         extrinsic_reward_functions += [reward_euler_state_2]
     if args.reward_euler_state_3:
         extrinsic_reward_functions += [reward_euler_state_3]
+    if args.reward_euler_state_robot_1:
+        extrinsic_reward_functions += [reward_euler_state_robot_1]
     if args.reward_position_state:
         extrinsic_reward_functions += [reward_position_state]
 
