@@ -236,7 +236,7 @@ if __name__ == "__main__":
     parser.add_argument("--reward-position-state", default=False, action='store_true', help="Reward static position state")
 
 
-#    parser.add_argument("-D", "--model-directory", type=str, default=".", help="The directory where to save models")
+#    parser.add_argument("-D", "--model-directory", type=str, defaultsi help="The directory where to save models")
 #    parser.add_argument("-P", "--prefix", type=str, default="ann-regression-", help="Prefix to use for saving files")
 
     parser.add_argument("-i", "--ip", default="127.0.0.1",
