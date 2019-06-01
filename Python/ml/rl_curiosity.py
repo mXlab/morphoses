@@ -466,6 +466,13 @@ if __name__ == "__main__":
                 target_vec = q_table_predict(model_q, prev_state, tile_coding)
                 q_table_update(model_q, state, tile_coding, target, prev_action, learning_rate)
 
+            print("{} => {}".format(state, r))
+            n_iter_log = 10
+            if iter % n_iter_log == 0:
+                print("t={} average reward = (int: {} ext: {} total: {})".format(iter, avg_r[0], avg_r[1], avg_r[2]))
+                print("state = ", state)
+                avg_r = r_array # reset
+
 
         # print("State: {} => Coding: {}".format(state, state_to_tile_coding(state, tile_coding)))
         # Get prediction table.
@@ -504,12 +511,6 @@ if __name__ == "__main__":
         #print('send action', action)
 #        print("Target {} Action {}".format(target, action))
 
-        print("state = ", state)
-        if iter % 10 == 0:
-            print('--- + 10')
-            print("t={} average reward = (int: {} ext: {} total: {})".format(iter, avg_r[0], avg_r[1], avg_r[2]))
-            print("state = ", state)
-
         # Send OSC message.
         client.send_message("/morphoses/action", action[0])
 
@@ -521,6 +522,13 @@ if __name__ == "__main__":
         # Wait
         if time_step > 0:
             time.sleep(time_step)
+            # tick = 0.01
+            # n_steps = round(time_step / tick)
+            # for i in range(n_steps):
+            #     time.sleep(tick)
+
+        # Ask for next data point.
+        client.send_message("/morphoses/next", [])
 
     # Create OSC dispatcher.
     dispatcher = dispatcher.Dispatcher()
@@ -541,7 +549,9 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, interrupt)
 
     print("Serving on {server.server_address}. Program ready.")
+    client.send_message("/morphoses/begin", [])
     if args.use_robot:
         time.sleep(10) # Give time to the robot to do its starting sequence
+    print("Go!")
 
     server.serve_forever()
