@@ -102,6 +102,24 @@ def reward_inv_position_border(complete_data):
     else:
         return 0
 
+def reward_delta_roll(complete_data):
+    return reward_sum(complete_data, [15], absolute=True, invert=False)
+
+def reward_inv_delta_roll(complete_data):
+    return reward_sum(complete_data, [15], absolute=True, invert=True)
+
+def reward_delta_pitch(complete_data):
+    return reward_sum(complete_data, [16], absolute=True, invert=False)
+
+def reward_inv_delta_pitch(complete_data):
+    return reward_sum(complete_data, [16], absolute=True, invert=True)
+
+def reward_delta_yaw(complete_data):
+    return reward_sum(complete_data, [17], absolute=True, invert=False)
+
+def reward_inv_delta_yaw(complete_data):
+    return reward_sum(complete_data, [17], absolute=True, invert=True)
+
 def reward_delta_euler(complete_data):
     return reward_sum(complete_data, [15, 16, 17], absolute=True, invert=False)
 
@@ -184,7 +202,7 @@ def choose_action_softmax(prediction, temperature=1):
     # Source: https://gist.github.com/alceufc/f3fd0cd7d9efb120195c
     if (temperature != 1):
         prediction = np.power(prediction, 1. / temperature)
-        prediction /= prediction.sum(0)
+        prediction /= prediction.sum()
     return np.asscalar(np.random.choice(np.arange(len(prediction)), 1, p=prediction))
 
 if __name__ == "__main__":
@@ -193,7 +211,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-p", "--policy", type=str, default="greedy", choices=["greedy", "boltzmann", "mixed"], help="Agent policy")
     parser.add_argument("-eps", "--epsilon", type=float, default=0.1, help="Epsilon value for the 'greedy' policy")
-    parser.add_argument("-temp", "--temperature", type=float, default=1, help="Temperature value for the 'boltzmann' policy [0, +inf] (higher: more uniform, lower: more greedy")
+    parser.add_argument("-temp", "--temperature", type=float, default=1, help="Temperature value for the 'boltzmann' policy [0, +inf] (higher: more uniform, lower: more greedy)")
 
     parser.add_argument("-gam", "--gamma", type=float, default=0.95, help="Gamma value for the Q-learning")
     parser.add_argument("-lr", "--learning-rate", type=float, default=0.01, help="The learning rate")
@@ -406,6 +424,7 @@ if __name__ == "__main__":
             state = get_state(complete_data, state_columns)
             prev_state = state
             prev_action = 0 # dummy
+            r = 0
 
         # Else: one step of Q-learning loop.
         else:
@@ -499,6 +518,16 @@ if __name__ == "__main__":
             else:
                 action = choose_action_softmax(prediction, temperature)
 
+        use_sarsa = True
+        # Perform one step.
+        if use_sarsa:
+            target = r + gamma * prediction[action]
+        else:
+            target = r + gamma * np.max(prediction)
+        target_vec = model_q.predict(prev_state)[0]
+        target_vec[prev_action] = target
+        model_q.fit(prev_state, target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
+
         # Save action for next iteration.
         prev_action = action
 
@@ -513,7 +542,7 @@ if __name__ == "__main__":
 #        print("Target {} Action {}".format(target, action))
 
         # Send OSC message.
-        client.send_message("/morphoses/action", action[0])
+        client.send_message("/morphoses/action", action_impl[0])
 
         # Update state.
         prev_state = state
