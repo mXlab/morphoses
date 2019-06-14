@@ -18,6 +18,7 @@ public class ReceiveOSC : MonoBehaviour
     osc.SetAddressHandler("/motor/1", OnMotor1);
     osc.SetAddressHandler("/motor/2", OnMotor2);
     osc.SetAddressHandler("/morphoses/action", OnAction);
+    osc.SetAddressHandler("/morphoses/next", OnNext);
     osc.SetAddressHandler("/morphoses/transform", OnDirectData);
   }
 
@@ -41,9 +42,13 @@ public class ReceiveOSC : MonoBehaviour
     GetComponent<BallController>().steering = steering;
   }
 
-  void OnAction(OscMessage message)
+  void OnNext(OscMessage message)
   {
     buffer += 1;
+  }
+
+  void OnAction(OscMessage message)
+  {
     float speed = message.GetFloat(0);
     float steering = message.GetFloat(1);
 

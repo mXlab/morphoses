@@ -137,8 +137,8 @@ void setup() {
   // we have shottky diodes (1N5818) from esp8266's SDA and SCLK to arduino to prevent 5V entering esp8266
   Wire.onReceive(receiveEvent); // register event
   Wire.onRequest(requestEvent); // register event
-  pinMode(encoderA, INPUT_PULLUP); // encoder has open-drain putputs
-  pinMode(encoderB, INPUT_PULLUP); // encoder has open-drain putputs
+  pinMode(encoderA, INPUT_PULLUP); // encoder has open-drain outputs
+  pinMode(encoderB, INPUT_PULLUP); // encoder has open-drain outputs
   pinMode(motorDir, OUTPUT);
   pinMode(motorPWM, OUTPUT);
   
@@ -358,12 +358,10 @@ void tilt_to(int targetTick) {
     actualRotaryTicks = (rotaryHalfSteps / 2);
     if (fwd) {
       if (targetTick <= actualRotaryTicks) {
-        Serial.print("X");
         break;
       }
     }
     else if (targetTick >= actualRotaryTicks) {
-      Serial.print("Y");
       break;
     }
     delayMicroseconds(100);
@@ -378,4 +376,3 @@ void tilt_to(int targetTick) {
   digitalWrite(optoLedL, LOW); // off
   digitalWrite(optoLedR, LOW); // off
 }
-
