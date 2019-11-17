@@ -1,22 +1,18 @@
 #include "Config.h"
 
-#include <UM7.h>
+#include <SparkFun_BNO080_Arduino_Library.h>
 
 #include <OSCBundle.h>
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include <WiFiUdp.h>
 #include <SLIPEncodedSerial.h>
 SLIPEncodedSerial SLIPSerial(Serial);
 
-UM7 imu;
-
+BNO080 imu;
 WiFiUDP udp;
 OSCBundle bndl;
 
 IPAddress destIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, DEST_IP_3); // remote IP
-
-//int nIMU;
-//int iter;
 
 void setup() {
   Serial.begin(115200);
@@ -28,34 +24,39 @@ void setup() {
   // Initialize Wifi and UDP.
   initWifi();
 
-//  nIMU = 0;
-//  iter = 0;
+  Wire.begin();
+  if (imu.begin() == false)
+  {
+    Serial.println("BNO080 not detected at default I2C address. Check your jumpers and the hookup guide. Freezing...");
+    while (1);
+  }
+
+  Wire.setClock(400000); //Increase I2C data rate to 400kHz
+
+  imu.enableRotationVector(50); //Send data update every 50ms
 }
 
 void loop() {
-
-  // Tick.
-//  bndl.add("/tick").add(iter++).add(millis()/1000.0f).add(Serial.available()).add(nIMU);
-//  sendOscBundle();
-  
   // Send IMU.
   processImu();
   
 }
 
 void processImu() {
-  if (Serial.available() > 0) {
-//    Serial.println("Receiving data");
-    if (imu.encode(Serial.read())) {
-      if (sendOSC) {
-//        bndl.add("/ypr/deg").add(imu.yaw/100.0).add(imu.pitch/100.0).add(imu.roll/100.0);
-//        bndl.add("/ypr/deg").add(imu.yaw()).add(imu.pitch()).add(imu.roll());
-        bndl.add("/quat").add(imu.q_a()).add(imu.q_b()).add(imu.q_c()).add(imu.q_d());
-        sendOscBundle();
-//        nIMU ++;
-      }    
+  if (imu.dataAvailable() == true)
+  {
+//    float quatI = imu.getQuatI();
+//    float quatJ = imu.getQuatJ();
+//    float quatK = imu.getQuatK();
+//    float quatReal = imu.getQuatReal();
+//    float quatRadianAccuracy = imu.getQuatRadianAccuracy();
+
+    if (sendOSC) {
+      bndl.add("/quat").add(imu.getQuatI()).add(imu.getQuatJ()).add(imu.getQuatK()).add(imu.getQuatReal());
+      sendOscBundle();
     }
   }
+
 }
 
 void initWifi()
