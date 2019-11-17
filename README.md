@@ -37,6 +37,11 @@ Contains the Unity project for generating simulated data.
 - On TEST computer run: `send_osc osc.udp://xxx.xxx.xxx.xxx:12345/ /hello`
 - You should see `/hello ,` on the HOST
 
+## Arduino libraries
+
+- OSC (CNMAT version by A. Freed & Y. Mann)
+- Sparkfun BNO080 IMU
+
 ## Update Wifi configuration on main ESP8266 board
 
 - From the root of the project: `cd MorphosesMainBoard`
