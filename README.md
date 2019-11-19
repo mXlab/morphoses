@@ -79,6 +79,11 @@ There are two kinds of microcontrollers on the robot:
 
 Both types need to be programmed using a 3.3V FTDI cable. *Do NOT use a 5V FTDI cable/interface because the ESP8266 runs at 3.3V and you could break it.*
 
+## Encoder Specs
+
+Roller motor: 1365 impulsions per turn
+Tilter motor: 1323 impulsions per turn
+
 ### ESP8266 Thing
 
 Step 1: Connect the FTDI cable to the right input pins.
@@ -147,3 +152,14 @@ Resolve TensorFlow issue with AVX instruction sets:
 - From the root of the project: `cd ./Python`
 - Launch Python virtual environment: `source ./bin/activate`
 - Install TensorFlow 1.5: `pip install tensorflow==1.5`
+
+# Machine Learning Scripts
+
+All the ML scripts are in the Python/ml subfolder.
+
+## Launching an experiment
+
+Launching an experiment requires to run 3 programs:
+- The Pythion script ```rl_curiosity.py```: runs the reinforcement learning process with tons of options
+- The Processing sketch ```RobotOscBridge```"" interfaces between the robot and the python scripts (the reason: somehow the OSC messages incoming from the ESP* are not recognized by Python)
+- The Python script ```robot_osc_bridge.py```: interfaces between ```RobotOscBridge``` and ```rl_curiosity.py``` to send and receive appropriately formatted OSC signals
