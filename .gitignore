@@ -76,6 +76,7 @@ sysinfo.txt
 *.hd5
 __pycache__
 trash/
+Documents/
 
 # Mac
 .DS_Store
