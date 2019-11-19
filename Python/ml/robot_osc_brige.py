@@ -11,6 +11,10 @@ next_data_requested = False
 start_time = time.time()
 current_speed = 0
 current_steer = 0
+current_quaternion = [0, 0, 0, 0]
+current_n_revolutions = 0
+
+N_MOTOR1_TICKS_PER_REVOLUTION = 1365
 
 class OscHelper:
     def __init__(self, ip, send_port, receive_port):
@@ -65,14 +69,27 @@ def receive_rgb(unused_addr, r, g, b):
 
 # Preserve state value for next call.
 def receive_quaternion(unused_addr, q0, q1, q2, q3):
-    global current_quaternion, current_timestamp, start_time, next_data_requested
-#    print("Received quaternion: {}".format([q0, q1, q2, q3]))
+    global current_quaternion, current_n_revolutions, current_timestamp, start_time, next_data_requested
+    current_quaternion = [q0, q1, q2, q3]
+    print("Received quaternion: {}".format([q0, q1, q2, q3]))
     if next_data_requested:
-        bridge_osc.send_message("/morphoses/data", [ 0, time.time() - start_time, 0, 0, q0, q1, q2, q3, current_speed, current_steer ])
+        bridge_osc.send_message("/morphoses/data", [ 0, time.time() - start_time, 0, 0, q0, q1, q2, q3, current_n_revolutions, current_speed, current_steer ])
+        next_data_requested = False
+
+# Preserve state value for next call.
+def receive_speed_ticks(unused_addr, ticks):
+    global current_quaternion, current_n_revolutions, current_timestamp, start_time, next_data_requested
+    current_n_revolutions = ticks / N_MOTOR1_TICKS_PER_REVOLUTION
+    q0 = current_quaternion[0]
+    q1 = current_quaternion[1]
+    q2 = current_quaternion[2]
+    q3 = current_quaternion[3]
+    if next_data_requested:
+        bridge_osc.send_message("/morphoses/data", [ 0, time.time() - start_time, 0, 0, q0, q1, q2, q3, current_n_revolutions, current_speed, current_steer ])
         next_data_requested = False
 
 # Create parser
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument("--bridge-receive-port", default="7765",
                         help="Specify the port number where data is received from the main application.")
@@ -100,6 +117,7 @@ imu_osc = OscHelper(args.imu_board_ip, args.imu_board_send_port, args.imu_board_
 bridge_osc = OscHelper("127.0.0.1", args.bridge_send_port, args.bridge_receive_port)
 
 imu_osc.map("/quat", receive_quaternion)
+main_osc.map("/motor/1/ticks", receive_speed_ticks)
 bridge_osc.map("/morphoses/action", receive_action)
 bridge_osc.map("/morphoses/next", receive_next)
 bridge_osc.map("/morphoses/begin", receive_begin)

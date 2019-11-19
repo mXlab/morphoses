@@ -181,6 +181,11 @@ def reward_position_state(complete_data):
     else:
         return -10. * dist
 
+def reward_inv_revolutions(complete_data):
+    print("n.revolutions: {} ({})".format(complete_data[9], complete_data))
+    return -abs(complete_data[9])
+#    return 1.0/(1+abs(complete_data[9]))
+
 def reward(complete_data, reward_functions):
     n_functions = len(reward_functions)
     if n_functions == 0:
@@ -242,6 +247,7 @@ if __name__ == "__main__":
     parser.add_argument("--use-euler-firsts", default=False, action='store_true', help="Add first two Euler angles to the input data")
     parser.add_argument("--use-euler-extremes", default=False, action='store_true', help="Add first and last Euler angles to the input data")
     parser.add_argument("--use-delta-euler", default=False, action='store_true', help="Add delta Euler angles to the input data")
+    parser.add_argument("--use-n-revolutions", default=False, action='store_true', help="Add number of revolutions the input data")
 
     parser.add_argument("--reward-position-center", default=False, action='store_true', help="Reward being close to center (0, 0)")
     parser.add_argument("--reward-inv-position-border", default=False, action='store_true', help="Punish heavily being too close to the edges")
@@ -252,7 +258,7 @@ if __name__ == "__main__":
     parser.add_argument("--reward-euler-state-3", default=False, action='store_true', help="Reward static Euler state using 3rd experiment reward")
     parser.add_argument("--reward-euler-state-robot-1", default=False, action='store_true', help="Reward static robot Euler state using 1st experiment reward")
     parser.add_argument("--reward-position-state", default=False, action='store_true', help="Reward static position state")
-
+    parser.add_argument("--reward-inv-revolutions", default=False, action='store_true', help="Reward low number of revolutions")
 
 #    parser.add_argument("-D", "--model-directory", type=str, defaultsi help="The directory where to save models")
 #    parser.add_argument("-P", "--prefix", type=str, default="ann-regression-", help="Prefix to use for saving files")
@@ -293,16 +299,18 @@ if __name__ == "__main__":
         state_columns += [2, 3, 4, 5]
     if args.use_euler:
         state_columns += [6, 7, 8]
+    if args.use_n_revolutions:
+        state_columns += [9]
     if args.use_euler_firsts:
         state_columns += [6, 7]
     if args.use_euler_extremes:
         state_columns += [6, 8]
     if args.use_delta_position:
-        state_columns += [9, 10]
+        state_columns += [10, 11]
     if args.use_delta_quaternion:
-        state_columns += [11, 12, 13, 14]
+        state_columns += [12, 13, 14, 15]
     if args.use_delta_euler:
-        state_columns += [15, 16, 17]
+        state_columns += [16, 17, 18]
     n_inputs = len(state_columns)
     if n_inputs <= 0:
         exit("You have no inputs! Make sure to specify some inputs using the --use-* options.")
@@ -327,6 +335,8 @@ if __name__ == "__main__":
         extrinsic_reward_functions += [reward_euler_state_robot_1]
     if args.reward_position_state:
         extrinsic_reward_functions += [reward_position_state]
+    if args.reward_inv_revolutions:
+        extrinsic_reward_functions += [reward_inv_revolutions]
 
     use_ann = not args.model == "tables"
     use_tile_coding = not args.model == "ann"
@@ -386,8 +396,8 @@ if __name__ == "__main__":
 
     # Create rescalers.
     scalerX = MinMaxScaler()
-    scalerX.fit([[-25, -25, -1, -1, -1, -1, -180, -90, -180],
-                 [+25, +25, +1, +1, +1, +1, +180, +90, +180]])
+    scalerX.fit([[-25, -25, -1, -1, -1, -1, -180, -90, -180, -5.],
+                 [+25, +25, +1, +1, +1, +1, +180, +90, +180,  5.]])
 
     scalerY = MinMaxScaler()
     scalerY.fit([[-15, -45],
@@ -396,7 +406,7 @@ if __name__ == "__main__":
     #             [+15, +45]])
 
     iter = 0
-    def handle_data(unused_addr, exp_id, t, x, y, qx, qy, qz, qw, speed, steer):
+    def handle_data(unused_addr, exp_id, t, x, y, qx, qy, qz, qw, speed_ticks, speed, steer):
         global notify_recv, use_ann
         global prev_data, prev_time, prev_state, prev_action
         global avg_r, iter, max_r, min_r
@@ -411,7 +421,8 @@ if __name__ == "__main__":
         pos = np.array([x, y])
         quat = np.array([qx, qy, qz, qw])
         euler = np.array(mpp.quaternion_to_euler(qx, qy, qz, qw))
-        data = np.concatenate((pos, quat, euler))
+        ticks = np.array([speed_ticks])
+        data = np.concatenate((pos, quat, euler, ticks))
         data = mpp.standardize(data, scalerX)[0] # normalize
 
         # If this is the first time we receive something: save as initial values and skip
@@ -433,9 +444,10 @@ if __name__ == "__main__":
 #            delta_data = 100 * delta(data, prev_data) / (t - prev_time)
             complete_data = np.concatenate((data, delta_data))
             state = get_state(complete_data, state_columns)
+            print("complete data : {} {}".format(complete_data, state_columns))
 
             # Adjust state model.
-            state_model_input = np.concatenate((prev_state[0], to_categorical(prev_action, n_actions)[0]))
+            state_model_input = np.concatenate((prev_state[0], to_categorical(prev_action, n_actions)))
             state_model_input = np.reshape(state_model_input, (1, n_inputs_forward))
 #            print(state_model_input)
             model_forward.fit(state_model_input, state, epochs=1, verbose=0)
@@ -472,19 +484,6 @@ if __name__ == "__main__":
             # Save previous data information.
             prev_data = data
             prev_time = t
-
-            # Perform one step.
-            # Source: https://keon.io/deep-q-learning/
-            # learned value = r + gamma * max_a Q(s_{t+1}, a)
-            if use_ann:
-                target = r + gamma * np.max(model_q.predict(state_to_tile_coding(state, tile_coding)))
-                target_vec = model_q.predict(state_to_tile_coding(prev_state, tile_coding))[0] # Q(s_t, a_t)
-                target_vec[prev_action] = target
-                model_q.fit(state_to_tile_coding(prev_state, tile_coding), target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
-            else:
-                target = r + gamma * np.max(q_table_predict(model_q, state, tile_coding))
-                target_vec = q_table_predict(model_q, prev_state, tile_coding)
-                q_table_update(model_q, state, tile_coding, target, prev_action, learning_rate)
 
             print("{} => {}".format(state, r))
             n_iter_log = 10
@@ -524,9 +523,17 @@ if __name__ == "__main__":
             target = r + gamma * prediction[action]
         else:
             target = r + gamma * np.max(prediction)
-        target_vec = model_q.predict(prev_state)[0]
-        target_vec[prev_action] = target
-        model_q.fit(prev_state, target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
+
+        # Perform one step.
+        # Source: https://keon.io/deep-q-learning/
+        # learned value = r + gamma * max_a Q(s_{t+1}, a)
+        if use_ann:
+            target_vec = model_q.predict(state_to_tile_coding(prev_state, tile_coding))[0] # Q(s_t, a_t)
+            target_vec[prev_action] = target
+            model_q.fit(state_to_tile_coding(prev_state, tile_coding), target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
+        else:
+            target_vec = q_table_predict(model_q, prev_state, tile_coding)
+            q_table_update(model_q, state, tile_coding, target, prev_action, learning_rate)
 
         # Save action for next iteration.
         prev_action = action
@@ -538,11 +545,12 @@ if __name__ == "__main__":
 
         # Send OSC message of action.
         action = scalerY.inverse_transform(target).astype('float')
-        #print('send action', action)
-#        print("Target {} Action {}".format(target, action))
+        # print("action: {}".format(action))
+        # print('send action', action)
+        # print("Target {} Action {}".format(target, action))
 
         # Send OSC message.
-        client.send_message("/morphoses/action", action_impl[0])
+        client.send_message("/morphoses/action", action[0])
 
         # Update state.
         prev_state = state
