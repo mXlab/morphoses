@@ -1,4 +1,3 @@
-#define AHRS true         // Set to false for basic data read
 #define SerialDebug false  // Set to true to get Serial output for debugging
 const bool OSCDebug = true; // debug-print OSC packet stuff
 boolean sendOSC = true; // set to true to stream samples
