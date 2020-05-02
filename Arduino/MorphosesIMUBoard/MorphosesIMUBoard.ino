@@ -21,6 +21,7 @@ void setup() {
     ; // wait for serial port to connect. Needed for native USB port only
   }
 
+
   // Initialize Wifi and UDP.
   initWifi();
 
@@ -28,12 +29,15 @@ void setup() {
   if (imu.begin() == false)
   {
     Serial.println("BNO080 not detected at default I2C address. Check your jumpers and the hookup guide. Freezing...");
+    bndl.add("/i2cerror");
+    sendOscBundle();
     while (1);
   }
 
   Wire.setClock(400000); //Increase I2C data rate to 400kHz
 
   imu.enableRotationVector(50); //Send data update every 50ms
+
 }
 
 void loop() {
