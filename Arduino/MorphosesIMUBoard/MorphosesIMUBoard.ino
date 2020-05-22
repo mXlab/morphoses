@@ -19,6 +19,14 @@ WiFiUDP udp;
 OSCBundle bndl;
 
 IPAddress destIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, DEST_IP_3); // remote IP
+IPAddress broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
+
+char packetBuffer[128];
+
+void sendOscBundle(boolean broadcast=false);
+void blinkIndicatorLed(unsigned long period, float pulseProportion=0.5);
+
+bool imuInitialized = false;
 
 void setup() {
   Serial.begin(115200);
@@ -27,29 +35,102 @@ void setup() {
     ; // wait for serial port to connect. Needed for native USB port only
   }
 
+  pinMode(LED_BUILTIN, OUTPUT);
 
   // Initialize Wifi and UDP.
   initWifi();
 
   Wire.begin();
-  if (imu.begin() == false)
-  {
-    Serial.println("BNO080 not detected at default I2C address. Check your jumpers and the hookup guide. Freezing...");
-    bndl.add("/i2cerror");
-    sendOscBundle();
-    while (1);
-  }
 
-  Wire.setClock(400000); //Increase I2C data rate to 400kHz
-
-  imu.enableRotationVector(50); //Send data update every 50ms
-
+  digitalWrite(LED_BUILTIN, HIGH);
 }
 
 void loop() {
+  // Init IMU if not already initialized.
+  if (!imuInitialized)
+    initIMU();
+  
+  // Check for incoming messages.
+  receiveMessage();
+  
   // Send IMU.
   processImu();
   
+}
+
+void receiveMessage() {
+  // if there's data available, read a packet
+  int packetSize = udp.parsePacket();
+
+  if (packetSize)
+  {
+    if (OSCDebug) {
+      Serial.print("Received packet of size ");
+      Serial.println(packetSize);
+      Serial.print("From ");
+    }
+    IPAddress remote = udp.remoteIP();
+    if (OSCDebug) {
+      for (int i = 0; i < 4; i++)
+      {
+        Serial.print(remote[i], DEC);
+        if (i < 3)
+        {
+          Serial.print(".");
+        }
+      }
+      Serial.print(", port ");
+      Serial.println(udp.remotePort());
+    }
+
+    // Read the packet
+    OSCMessage messIn;
+    while (packetSize--) messIn.fill(udp.read());
+
+    switch(messIn.getError()) {
+      case  OSC_OK:
+        int messSize;
+        if (OSCDebug) Serial.println("no errors in packet");
+        messSize = messIn.size();
+        if (SerialDebug) {
+          Serial.print("messSize: ");
+          Serial.println(messSize);
+        }
+        if (OSCDebug) {
+          char addressIn[64];
+          messSize = messIn.getAddress(addressIn, 0, 64);
+          Serial.print("messSize: ");
+          Serial.println(messSize);
+          Serial.print("address: ");
+          Serial.println(addressIn);
+        }
+        processMessage(messIn);
+
+        break;
+      case BUFFER_FULL:
+        if (OSCDebug) Serial.println("BUFFER_FULL error");
+        break;
+      case INVALID_OSC:
+        if (OSCDebug) Serial.println("INVALID_OSC error");
+        break;
+      case ALLOCFAILED:
+        if (OSCDebug) Serial.println("ALLOCFAILED error");
+        break;
+      case INDEX_OUT_OF_BOUNDS:
+        if (OSCDebug) Serial.println("INDEX_OUT_OF_BOUNDS error");
+        break;
+    }
+  } //if (packetSize)
+}
+
+void processMessage(OSCMessage& messIn) {
+  // This message assigns destination IP to the remote IP from which the OSC message was sent.
+  if (messIn.fullMatch("/bonjour")) {
+    if (OSCDebug) Serial.println("Init IP");
+    destIP = udp.remoteIP();
+    bndl.add("/imu/bonjour");
+    sendOscBundle();
+  }
 }
 
 void processImu() {
@@ -59,14 +140,36 @@ void processImu() {
 //    float quatJ = imu.getQuatJ();
 //    float quatK = imu.getQuatK();
 //    float quatReal = imu.getQuatReal();
-//    float quatRadianAccuracy = imu.getQuatRadianAccuracy();
+//    Serial.println(quatI);
+//    Serial.println(quatJ);
+//    Serial.println(quatK);
+//    Serial.println(quatReal);
+////    float quatRadianAccuracy = imu.getQuatRadianAccuracy();
 
     if (sendOSC) {
       bndl.add("/quat").add(imu.getQuatI()).add(imu.getQuatJ()).add(imu.getQuatK()).add(imu.getQuatReal());
       sendOscBundle();
     }
   }
+}
 
+void initIMU() {
+  if (!imuInitialized)
+  {
+    if (!imu.begin()) {
+      Serial.println("BNO080 not detected at default I2C address. Check your jumpers and the hookup guide. Freezing...");
+      bndl.add("/imu/i2c/error");
+      sendOscBundle();
+      blinkIndicatorLed(1000, 0.1);
+    }
+    else {  
+      bndl.add("/imu/i2c/ok");
+      sendOscBundle();
+      Wire.setClock(400000); //Increase I2C data rate to 400kHz
+      imu.enableRotationVector(50); //Send data update every 50ms
+      imuInitialized = true;
+    }
+  }
 }
 
 void initWifi()
@@ -93,7 +196,7 @@ void initWifi()
 
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
-    delay(500);
+    blinkIndicatorLed(500);
   }
 
   IPAddress myIP = WiFi.localIP();
@@ -105,13 +208,17 @@ void initWifi()
     while(1); // Loop forever if setup didn't work
   }
   Serial.println("Done");
+
+  // Broadcast IP address.
+  bndl.add("/imu/ip").add(myIP[3]);
+  sendOscBundle(true);
 }
 
-void sendOscBundle() {
+void sendOscBundle(boolean broadcast) {
   if (sendOSC) {
 
     if (useUdp) {
-      udp.beginPacket(destIP, destPort);
+      udp.beginPacket(broadcast ? broadcastIP : destIP, destPort);
       bndl.send(udp); // send the bytes to the SLIP stream
       udp.endPacket(); // mark the end of the OSC Packet
     }
@@ -122,4 +229,11 @@ void sendOscBundle() {
     }
   }
   bndl.empty(); // empty the bundle to free room for a new one
+}
+
+void blinkIndicatorLed(unsigned long period, float pulseProportion) {
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay((unsigned long) (period * pulseProportion));
+  digitalWrite(LED_BUILTIN, LOW);
+  delay((unsigned long) ((period * (1-pulseProportion))));
 }
