@@ -3,11 +3,13 @@
 #include <SparkFun_BNO080_Arduino_Library.h>
 
 #include <OSCBundle.h>
+
 #ifdef ARDUINO_ARCH_ESP32
-#include <ESP8266WiFi.h>
-#else
 #include <WiFi.h>
+#else
+#include <ESP8266WiFi.h>
 #endif
+
 #include <WiFiUdp.h>
 #include <SLIPEncodedSerial.h>
 SLIPEncodedSerial SLIPSerial(Serial);
