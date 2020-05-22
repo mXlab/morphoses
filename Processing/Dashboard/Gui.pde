@@ -118,7 +118,7 @@ void motorSlider(float dummy) {
   float[] values = motorSlider.getArrayValue();
   int tilt  = round(values[0]);
   int speed = round(values[1]);
-  robot.setTilterMotorPosition(tilt);
+  robot.setTilterMotorPosition(invertTilter ? - tilt : tilt);
   robot.setRollerMotorSpeed(speed);
   updateDisplay();
 }

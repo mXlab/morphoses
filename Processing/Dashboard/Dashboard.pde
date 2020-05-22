@@ -18,7 +18,7 @@ final String POSITION_OSC_IP     = "172.20.10.8";
 
 final int ROLLER_MAX = 255;
 final int ROLLER_MIN = -255;
-final int TILTER_MAX = 30;
+final boolean invertTilter = true;
 final int TILTER_MIN = -30;
 
 OscP5 mainOscP5;
