@@ -58,6 +58,9 @@ def receive_end(unused_addr):
     global next_data_requested
     print("Requested next data")
     main_osc.send_message("/power", 0)
+    # Switch motors off
+    main_osc.send_message("/motor/1", 0)
+    main_osc.send_message("/motor/2", 0)
     next_data_requested = False
 
 def receive_rgb(unused_addr, r, g, b):
