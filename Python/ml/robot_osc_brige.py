@@ -99,18 +99,18 @@ parser.add_argument("--bridge-receive-port", default="7765",
 parser.add_argument("--bridge-send-port", default="7767",
                         help="Specify the port number to send to the main application.")
 
-parser.add_argument("--main-board-ip", default="192.168.0.101",
+parser.add_argument("--main-board-ip", default="192.168.0.100",
                         help="Specify the ip address of the main board.")
 parser.add_argument("--main-board-send-port", default="8765",
                         help="Specify the port number to send to main board.")
 parser.add_argument("--main-board-receive-port", default="8766",
                         help="Specify the port number where data is received from the main board.")
 
-parser.add_argument("--imu-board-ip", default="192.168.0.102",
+parser.add_argument("--imu-board-ip", default="192.168.0.101",
                         help="Specify the ip address of the IMU board.")
 parser.add_argument("--imu-board-send-port", default="8765",
                         help="Specify the port number to send to IMU board.")
-parser.add_argument("--imu-board-receive-port", default="8767",
+parser.add_argument("--imu-board-receive-port", default="9767",
                         help="Specify the port number where data is received from the IMU board.")
 
 args = parser.parse_args()
