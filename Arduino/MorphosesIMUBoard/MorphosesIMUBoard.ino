@@ -14,6 +14,8 @@
 #include <SLIPEncodedSerial.h>
 SLIPEncodedSerial SLIPSerial(Serial);
 
+#define WIFI_CONNECTION_TIMEOUT 5000
+
 BNO080 imu;
 WiFiUDP udp;
 OSCBundle bndl;
@@ -24,7 +26,7 @@ IPAddress broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
 char packetBuffer[128];
 
 void sendOscBundle(boolean broadcast=false);
-void blinkIndicatorLed(unsigned long period, float pulseProportion=0.5);
+void blinkIndicatorLed(unsigned long period, float pulseProportion=0.5, int nBlinks=1);
 
 bool imuInitialized = false;
 
@@ -46,6 +48,10 @@ void setup() {
 }
 
 void loop() {
+  // Check connection status: reconnect if connection lost.
+  if (WiFi.status() != WL_CONNECTED)
+    initWifi();
+
   // Init IMU if not already initialized.
   if (!imuInitialized)
     initIMU();
@@ -194,9 +200,18 @@ void initWifi()
 #else
   WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED) {
+  // Wait for connection to complete.
+  unsigned long startMillis = millis();
+  while (WiFi.status() != WL_CONNECTED && 
+         millis() - startMillis < WIFI_CONNECTION_TIMEOUT) {
     Serial.print(".");
     blinkIndicatorLed(500);
+  }
+
+  // If still not connected, restart the board.
+  if (WiFi.status() != WL_CONNECTED) {
+    blinkIndicatorLed(100, 0.7, 20);
+    ESP.restart();
   }
 
   IPAddress myIP = WiFi.localIP();
@@ -231,9 +246,11 @@ void sendOscBundle(boolean broadcast) {
   bndl.empty(); // empty the bundle to free room for a new one
 }
 
-void blinkIndicatorLed(unsigned long period, float pulseProportion) {
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay((unsigned long) (period * pulseProportion));
-  digitalWrite(LED_BUILTIN, LOW);
-  delay((unsigned long) ((period * (1-pulseProportion))));
+void blinkIndicatorLed(unsigned long period, float pulseProportion, int nBlinks) {
+  while (nBlinks--) {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay((unsigned long) (period * pulseProportion));
+    digitalWrite(LED_BUILTIN, LOW);
+    delay((unsigned long) ((period * (1-pulseProportion))));
+  }
 }
