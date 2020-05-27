@@ -314,22 +314,18 @@ boolean argIsNumber(OSCMessage& msg, int index) {
 }
 
 void processMessage(OSCMessage& messIn) {
-  if (messIn.fullMatch("/stream")) {
+  // This message assigns destination IP to the remote IP from which the OSC message was sent.
+  if (messIn.fullMatch("/bonjour")) {
+    if (OSCDebug) Serial.println("Init IP");
+    destIP = udp.remoteIP();
+  }
+  else if (messIn.fullMatch("/stream")) {
     if (OSCDebug) Serial.println("STREAM");
     if (argIsNumber(messIn, 0)) {
       if (OSCDebug) Serial.print("stream value ");
       int32_t val = getArgAsInt(messIn, 0);
       if (OSCDebug) Serial.println(val);
       sendOSC = (val != 0);
-    }
-  }
-  else if (messIn.fullMatch("/replyto")) {
-    if (OSCDebug) Serial.println("REPLYTO");
-    if (argIsNumber(messIn, 0)) {
-      if (OSCDebug) Serial.print("reply value ");
-      int32_t val = getArgAsInt(messIn, 0);
-      if (OSCDebug) Serial.println(val);
-      destIP[3] = val;
     }
   }
 #if MAIN_BOARD
