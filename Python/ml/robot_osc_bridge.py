@@ -1,11 +1,11 @@
 import argparse
 import time
-import threading
+import signal
+import sys
 
-from pythonosc import dispatcher
-from pythonosc import osc_server
-from pythonosc import osc_message_builder
-from pythonosc import udp_client
+from osc4py3.as_eventloop import *
+from osc4py3 import oscbuildparse
+from osc4py3 import oscmethod as osm
 
 next_data_requested = False
 start_time = time.time()
@@ -17,21 +17,27 @@ current_n_revolutions = 0
 N_MOTOR1_TICKS_PER_REVOLUTION = 1365
 
 class OscHelper:
-    def __init__(self, ip, send_port, receive_port):
+    def __init__(self, name, ip, send_port, receive_port):
         print("Creating OSC link at IP {} send = {} recv = {}".format(ip, send_port, receive_port))
-        self.dispatcher = dispatcher.Dispatcher()
-        self.server = osc_server.ThreadingOSCUDPServer(("localhost", int(receive_port)), self.dispatcher)
-        self.client = udp_client.SimpleUDPClient(ip, int(send_port))
-        self.server_thread = threading.Thread(target=self.server.serve_forever)
+        self.name = name
+        osc_udp_client(ip, int(send_port), self.client_name())
+        osc_udp_server("0.0.0.0", int(receive_port), self.server_name())
+
+    def client_name(self):
+        return self.name + "_client"
+
+    def server_name(self):
+        return self.name + "_server"
 
     def map(self, path, function):
-        self.dispatcher.map(path, function)
+        osc_method(path, function, argscheme=osm.OSCARG_ADDRESS + osm.OSCARG_DATAUNPACK)
 
     def send_message(self, path, args):
-        self.client.send_message(path, args)
-
-    def start(self):
-        self.server_thread.start()
+        if not isinstance(args, list):
+            args = [ args ]
+        msg = oscbuildparse.OSCMessage(path, None, args)
+        osc_send(msg, self.client_name())
+        osc_process()
 
 # Re-route action to robot.
 def receive_action(unused_addr, speed, steer):
@@ -110,14 +116,16 @@ parser.add_argument("--imu-board-ip", default="192.168.0.101",
                         help="Specify the ip address of the IMU board.")
 parser.add_argument("--imu-board-send-port", default="8765",
                         help="Specify the port number to send to IMU board.")
-parser.add_argument("--imu-board-receive-port", default="9767",
+parser.add_argument("--imu-board-receive-port", default="8767",
                         help="Specify the port number where data is received from the IMU board.")
 
 args = parser.parse_args()
 
-main_osc = OscHelper(args.main_board_ip, args.main_board_send_port, args.main_board_receive_port)
-imu_osc = OscHelper(args.imu_board_ip, args.imu_board_send_port, args.imu_board_receive_port)
-bridge_osc = OscHelper("127.0.0.1", args.bridge_send_port, args.bridge_receive_port)
+osc_startup()
+
+main_osc = OscHelper("main", args.main_board_ip, args.main_board_send_port, args.main_board_receive_port)
+imu_osc = OscHelper("imu", args.imu_board_ip, args.imu_board_send_port, args.imu_board_receive_port)
+bridge_osc = OscHelper("bridge", "127.0.0.1", args.bridge_send_port, args.bridge_receive_port)
 
 imu_osc.map("/quat", receive_quaternion)
 main_osc.map("/motor/1/ticks", receive_speed_ticks)
@@ -127,6 +135,14 @@ bridge_osc.map("/morphoses/begin", receive_begin)
 bridge_osc.map("/morphoses/end", receive_end)
 bridge_osc.map("/morphoses/rgb", receive_rgb)
 
-main_osc.start()
-imu_osc.start()
-bridge_osc.start()
+def interrupt(signup, frame):
+    global client, server
+    print("Exiting program...")
+    osc_terminate()
+    sys.exit()
+
+signal.signal(signal.SIGINT, interrupt)
+
+# Serve forever.
+while True:
+    osc_process()
