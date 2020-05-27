@@ -159,7 +159,6 @@ All the ML scripts are in the Python/ml subfolder.
 
 ## Launching an experiment
 
-Launching an experiment requires to run 3 programs:
+Launching an experiment requires to run 2 programs:
 - The Pythion script ```rl_curiosity.py```: runs the reinforcement learning process with tons of options
-- The Processing sketch ```RobotOscBridge```"" interfaces between the robot and the python scripts (the reason: somehow the OSC messages incoming from the ESP* are not recognized by Python)
 - The Python script ```robot_osc_bridge.py```: interfaces between ```RobotOscBridge``` and ```rl_curiosity.py``` to send and receive appropriately formatted OSC signals
