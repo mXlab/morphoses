@@ -162,3 +162,20 @@ All the ML scripts are in the Python/ml subfolder.
 Launching an experiment requires to run 2 programs:
 - The Pythion script ```rl_curiosity.py```: runs the reinforcement learning process with tons of options
 - The Python script ```robot_osc_bridge.py```: interfaces between ```RobotOscBridge``` and ```rl_curiosity.py``` to send and receive appropriately formatted OSC signals
+
+```
+ [[ MAIN ]]    [[ IMU ]]
+  |     ^       |    ^
+  |     |       |    |
+(8766)  |    (8767)  |  
+  |   (8675)    |  (8765)
+  |     |       |    |
+  V     |       V    |
+{{ robot_osc_bridge.py }}
+        |     ^
+        |     |
+     (7767)  (7765)
+        |     |
+        V     |
+ {{ rl_curiosity.py }}
+```
