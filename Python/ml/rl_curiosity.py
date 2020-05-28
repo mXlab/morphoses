@@ -435,7 +435,7 @@ if __name__ == "__main__":
         start_time = time.perf_counter()
 
         if not(notify_recv):
-            print("Received initial packets from unity!")
+            print("Received initial packets.")
             notify_recv = True
 
         # Process input data.
@@ -610,7 +610,7 @@ if __name__ == "__main__":
 
     signal.signal(signal.SIGINT, interrupt)
 
-    print("Serving on {server.server_address}. Program ready.")
+    print("Serving on {}. Program ready.".format(server.server_address))
     client.send_message("/morphoses/begin", [])
     if args.use_robot:
         time.sleep(10) # Give time to the robot to do its starting sequence
