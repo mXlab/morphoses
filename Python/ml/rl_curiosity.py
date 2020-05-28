@@ -412,6 +412,7 @@ if __name__ == "__main__":
     avg_r = None
     max_r = -1000
     min_r = 1000
+    count_action = np.zeros(n_actions)
     #avg_r = np.array([ 0., 0., 0. ])
 
     # Create rescalers.
@@ -429,7 +430,7 @@ if __name__ == "__main__":
     def handle_data(unused_addr, exp_id, t, x, y, qx, qy, qz, qw, speed_ticks, speed, steer):
         global notify_recv, use_ann
         global prev_data, prev_time, prev_state, prev_action
-        global avg_r, iter, max_r, min_r
+        global avg_r, iter, max_r, min_r, count_action
 
         start_time = time.perf_counter()
 
@@ -510,6 +511,7 @@ if __name__ == "__main__":
             if iter % n_iter_log == 0:
                 print("t={} average reward = (int: {} ext: {} total: {})".format(iter, avg_r[0], avg_r[1], avg_r[2]))
                 print("state = ", state)
+                print("counts = ", count_action / sum(count_action))
                 avg_r = r_array # reset
 
 
@@ -536,6 +538,8 @@ if __name__ == "__main__":
                 action = choose_action_random(n_actions)
             else:
                 action = choose_action_softmax(prediction, temperature)
+
+        count_action[action] += 1
 
         use_sarsa = True
         # Perform one step.
