@@ -103,28 +103,29 @@ def reward_inv_position_border(complete_data):
         return 0
 
 def reward_delta_roll(complete_data):
-    return reward_sum(complete_data, [15], absolute=True, invert=False)
-
-def reward_inv_delta_roll(complete_data):
-    return reward_sum(complete_data, [15], absolute=True, invert=True)
-
-def reward_delta_pitch(complete_data):
     return reward_sum(complete_data, [16], absolute=True, invert=False)
 
-def reward_inv_delta_pitch(complete_data):
+def reward_inv_delta_roll(complete_data):
     return reward_sum(complete_data, [16], absolute=True, invert=True)
 
-def reward_delta_yaw(complete_data):
+def reward_delta_pitch(complete_data):
     return reward_sum(complete_data, [17], absolute=True, invert=False)
 
-def reward_inv_delta_yaw(complete_data):
+def reward_inv_delta_pitch(complete_data):
     return reward_sum(complete_data, [17], absolute=True, invert=True)
 
+def reward_delta_yaw(complete_data):
+    return reward_sum(complete_data, [18], absolute=True, invert=False)
+
+def reward_inv_delta_yaw(complete_data):
+    return reward_sum(complete_data, [18], absolute=True, invert=True)
+
 def reward_delta_euler(complete_data):
-    return reward_sum(complete_data, [15, 16, 17], absolute=True, invert=False)
+    return reward_sum(complete_data, [16, 17, 18], absolute=True, invert=False)
 
 def reward_inv_delta_euler(complete_data):
-    return reward_sum(complete_data, [15, 16, 17], absolute=True, invert=True)
+    return reward_sum(complete_data, [16, 17, 18], absolute=True, invert=True)
+
 
 def reward_euler_state_1(complete_data):
     goal_euler_state = [0.25, 0.5, 0.75] # do not care about third Euler angle
@@ -253,6 +254,13 @@ if __name__ == "__main__":
     parser.add_argument("--reward-inv-position-border", default=False, action='store_true', help="Punish heavily being too close to the edges")
     parser.add_argument("--reward-delta-euler", default=False, action='store_true', help="Reward Euler motion")
     parser.add_argument("--reward-inv-delta-euler", default=False, action='store_true', help="Reward no Euler motion")
+    parser.add_argument("--reward-delta-roll", default=False, action='store_true', help="Reward roll motion")
+    parser.add_argument("--reward-inv-delta-roll", default=False, action='store_true', help="Reward no roll motion")
+    parser.add_argument("--reward-delta-pitch", default=False, action='store_true', help="Reward pitch motion")
+    parser.add_argument("--reward-inv-delta-pitch", default=False, action='store_true', help="Reward no pitch motion")
+    parser.add_argument("--reward-delta-yaw", default=False, action='store_true', help="Reward yaw motion")
+    parser.add_argument("--reward-inv-delta-yaw", default=False, action='store_true', help="Reward no yaw motion")
+
     parser.add_argument("--reward-euler-state-1", default=False, action='store_true', help="Reward static Euler state using 1st experiment reward")
     parser.add_argument("--reward-euler-state-2", default=False, action='store_true', help="Reward static Euler state using 2nd experiment reward")
     parser.add_argument("--reward-euler-state-3", default=False, action='store_true', help="Reward static Euler state using 3rd experiment reward")
@@ -325,6 +333,18 @@ if __name__ == "__main__":
         extrinsic_reward_functions += [reward_delta_euler]
     if args.reward_inv_delta_euler:
         extrinsic_reward_functions += [reward_inv_delta_euler]
+    if args.reward_delta_roll:
+        extrinsic_reward_functions += [reward_delta_roll]
+    if args.reward_inv_delta_roll:
+        extrinsic_reward_functions += [reward_inv_delta_roll]
+    if args.reward_delta_pitch:
+        extrinsic_reward_functions += [reward_delta_pitch]
+    if args.reward_inv_delta_pitch:
+        extrinsic_reward_functions += [reward_inv_delta_pitch]
+    if args.reward_delta_yaw:
+        extrinsic_reward_functions += [reward_delta_yaw]
+    if args.reward_inv_delta_yaw:
+        extrinsic_reward_functions += [reward_inv_delta_yaw]
     if args.reward_euler_state_1:
         extrinsic_reward_functions += [reward_euler_state_1]
     if args.reward_euler_state_2:
