@@ -7,10 +7,14 @@ from osc4py3.as_eventloop import *
 from osc4py3 import oscbuildparse
 from osc4py3 import oscmethod as osm
 
+import paho.mqtt.client as mqtt
+import json
+
 next_data_requested = False
 start_time = time.time()
 current_speed = 0
 current_steer = 0
+current_position = [0, 0]
 current_quaternion = [0, 0, 0, 0]
 current_n_revolutions = 0
 
@@ -51,14 +55,14 @@ def receive_action(unused_addr, speed, steer):
 
 # Main program asks for next data point.
 def receive_next(unused_addr):
-    global next_data_requested
+    global next_data_requested, bridge_osc
     print("Requested next data")
-    next_data_requested = True
+    send_data()
 
 def receive_begin(unused_addr):
     global next_data_requested
     main_osc.send_message("/power", 1)
-    next_data_requested = True
+    send_data()
 
 def receive_end(unused_addr):
     global next_data_requested
@@ -67,7 +71,6 @@ def receive_end(unused_addr):
     # Switch motors off
     main_osc.send_message("/motor/1", 0)
     main_osc.send_message("/motor/2", 0)
-    next_data_requested = False
 
 def receive_rgb(unused_addr, r, g, b):
     global next_data_requested
@@ -76,26 +79,38 @@ def receive_rgb(unused_addr, r, g, b):
     main_osc.send_message("/green", int(g))
     main_osc.send_message("/blue", int(b))
 
+def send_data():
+    global current_position, current_quaternion, current_n_revolutions, current_timestamp, start_time, next_data_requested
+    bridge_osc.send_message("/morphoses/data", [ 0, time.time() - start_time ] + current_position + current_quaternion + [current_n_revolutions, current_speed, current_steer ])
+
 # Preserve state value for next call.
 def receive_quaternion(unused_addr, q0, q1, q2, q3):
-    global current_quaternion, current_n_revolutions, current_timestamp, start_time, next_data_requested
+    global current_position, current_quaternion, current_n_revolutions, current_timestamp, start_time, next_data_requested
     current_quaternion = [q0, q1, q2, q3]
     print("Received quaternion: {}".format([q0, q1, q2, q3]))
-    if next_data_requested:
-        bridge_osc.send_message("/morphoses/data", [ 0, time.time() - start_time, 0, 0, q0, q1, q2, q3, current_n_revolutions, current_speed, current_steer ])
-        next_data_requested = False
 
 # Preserve state value for next call.
 def receive_speed_ticks(unused_addr, ticks):
-    global current_quaternion, current_n_revolutions, current_timestamp, start_time, next_data_requested
+    global current_position, current_quaternion, current_n_revolutions, current_timestamp, start_time, next_data_requested
     current_n_revolutions = ticks / N_MOTOR1_TICKS_PER_REVOLUTION
-    q0 = current_quaternion[0]
-    q1 = current_quaternion[1]
-    q2 = current_quaternion[2]
-    q3 = current_quaternion[3]
-    if next_data_requested:
-        bridge_osc.send_message("/morphoses/data", [ 0, time.time() - start_time, 0, 0, q0, q1, q2, q3, current_n_revolutions, current_speed, current_steer ])
-        next_data_requested = False
+
+# The callback for when the client receives a CONNACK response from the server.
+def mqtt_on_connect(client, args, flags, rc):
+    print("Connected with result code "+str(rc))
+
+    # Subscribing in on_connect() means that if we lose the connection and
+    # reconnect then subscriptions will be renewed.
+#    client.subscribe("$SYS/#")
+    client.subscribe("dwm/node/{}/uplink/location".format(args.rtls_robot_node_id))
+
+# The callback for when a PUBLISH message is received from the server.
+def mqtt_on_message(client, userdata, msg):
+    global current_position, current_quaternion, current_n_revolutions, current_timestamp, start_time, next_data_requested
+#    print(msg.topic+" "+str(msg.payload))
+    data = json.loads(msg.payload)
+    pos = data['position']
+    if (pos['quality'] > 0): # only update if quality is good
+        current_position = [float(pos['x']), float(pos['y'])]
 
 # Create parser
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -118,6 +133,13 @@ parser.add_argument("--imu-board-send-port", default="8765",
                         help="Specify the port number to send to IMU board.")
 parser.add_argument("--imu-board-receive-port", default="8767",
                         help="Specify the port number where data is received from the IMU board.")
+
+parser.add_argument("--rtls-gateway-ip", default="192.168.0.102",
+                        help="Specify the ip address of the RTLS Rasbperry Pi gateway.")
+parser.add_argument("--rtls-gateway-port", default=1883,
+                        help="Specify the port number of the RLTS Raspberry Pi gateway MQTT.")
+parser.add_argument("--rtls-robot-node-id", default="1a1e",
+                        help="The Node ID of the robot in the RTLS network.")
 
 args = parser.parse_args()
 
@@ -143,6 +165,20 @@ def interrupt(signup, frame):
 
 signal.signal(signal.SIGINT, interrupt)
 
+mqtt_client = mqtt.Client(userdata=args)
+mqtt_client.on_connect = mqtt_on_connect
+mqtt_client.on_message = mqtt_on_message
+
+mqtt_client.connect(args.rtls_gateway_ip, args.rtls_gateway_port)
+
+# Blocking call that processes network traffic, dispatches callbacks and
+# handles reconnecting.
+# Other loop*() functions are available that give a threaded interface and a
+# manual interface.
+#mqtt_client.loop_forever()
+
 # Serve forever.
 while True:
+ #   print("Iterate")
     osc_process()
+    mqtt_client.loop()
