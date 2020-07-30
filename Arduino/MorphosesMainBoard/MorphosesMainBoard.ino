@@ -30,28 +30,39 @@
  SCL ----------------------- SCL
  GND ---------------------- GND
  */
+#include "Config.h"
+
+#include <SparkFun_BNO080_Arduino_Library.h>
 
 #include <OSCBundle.h>
 
-#include <EEPROM.h>
-
 #include <Wire.h>
 
+#ifdef ARDUINO_ARCH_ESP32
+#include <WiFi.h>
+#else
 #include <ESP8266WiFi.h>
+#endif
+
 #include <WiFiUdp.h>
 #include <SLIPEncodedSerial.h>
 SLIPEncodedSerial SLIPSerial(Serial);
 
-#include "MorphosesConfig.h"
+#define WIFI_CONNECTION_TIMEOUT 5000
 
+BNO080 imu;
 OSCBundle bndl;
-// A UDP instance to let us send and receive packets over UDP
 WiFiUDP udp;
 
 IPAddress destIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, DEST_IP_3); // remote IP
-float magScale[3] = {0, 0, 0};
+IPAddress broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
 
 char packetBuffer[128];
+
+void sendOscBundle(boolean broadcast=false);
+void blinkIndicatorLed(unsigned long period, float pulseProportion=0.5, int nBlinks=1);
+
+bool imuInitialized = false;
 
 void setup()
 {
@@ -68,10 +79,11 @@ void setup()
   }
 
   
-#if MAIN_BOARD
-  // Set up the interrupt pin, it's set as active high, push-pull
-  pinMode(intPin, INPUT); // interrupt out from the IMU
-  digitalWrite(intPin, LOW);
+//  // Set up the interrupt pin, it's set as active high, push-pull
+//  pinMode(intPin, INPUT); // interrupt out from the IMU
+//  digitalWrite(intPin, LOW);
+
+#ifndef ARDUINO_ARCH_ESP32
   pinMode(redLed, OUTPUT);
   pinMode(greenLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
@@ -83,9 +95,6 @@ void setup()
 	// Initialize Wifi and UDP.
 	initWifi();
 
-	// Initialize and calibrate IMU.
-  EEPROM.begin(512);
-
 #if MAIN_BOARD
   digitalWrite(blueLed, LOW);
 #endif
@@ -95,6 +104,22 @@ void setup()
 
 void loop()
 {
+  // Check connection status: reconnect if connection lost.
+  if (WiFi.status() != WL_CONNECTED)
+    initWifi();
+
+  // Init IMU if not already initialized.
+  if (!imuInitialized)
+    initIMU();
+  
+  // Check for incoming messages.
+  receiveMessage();
+
+  // Send messages.
+  sendData();
+}
+
+void receiveMessage() {
     // if there's data available, read a packet
   int packetSize = udp.parsePacket();
 
@@ -157,31 +182,8 @@ void loop()
         break;
     }
   } //if (packetSize)
-
-
-#if MAIN_BOARD
-	// Read motors. --> for now this is included in processIMU(), see NOTE below
-	processMotors();
-#endif
-
-	// Send bundle.
-  if (sendOSC) {
-
-    if (useUdp) {
-      udp.beginPacket(destIP, destPort);
-      bndl.send(udp); // send the bytes to the SLIP stream
-      udp.endPacket(); // mark the end of the OSC Packet
-    }
-    else {
-      SLIPSerial.beginPacket();
-      bndl.send(udp); // send the bytes to the SLIP stream
-      SLIPSerial.endPacket(); // mark the end of the OSC Packet
-    }
-    bndl.empty(); // empty the bundle to free room for a new one
-  }
 }
 
-#if MAIN_BOARD
 void processMotors()
 {
 	// get the motor 1 encoder count
@@ -226,7 +228,49 @@ void processMotors()
 	int32_t motor2Ticks = (tick3<<24) + (tick2<<16) + (tick1<<8) + tick0;
 	if (sendOSC) bndl.add("/motor/2/ticks").add(motor2Ticks);
 }
-#endif
+
+bool processImu() {
+  // Get data.
+  bool dataAvailable = imu.dataAvailable();
+
+  // Send data over OSC.
+  if (dataAvailable && sendOSC)
+  {
+    bndl.add("/quat").add(imu.getQuatI()).add(imu.getQuatJ()).add(imu.getQuatK()).add(imu.getQuatReal());
+    bndl.add("/euler").add((float)degrees(imu.getRoll())).add((float)degrees(imu.getPitch())).add((float)degrees(imu.getYaw()));
+//      bndl.add("/mag").add(imu.getMagX()).add(imu.getMagY()).add(imu.getMagZ());
+  }
+  return dataAvailable;
+}
+
+void sendData() {
+  // Process motor ticks only if IMU ready.
+  if (processImu())
+    processMotors();
+
+  // Send OSC bundle.
+  sendOscBundle();
+}
+
+void initIMU() {
+  if (!imuInitialized)
+  {
+    if (!imu.begin()) {
+      Serial.println("BNO080 not detected at default I2C address. Check your jumpers and the hookup guide. Freezing...");
+      bndl.add("/imu/i2c/error");
+      sendOscBundle();
+      blinkIndicatorLed(1000, 0.1);
+    }
+    else {  
+      bndl.add("/imu/i2c/ok");
+      sendOscBundle();
+      Wire.setClock(400000); //Increase I2C data rate to 400kHz
+      imu.enableRotationVector(50); //Send data update every 50ms
+//      imu.enableMagnetometer(50);
+      imuInitialized = true;
+    }
+  }
+}
 
 void initWifi()
 {
@@ -240,48 +284,43 @@ void initWifi()
   // now start the wifi
   WiFi.mode(WIFI_AP_STA);
 #if AP_MODE
-  Serial.print("Configuring access point...");
   /* You can remove the password parameter if you want the AP to be open. */
   if (!WiFi.softAP(ssid, password)) {
-    Serial.println("Can't start softAP");
     while(1); // Loop forever if setup didn't work
   }
 
   IPAddress myIP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(myIP);
 
 #else
   WiFi.begin(ssid, password);
-  Serial.print("Connecting to access point: \"");
-  Serial.print(ssid);
-  Serial.println("\"");
-  
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+
+  // Wait for connection to complete.
+  unsigned long startMillis = millis();
+  while (WiFi.status() != WL_CONNECTED && 
+         millis() - startMillis < WIFI_CONNECTION_TIMEOUT) {
     Serial.print(".");
+    blinkIndicatorLed(500);
   }
 
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
+  // If still not connected, restart the board.
+  if (WiFi.status() != WL_CONNECTED) {
+    blinkIndicatorLed(100, 0.7, 20);
+    ESP.restart();
+  }
+
   IPAddress myIP = WiFi.localIP();
-  Serial.println(myIP);
 #endif
+  Serial.println("IP: ");
+  Serial.println(myIP);
 
-  digitalWrite(greenLed, LOW);
-
-
-  Serial.println("Starting UDP");
   if (!udp.begin(localPort)) {
-    Serial.println("Can't start UDP");
     while(1); // Loop forever if setup didn't work
   }
-  Serial.print("Local port: ");
-  Serial.println(udp.localPort());
-  digitalWrite(redLed, LOW);
+  Serial.println("Done");
 
-  WiFi.printDiag(Serial);
+  // Broadcast IP address.
+  bndl.add("/imu/ip").add(myIP[3]);
+  sendOscBundle(true);
 }
 
 void waitForInputSerial() {
@@ -328,7 +367,6 @@ void processMessage(OSCMessage& messIn) {
       sendOSC = (val != 0);
     }
   }
-#if MAIN_BOARD
   else if (messIn.fullMatch("/power")) {
     if (OSCDebug) Serial.println("POWER");
     if (argIsNumber(messIn, 0)) {
@@ -375,6 +413,7 @@ void processMessage(OSCMessage& messIn) {
     Wire.write(MOTOR_RESET); // sends one byte
     Wire.endTransmission(); // stop transmitting
   }
+#ifndef ARDUINO_ARCH_ESP32 // RGB Leds only available on ESP8266
   else if (messIn.fullMatch("/red")) {
     if (OSCDebug) Serial.println("RED");
     if (argIsNumber(messIn, 0)) {
@@ -406,4 +445,30 @@ void processMessage(OSCMessage& messIn) {
     }
   }
 #endif
+}
+
+void sendOscBundle(boolean broadcast) {
+  if (sendOSC) {
+
+    if (useUdp) {
+      udp.beginPacket(broadcast ? broadcastIP : destIP, destPort);
+      bndl.send(udp); // send the bytes to the SLIP stream
+      udp.endPacket(); // mark the end of the OSC Packet
+    }
+    else {
+      SLIPSerial.beginPacket();
+      bndl.send(SLIPSerial); // send the bytes to the SLIP stream
+      SLIPSerial.endPacket(); // mark the end of the OSC Packet
+    }
+  }
+  bndl.empty(); // empty the bundle to free room for a new one
+}
+
+void blinkIndicatorLed(unsigned long period, float pulseProportion, int nBlinks) {
+  while (nBlinks--) {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay((unsigned long) (period * pulseProportion));
+    digitalWrite(LED_BUILTIN, LOW);
+    delay((unsigned long) ((period * (1-pulseProportion))));
+  }
 }
