@@ -134,7 +134,7 @@ parser.add_argument("--imu-board-send-port", default="8765",
 parser.add_argument("--imu-board-receive-port", default="8767",
                         help="Specify the port number where data is received from the IMU board.")
 
-parser.add_argument("--rtls-gateway-ip", default="192.168.0.102",
+parser.add_argument("--rtls-gateway-ip", default="192.168.0.120",
                         help="Specify the ip address of the RTLS Rasbperry Pi gateway.")
 parser.add_argument("--rtls-gateway-port", default=1883,
                         help="Specify the port number of the RLTS Raspberry Pi gateway MQTT.")
