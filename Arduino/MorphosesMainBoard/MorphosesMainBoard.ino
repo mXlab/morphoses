@@ -319,7 +319,7 @@ void initWifi()
   Serial.println("Done");
 
   // Broadcast IP address.
-  bndl.add("/imu/ip").add(myIP[3]);
+  bndl.add("/main/ip").add(myIP[3]);
   sendOscBundle(true);
 }
 

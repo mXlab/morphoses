@@ -16,13 +16,13 @@ boolean sendOSC = true; // set to true to stream samples
 #define SEND_DATA_INTERVAL 200
 //#define SEND_DATA_INTERVAL 100
 
-const char *ssid = "Morphoses"; // Pointer to the SSID (max 63 char)
-const char *password = "thepassword"; // for WPA2 min 8 char, for open use NULL
-
-#define DEST_IP_0 192
-#define DEST_IP_1 168
-#define DEST_IP_2 0
-#define DEST_IP_3 110
+//const char *ssid = "ball"; // Pointer to the SSID (max 63 char)
+//const char *password = "roller"; // for WPA2 min 8 char, for open use NULL
+//
+//#define DEST_IP_0 192
+//#define DEST_IP_1 168
+//#define DEST_IP_2 0
+//#define DEST_IP_3 100
 
 
 #if MAIN_BOARD
