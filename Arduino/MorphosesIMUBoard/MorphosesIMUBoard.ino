@@ -154,6 +154,7 @@ void processImu() {
 
     if (sendOSC) {
       bndl.add("/quat").add(imu.getQuatI()).add(imu.getQuatJ()).add(imu.getQuatK()).add(imu.getQuatReal());
+      bndl.add("/euler").add((float)degrees(imu.getRoll())).add((float)degrees(imu.getPitch())).add((float)degrees(imu.getYaw()));
       sendOscBundle();
     }
   }
