@@ -179,3 +179,10 @@ Launching an experiment requires to run 2 programs:
         V     |
  {{ rl_curiosity.py }}
 ```
+
+Default IP addresses (need to be setup on the router):
+
+* MAIN Esp : 192.168.0.100
+* IMU Esp : 192.168.0.101
+* Computer: 192.168.0.110
+* RTLS Gateway: 192.168.0.120
