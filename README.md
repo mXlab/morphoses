@@ -167,7 +167,7 @@ Launching an experiment requires to run 2 programs:
   |     ^       |    ^
   |     |       |    |
 (8766)  |    (8767)  |  
-  |   (8675)    |  (8765)
+  |   (8765)    |  (8765)
   |     |       |    |
   V     |       V    |
 {{ robot_osc_bridge.py }}
