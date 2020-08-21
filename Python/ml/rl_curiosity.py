@@ -395,7 +395,8 @@ if __name__ == "__main__":
         model_q.add(InputLayer(batch_input_shape=(1, n_inputs_q)))
         if (n_hidden_q > 0):
             model_q.add(Dense(n_hidden_q, activation='relu'))
-        model_q.add(Dense(n_actions, activation='softmax'))
+        model_q.add(Dense(n_actions, activation='linear'))
+        # model_q.add(Dense(n_actions, activation='softmax'))
         model_q.compile(loss='categorical_crossentropy', optimizer=optimizers.SGD(lr=learning_rate), metrics=['accuracy'])
         print(model_q.summary())
     else:
