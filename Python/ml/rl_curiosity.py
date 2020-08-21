@@ -438,7 +438,7 @@ if __name__ == "__main__":
         global prev_data, prev_time, prev_state, prev_action
         global avg_r, iter, max_r, min_r, count_action
 
-        start_time = time.perf_counter()
+#        start_time = time.perf_counter()
 
         if not(notify_recv):
             print("Received initial packets.")
@@ -590,10 +590,6 @@ if __name__ == "__main__":
         # Wait
         if time_step > 0:
             time.sleep(time_step)
-            # tick = 0.01
-            # n_steps = round(time_step / tick)
-            # for i in range(n_steps):
-            #     time.sleep(tick)
 
         # Ask for next data point.
         client.send_message("/morphoses/next", [])
