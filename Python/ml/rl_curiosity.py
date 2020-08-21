@@ -199,7 +199,9 @@ def reward(complete_data, reward_functions):
         return r
 
 def choose_action_argmax(prediction):
-    return np.argmax(prediction)
+    allmax = np.argwhere(prediction == np.amax(prediction)).flatten()
+    return np.asscalar(np.random.choice(allmax, 1))
+#    return np.argmax(prediction)
 
 def choose_action_random(n_actions):
     return np.random.randint(n_actions)
