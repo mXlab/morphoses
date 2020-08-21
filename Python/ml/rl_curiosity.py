@@ -208,9 +208,13 @@ def choose_action_random(n_actions):
 
 def choose_action_softmax(prediction, temperature=1):
     # Source: https://gist.github.com/alceufc/f3fd0cd7d9efb120195c
-    if (temperature != 1):
-        prediction = np.power(prediction, 1. / temperature)
-        prediction /= prediction.sum()
+    prediction = np.exp(prediction / temperature)
+    # if (temperature != 1):
+    #     prediction = np.power(prediction, 1. / temperature)
+    # if (prediction.sum() == 0):
+    #     prediction.fill(1)
+    prediction /= prediction.sum()
+    print("Prediction: {}".format(prediction))
     return np.asscalar(np.random.choice(np.arange(len(prediction)), 1, p=prediction))
 
 if __name__ == "__main__":
