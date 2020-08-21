@@ -11,6 +11,7 @@ Expériences
 * Gamma: 0.5
 * Epsilon: 0.1
 * Modèle: Q-tables 5x5x5
+* Policy: E-Greedy (avec np.argmax() ... favorise toujours la première action au début, ce qui explique que le robot roule vers l'avant-gauche)
 * Note: Il y avait un bug dans le programme donc les résultats ne sont peut-être pas fiables.
 
 Note: Modification effectuée à rl_curiosity.py ligne 408 pour augmenter la magnitude des deltas:
@@ -38,6 +39,7 @@ Résultats:
 * Gamma: 0.5
 * Epsilon: 0.1
 * Modèle: Q-tables 5x5x5
+* Policy: E-Greedy (avec np.argmax() ... favorise toujours la première action au début, ce qui explique que le robot roule vers l'avant-gauche)
 
 Note: Modification effectuée à rl_curiosity.py ligne 408 pour augmenter la magnitude des deltas:
 ```
@@ -66,6 +68,7 @@ Résultats:
 * Gamma: 0.7
 * Epsilon: 0.1
 * Modèle: Q-tables 5x5x5
+* Policy: E-Greedy (avec np.argmax() ... favorise toujours la première action au début, ce qui explique que le robot roule vers l'avant-gauche)
 
 Ligne de commande:
 ```
@@ -75,21 +78,96 @@ python rl_curiosity.py --n-action-bins 3 --use-euler --reward-euler-state-robot-
 Résultats:
 * Le robot atteint très rapidement la position souhaitée et cesse de bouger
 
-# Expérience 3 : Position angulaire cible
+# Expérience 4 : Curiosité + immobilisme
 
-* Données: euler
-* Reward: position précise
-* Curiosité: OFF
+* Données: delta euler
+* Reward: immobilisme (75%)
+* Curiosité: 25%
 * Learning rate: 0.1
 * Gamma: 0.7
 * Epsilon: 0.1
 * Modèle: Q-tables 5x5x5
+* Policy: E-Greedy (avec np.argmax() ... favorise toujours la première action au début, ce qui explique que le robot roule vers l'avant-gauche)
 
 Ligne de commande:
 ```
-python rl_curiosity.py --n-action-bins 3 --use-euler --reward-euler-state-robot-1 --curiosity-weight 0 --model tables --n-state-tiles 5 --send-port 7765 --receive-port 7767 --use-robot --time-step 1 --learning-rate 0.1 --gamma 0.7 --epsilon 0.1
+python3 rl_curiosity.py --n-action-bins 3 --use-delta-euler --reward-inv-delta-euler --curiosity-weight 0.25 --model tables --n-state-tiles 5 --send-port 7765 --receive-port 7767 --use-robot --time-step 1 --learning-rate 0.1 --gamma 0.7 --epsilon 0.1 -nf 32
 ```
 
 Résultats:
-* Le robot atteint très rapidement la position souhaitée et cesse de bouger
-* Le robot se retrouve parfois dans des positions où il est "pris" et il continue alors de prendre la même décision (eg. tourner son moteur). Ceci pourrait être dû en partie au fait que le robot n'a accès qu'à la position de la boule et non celle du moteur à l'intérieur. Ceci est vrai par ailleurs non seulement pour cette expérience mais de façon générale.
+* Le robot bouge à travers l'espace et adopte différentes postures et mouvement. Parfois difficile à décrire.
+* Par rapport au mode curiosité "pur" l'ajout de la contrainte de l'immobilisme le rend un peu moins actif.
+
+# Expérience 5 : Apprendre à bouger
+
+* Données: delta euler
+* Reward: mouvement
+* Learning rate: 0.1
+* Gamma: 0.7
+* Epsilon: 0.1
+* Modèle: Q-tables 5x5x5
+* Policy: E-Greedy avec argmax corrigé
+
+Ligne de commande:
+```
+python3 rl_curiosity.py --n-action-bins 3 --use-delta-euler --reward-delta-euler --curiosity-weight 0.0 --model tables --n-state-tiles 5 --send-port 7765 --receive-port 7767 --use-robot --time-step 1 --learning-rate 0.1 --gamma 0.7 --epsilon 0.1 -nf 32
+```
+
+Résultats:
+* TODO
+
+# Expérience 6 : Rouler drette
+
+
+* Données: delta euler
+* Reward: + mouvement pitch - mouvement roll
+* Learning rate: 0.1
+* Gamma: 0.7
+* Epsilon: 0.1
+* Modèle: Q-tables 5x5x5
+* Policy: E-Greedy avec argmax corrigé
+
+Ligne de commande:
+
+```
+python3 rl_curiosity.py --n-action-bins 3 --use-delta-euler --reward-delta-pitch --reward-inv-delta-roll --curiosity-weight 0.0 --model tables --n-state-tiles 5 --send-port 7765 --receive-port 7767 --use-robot --time-step 1 --learning-rate 0.1 --gamma 0.7 --epsilon 0.1 -nf 32
+```
+
+
+# Expérience 7 : Tanguer
+
+* Données: delta euler
+* Reward: - mouvement pitch + mouvement roll
+* Learning rate: 0.1
+* Gamma: 0.7
+* Epsilon: 0.1
+* Modèle: Q-tables 5x5x5
+* Policy: E-Greedy avec argmax corrigé
+
+```
+python3 rl_curiosity.py --n-action-bins 3 --use-delta-euler --reward-inv-delta-pitch --reward-delta-roll --curiosity-weight 0.0 --model tables --n-state-tiles 5 --send-port 7765 --receive-port 7767 --use-robot --time-step 1 --learning-rate 0.1 --gamma 0.7 --epsilon 0.1 -nf 32
+```
+
+Résultats:
+* Ça semble fonctionner au sens où (1) ça donne un comportement plus de "tangage" que l'expérience 6 et (2) les actions les plus fréquemment sélectionnées sont "gauche" et "droite".
+* Par contre le robot ne connaît pas la position actuelle (gauche-droite) de son moteur donc il est incapable d'interpréter que le passage de gauche à droite le fera tanguer. Il faudrait peut-être lui ajouter cette information.
+
+# Expérience 8 : Curiosité (quaternion) + handicap
+
+* Données: quaternion
+* Reward: n/a
+* Curiosité: 100%
+* Learning rate: 0.1
+* Gamma: 0.7
+* Epsilon: 0.1
+* Modèle: Q-tables 5x5x5x5
+* Policy: E-Greedy avec argmax corrigé
+
+Ligne de commande:
+```
+python3 rl_curiosity.py --n-action-bins 3 --use-quaternion --curiosity-weight 1.0 --model tables --n-state-tiles 5 --send-port 7765 --receive-port 7767 --use-robot --time-step 1 --learning-rate 0.1 --gamma 0.7 --epsilon 0.1 -nf 32 
+```
+
+Résultats:
+* Testé avec une boule avec un handicap (excroissance). Au départ le robot reposait sur son excroissance. Pendant les premières 2-3 minutes il fait des micro-mouvements mais n'arrive jamais à se "libérer".
+* Une fois finalement "libéré" le robot bouge à travers l'espace et adopte différentes postures et mouvement. Parfois difficile à décrire.
