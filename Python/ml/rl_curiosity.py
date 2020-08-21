@@ -439,10 +439,10 @@ if __name__ == "__main__":
             notify_recv = True
 
         # Process input data.
-        pos = np.array([x, y])
-        quat = np.array([qx, qy, qz, qw])
-        euler = np.array(mpp.quaternion_to_euler(qx, qy, qz, qw))
-        ticks = np.array([speed_ticks])
+        pos = np.array([x, y]) # 0, 1
+        quat = np.array([qx, qy, qz, qw]) # 2, 3, 4, 5
+        euler = np.array(mpp.quaternion_to_euler(qx, qy, qz, qw)) # 6, 7, 8
+        ticks = np.array([speed_ticks]) # 9
         data = np.concatenate((pos, quat, euler, ticks))
         data = mpp.standardize(data, scalerX)[0] # normalize
 
