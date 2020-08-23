@@ -1,6 +1,33 @@
-#include "Config.h"
+/**
+ * MorphosesIMUBOard
+ * 
+ * This program is part of the Morphoses project. It contains the code for 
+ * the IMU ESP board which is located on the side of the ball inside the robot 
+ * and is in charge of sending data about the rotation of the robot.
+ * 
+ * INSTRUCTIONS: Copy Config.h.default to Config.h and adjust according to 
+ * your own Wifi setup.
+ * 
+ * (c) 2018-2020 Sofian Audry, Martin Peach
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+ #include "Config.h"
 
 #include <SparkFun_BNO080_Arduino_Library.h>
+
+#include <Chrono.h>
 
 #include <OSCBundle.h>
 
@@ -29,6 +56,9 @@ void sendOscBundle(boolean broadcast=false);
 void blinkIndicatorLed(unsigned long period, float pulseProportion=0.5, int nBlinks=1);
 
 bool imuInitialized = false;
+
+// Chronometer to control when the IMU data is fetched.
+Chrono imuDataChrono;
 
 void setup() {
   Serial.begin(115200);
@@ -60,8 +90,10 @@ void loop() {
   receiveMessage();
   
   // Send IMU.
-  processImu();
-  
+  if (imuDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
+    imuDataChrono.restart();
+    processImu();
+  }
 }
 
 void receiveMessage() {
