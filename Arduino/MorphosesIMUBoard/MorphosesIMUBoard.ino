@@ -27,6 +27,8 @@
 
 #include <SparkFun_BNO080_Arduino_Library.h>
 
+#include <Chrono.h>
+
 #include <OSCBundle.h>
 
 #ifdef ARDUINO_ARCH_ESP32
@@ -54,6 +56,9 @@ void sendOscBundle(boolean broadcast=false);
 void blinkIndicatorLed(unsigned long period, float pulseProportion=0.5, int nBlinks=1);
 
 bool imuInitialized = false;
+
+// Chronometer to control when the IMU data is fetched.
+Chrono imuDataChrono;
 
 void setup() {
   Serial.begin(115200);
@@ -85,8 +90,10 @@ void loop() {
   receiveMessage();
   
   // Send IMU.
-  processImu();
-  
+  if (imuDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
+    imuDataChrono.restart();
+    processImu();
+  }
 }
 
 void receiveMessage() {
