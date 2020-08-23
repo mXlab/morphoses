@@ -1,34 +1,30 @@
-// INSTRUCTIONS: Copy MorphosesConfig.h.default to MorphosesConfig.h 
-// and adjust according to your own Wifi setup.
-// 
-/* 20170116 add /motor/2 position with i2c send*/
-/* 20161205 add /motor/1 speed with i2c send*/
-/* mp_esp8266MPU9250 was */
-/* MPU9250 Basic Example Code
- by: Kris Winer
- date: April 1, 2014
- license: Beerware - Use this code however you'd like. If you
- find it useful you can buy me a beer some time.
- Modified by Brent Wilkins July 19, 2016
-
- Demonstrate basic MPU-9250 functionality including parameterizing the register
- addresses, initializing the sensor, getting properly scaled accelerometer,
- gyroscope, and magnetometer data out. Added display functions to allow display
- to on breadboard monitor. Addition of 9 DoF sensor fusion using open source
- Madgwick and Mahony filter algorithms. Sketch runs on the 3.3 V 8 MHz Pro Mini
- and the Teensy 3.1.
-
- SDA and SCL should have external pull-up resistors (to 3.3V).
- 10k resistors are on the EMSENSR-9250 breakout board.
- 2.2k resistors are on the ESP8266Thing
-
- Hardware setup:
- MPU9250 Breakout --------- ESP8266Thing
- VDD ---------------------- 3.3V
- VDDI --------------------- 3.3V
- SDA ----------------------- SDA
- SCL ----------------------- SCL
- GND ---------------------- GND
+/**
+ * MorphosesMainBOard
+ * 
+ * This program is part of the Morphoses project. It contains the code for 
+ * the MAIN ESP board which is located in the center of the robot and is in
+ * charge of controlling the motors.
+ * 
+ * INSTRUCTIONS: Copy Config.h.default to Config.h and adjust according to 
+ * your own Wifi setup.
+ * 
+ * (c) 2018-2020 Sofian Audry, Martin Peach
+ * 
+ * 20170116 add /motor/2 position with i2c send
+ * 20161205 add /motor/1 speed with i2c send
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "Config.h"
 
