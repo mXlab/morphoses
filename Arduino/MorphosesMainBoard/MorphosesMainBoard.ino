@@ -91,12 +91,10 @@ void setup()
 	// Initialize Wifi and UDP.
 	initWifi();
 
-#if MAIN_BOARD
+#ifndef ARDUINO_ARCH_ESP32
   digitalWrite(blueLed, LOW);
 #endif
 }
-
-
 
 void loop()
 {
