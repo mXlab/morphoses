@@ -25,6 +25,8 @@
  */
  #include "Config.h"
 
+ #include <driver/adc.h>
+
 #include <SparkFun_BNO080_Arduino_Library.h>
 
 #include <Chrono.h>
@@ -57,6 +59,9 @@ void blinkIndicatorLed(unsigned long period, float pulseProportion=0.5, int nBli
 
 bool imuInitialized = false;
 
+//int sensorValue = 0;
+//int analogPin = 4;
+
 // Chronometer to control when the IMU data is fetched.
 Chrono imuDataChrono;
 
@@ -75,9 +80,20 @@ void setup() {
   Wire.begin();
 
   digitalWrite(LED_BUILTIN, HIGH);
+
+  //adc1_config_width(ADC_WIDTH_BIT_12);
+  //adc1_config_channel_atten(ADC1_CHANNEL_0,ADC_ATTEN_DB_0);
+  //float value = (float)adc1_get_raw(ADC1_CHANNEL_0);
 }
 
 void loop() {
+  //sensorValue = analogRead(analogPin);
+  //Serial.println(sensorValue);
+  
+  //int value = adc1_get_raw(ADC1_CHANNEL_0);
+  //Serial.println(value);
+  //delay(50);
+  
   // Check connection status: reconnect if connection lost.
   if (WiFi.status() != WL_CONNECTED)
     initWifi();

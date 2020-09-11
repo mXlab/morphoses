@@ -101,6 +101,18 @@ def class_to_speed_steering(y, bins, normalize=False):
         array = [ x/float(bins-1) for x in array]
     return array
 
+# Buggy: Convert class to specific speed/steering actions (i.e., not necessarily computed using bin division).
+def class_to_speed_steering_spec(y, bins, normalize=False):
+    if y == 0: # oscillating left
+        array = [0.5, 0.]
+    elif y == 1: # forward
+        array = [1., 0.5]
+    elif y == 2: # backward
+        array = [0., 0.5]
+    elif y == 3: # oscillating right
+        array = [0.5, 1.]
+    return array
+
 # def standardize(value, min, max):
 #     return (value - min) / (max - min)
 #
