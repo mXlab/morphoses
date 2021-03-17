@@ -371,6 +371,57 @@ def reward_delta_dist_3(complete_data):
 
     return reward
 
+
+# Reward inverse of: difference between current and previous distance to target (with target radius, and specific values for stabilised positions).
+def reward_inv_delta_dist_3(complete_data):
+    global prev_dist
+
+    target_pos = [complete_data[22], complete_data[23]]
+
+    # Define delta distance threshold (i.e., upon which the robot would be considered as stable, or not).
+    delta_dist_threshold = 0.05
+
+    # Compute current distance from target position state.
+    dist = np.sqrt(abs(complete_data[0] - target_pos[0]) ** 2 + abs(complete_data[1] - target_pos[1]) ** 2)
+
+    # Compute difference between current and previous distance to target.
+    delta_dist = dist - prev_dist
+
+    # If robot close to target state:
+    if complete_data[24] == 1.:
+
+        # Give medium-low reward if robot moves away from target
+        if delta_dist > delta_dist_threshold:
+            reward = -10
+
+        # Give medium-low reward if robot stands still close to target
+        elif -delta_dist_threshold < delta_dist <= delta_dist_threshold:
+            reward = -10
+
+        # Give lowest reward if robot gets closer to target
+        elif delta_dist <= - delta_dist_threshold:
+            reward = -100
+
+    # If robot far away from target position:
+    else:
+
+        # Give medium-low reward if robot moves away from target
+        if delta_dist > delta_dist_threshold:
+            reward = 10
+
+        # Give highest reward if robot stands still far away from target
+        elif -delta_dist_threshold < delta_dist <= delta_dist_threshold:
+            reward = 100
+
+        # Give lowest reward if robot gets closer to target
+        elif delta_dist <= - delta_dist_threshold:
+            reward = -100
+
+    # Store current distance
+    prev_dist = dist
+
+    return reward
+
 # Reward silence.
 def reward_sound_level(complete_data):
     accumulated_sound_level = complete_data[25]
@@ -511,8 +562,9 @@ if __name__ == "__main__":
     parser.add_argument("--reward-delta-dist-1", default=False, action='store_true', help="Reward difference between current and previous distance to target")
     parser.add_argument("--reward-delta-dist-2", default=False, action='store_true', help="Reward difference between current and previous distance to target (with target radius)")
     parser.add_argument("--reward-delta-dist-3", default=False, action='store_true', help="Reward difference between current and previous distance to target (with target radius, and specific values for stabilised positions)")
+    parser.add_argument("--reward-inv-delta-dist-3", default=False, action='store_true', help="Reward difference between current and previous distance to target (with target radius, and specific values for stabilised positions)")
     parser.add_argument("--reward-sound-level", default=False, action='store_true', help="Reward silence")
-    
+
     parser.add_argument("--target-radius", type=float, default=0.2, help="Radius (in m) from the target in which the robot would receive high reward")
 
     parser.add_argument("--x-min", type=float, default=-math.inf, help="Left boundary (x) of the virtual fence (math.inf = no fence)")
@@ -630,6 +682,8 @@ if __name__ == "__main__":
         extrinsic_reward_functions += [reward_delta_dist_2]
     if args.reward_delta_dist_3:
         extrinsic_reward_functions += [reward_delta_dist_3]
+    if args.reward_inv_delta_dist_3:
+        extrinsic_reward_functions += [reward_inv_delta_dist_3]
     if args.reward_sound_level:
         extrinsic_reward_functions += [reward_sound_level]
 
