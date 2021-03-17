@@ -457,7 +457,8 @@ def reward(complete_data, reward_functions):
 
 def choose_action_argmax(prediction):
     allmax = np.argwhere(prediction == np.amax(prediction)).flatten()
-    return np.asscalar(np.random.choice(allmax, 1))
+    return np.random.choice(allmax, 1).item()
+#    return np.asscalar(np.random.choice(allmax, 1))
 #    return np.argmax(prediction)
 
 def choose_action_random(n_actions):
@@ -472,7 +473,9 @@ def choose_action_softmax(prediction, temperature=1):
     #     prediction.fill(1)
     prediction /= prediction.sum()
     print("Prediction: {}".format(prediction))
-    return np.asscalar(np.random.choice(np.arange(len(prediction)), 1, p=prediction))
+    return np.random.choice(np.arange(len(prediction)), 1, p=prediction).item()
+#    return np.asscalar(np.random.choice(np.arange(len(prediction)), 1, p=prediction))
+
 def robot_action(speed, steer):
     global last_nonzero_speed
     if speed != 0:
