@@ -418,6 +418,26 @@ def choose_action_softmax(prediction, temperature=1):
     prediction /= prediction.sum()
     print("Prediction: {}".format(prediction))
     return np.asscalar(np.random.choice(np.arange(len(prediction)), 1, p=prediction))
+def robot_action(speed, steer):
+    global last_nonzero_speed
+    if speed != 0:
+        last_nonzero_speed = speed
+    client.send_message("/morphoses/action", [speed, steer])
+
+def robot_next():
+    client.send_message("/morphoses/next", [])
+
+def robot_begin():
+    client.send_message("/morphoses/begin", [])
+
+def robot_end():
+    robot_rgb(0, 0, 0)
+    robot_action(0, 0)
+    client.send_message("/morphoses/end", [])
+
+def robot_rgb(r, g, b):
+    client.send_message("/morphoses/rgb", [r, g, b])
+
 
 if __name__ == "__main__":
     # Create parser
@@ -689,8 +709,8 @@ if __name__ == "__main__":
                  [x_max, y_max, +1, +1, +1, +1, +180, +90, +180,  5.]])
 
     scalerY = MinMaxScaler()
-    scalerY.fit([[-15, -45],
-                 [+15, +45]])
+    scalerY.fit([[-1, 1],
+                 [-1, 1]])
     #scalerY.fit([[-15, -45],
     #             [+15, +45]])
 
@@ -798,7 +818,7 @@ if __name__ == "__main__":
                     min_r = r
                 scaled_r = (r - min_r) / (max_r - min_r + 0.000001)
                 brightness = round(scaled_r * 255)
-                client.send_message("/morphoses/rgb", [(255 - brightness), brightness, 0])
+                robot_rgb(255 - brightness, brightness, 0)
 
     #            print(r)
 
@@ -878,13 +898,12 @@ if __name__ == "__main__":
     #        print("Choice made {} {} {}".format(action, model.predict(state), target))
 
             # Send OSC message of action.
-            action = scalerY.inverse_transform(target).astype('float')
-            # print("action: {}".format(action))
-            # print('send action', action)
-            # print("Target {} Action {}".format(target, action))
+            action = target
+            #action = scalerY.inverse_transform(target).astype('float')
+            print("Target {} Action {}".format(target, action))
 
             # Send OSC message.
-            client.send_message("/morphoses/action", action[0])
+            robot_action(action[0][0], action[0][1])
             #print('action', action[0])
 
             # Update state.
@@ -897,18 +916,22 @@ if __name__ == "__main__":
                 time.sleep(time_step)
 
             # Structure learning by having the robot take a pause in a stabilised state (zero speed, zero steering).
-            client.send_message("/morphoses/action", [0., 0.])
-            time.sleep(time_balance)
+            if time_balance > 0:
+                robot_action(0, 0)
+                time.sleep(time_balance)
 
             # Ask for next data point.
-            client.send_message("/morphoses/next", [])
+            robot_next()
 
-        # If the robot is outside virtual fence: Correct robot position.  
+        # If the robot is outside virtual fence: Correct robot position.
         else:
             print('Outside virtual fence', 0)
 
+            # Signal that I am out.
+            robot_rgb(0, 0, 255)
+
             # Pause and stabilise the robot
-            client.send_message("/morphoses/action", [0., 0.])
+            robot_action(0, 0)
             time.sleep(1)
 
             # If no correction was made on robot position, use previous action as previous correction action.
@@ -917,7 +940,8 @@ if __name__ == "__main__":
                     target = [mpp.class_to_speed_steering_spec(prev_action, n_action_bins, True)]
                 else:
                     target = [mpp.class_to_speed_steering(prev_action, n_action_bins, True)]
-                action = scalerY.inverse_transform(target).astype('float')
+                action = target
+                #action = scalerY.inverse_transform(target).astype('float')
                 prev_corr_action = action
 
             # Get signs of previous speed and steer actions.
@@ -926,7 +950,7 @@ if __name__ == "__main__":
 
             # If previous speed action was zero, take random speed action during short time. (Could be improved...)
             if sgn_speed == 0:
-                corr_speed = random.choice([-1., 1.]) * 15
+                corr_speed = random.choice([-1., 1.])
                 time_corr_action = 2
 
             # Else, correct speed as opposite previous speed action during long time.
@@ -936,7 +960,7 @@ if __name__ == "__main__":
 
             # If previous steer action was zero, choose random steer action. (Could be improved...)
             if sgn_steer == 0:
-                corr_steer = random.choice([-1., 1.]) * 22.5
+                corr_steer = random.choice([-1., 1.]) * 0.5
 
             # Else, correct steer as opposite previous steer action.
             else:
@@ -946,20 +970,20 @@ if __name__ == "__main__":
             print('corr_action', corr_action)
 
             # Send corrective action to robot.
-            client.send_message("/morphoses/action", corr_action[0])
+            robot_action(corr_action[0][0], corr_action[0][1])
 
             # Store previous corrective action.
             prev_corr_action = corr_action
 
-            # Wait 
+            # Wait
             time.sleep(time_corr_action)
 
             # Pause and stabilise the robot
-            client.send_message("/morphoses/action", [0., 0.])
+            robot_action(0, 0)
             time.sleep(1)
 
             # Ask for next data point.
-            client.send_message("/morphoses/next", [])
+            robot_next()
 
     # Create OSC dispatcher.
     dispatcher = dispatcher.Dispatcher()
@@ -973,14 +997,14 @@ if __name__ == "__main__":
     def interrupt(signup, frame):
         global client, server
         print("Exiting program... {np.mean(perf_measurements)}")
-        client.send_message("/morphoses/end", [])
+        robot_end()
         server.server_close()
         sys.exit()
 
     signal.signal(signal.SIGINT, interrupt)
 
     print("Serving on {}. Program ready.".format(server.server_address))
-    client.send_message("/morphoses/begin", [])
+    robot_begin()
     if args.use_robot:
         time.sleep(10) # Give time to the robot to do its starting sequence
     print("Go!")

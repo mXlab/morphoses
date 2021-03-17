@@ -47,11 +47,12 @@ class OscHelper:
 
 # Re-route action to robot.
 def receive_action(unused_addr, speed, steer):
-    global main_osc, current_speed, current_steer
+    global main_osc, current_speed, current_steer, max_speed, max_steer
     current_speed = speed
     current_steer = steer
-    speed = 0.5 * (speed / 15 * 255)
-    steer = steer * 0.75
+    print("Receive action: {} speed={} steer={}".format(max_speed, speed, steer))
+    speed = speed * max_speed
+    print("--> Result: speed={} steer={}".format(speed, steer))
     main_osc.send_message("/motor/1", round(speed))
     main_osc.send_message("/motor/2", round(steer))
 
@@ -172,6 +173,11 @@ parser.add_argument("--rtls-robot-node-id", default="1a1e",
 parser.add_argument("--rtls-thing-node-id", default="5a8e",
                         help="The Node ID of the thing tag in the RTLS network.")
 
+parser.add_argument("--max-speed", default=128, type=float,
+                        help="Max value of speed.")
+parser.add_argument("--max-steer", default=75, type=float,
+                        help="Max value of steering.")
+
 args = parser.parse_args()
 
 osc_startup()
@@ -179,6 +185,9 @@ osc_startup()
 main_osc = OscHelper("main", args.main_board_ip, args.main_board_send_port, args.main_board_receive_port)
 imu_osc = OscHelper("imu", args.imu_board_ip, args.imu_board_send_port, args.imu_board_receive_port)
 bridge_osc = OscHelper("bridge", "127.0.0.1", args.bridge_send_port, args.bridge_receive_port)
+
+max_speed = args.max_speed
+max_steer = args.max_steer
 
 imu_osc.map("/quat", receive_quaternion)
 #main_osc.map("/motor/1/ticks", receive_speed_ticks)

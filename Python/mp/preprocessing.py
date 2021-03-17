@@ -1,18 +1,6 @@
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, KBinsDiscretizer
 
-MIN_SPEED = -15
-MAX_SPEED = 15
-
-MIN_STEERING = -45
-MAX_STEERING = 45
-
-MIN_POSITION = -25
-MAX_POSITION = 25
-
-MIN_ANGLE = -180
-MAX_ANGLE = -180
-
 # Transforms quaternion coordinates into Euler angles (in degrees).
 def quaternion_to_euler(x, y, z, w):
     import math
@@ -92,26 +80,34 @@ def preprocess_data(dataset, prune_experiments = False, bins = None):
 
     return X, Y, scalerX, scalerY
 
-def speed_steering_to_class(y, bins):
-    return y[0]*bins + y[1]
+#def speed_steering_to_class(y, bins):
+#    return y[0]*bins + y[1]
 
 def class_to_speed_steering(y, bins, normalize=False):
     array = [ int(y/bins), int(y%bins) ]
+    # Normalize to [-1, 1].
     if normalize:
-        array = [ x/float(bins-1) for x in array]
+        array = [ remap(x, 0, bins-1, -1, 1) for x in array]
     return array
 
 # Buggy: Convert class to specific speed/steering actions (i.e., not necessarily computed using bin division).
 def class_to_speed_steering_spec(y, bins, normalize=False):
     if y == 0: # oscillating left
-        array = [0.5, 0.]
+        array = [0, -1]
     elif y == 1: # forward
-        array = [1., 0.5]
+        array = [1,  0]
     elif y == 2: # backward
-        array = [0., 0.5]
+        array = [-1, 0]
     elif y == 3: # oscillating right
-        array = [0.5, 1.]
+        array = [0, 1.]
     return array
+
+def remap(value, fromMin, fromMax, toMin, toMax):
+    # Avoids divisions by zero.
+    if fromMin == fromMax:
+        return (toMin + toMax) * 0.5 # dummy value
+    return (value - fromMin) * (toMax - toMin) / (fromMax - fromMin) + toMin
+
 
 # def standardize(value, min, max):
 #     return (value - min) / (max - min)
@@ -131,3 +127,6 @@ def class_to_speed_steering_spec(y, bins, normalize=False):
 # Standardizes an input point using its scaler.
 def standardize(datapoint, scaler):
     return scaler.transform([datapoint])
+
+
+# Remap
