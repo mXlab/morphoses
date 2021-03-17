@@ -260,7 +260,7 @@ def reward_position_state(complete_data):
     dist += abs(complete_data[1] - target_position_state[1])**2
     dist = np.sqrt(dist)
     print('dist', dist)
-    if dist > 0.25:
+    if dist >= 0.25:
         return -100. * dist
     else:
         return -10. * dist
@@ -278,7 +278,7 @@ def reward_delta_dist_1(complete_data):
     delta_dist = dist - prev_dist
 
     # Give lowest reward if robot moves away from target
-    if dist - prev_dist > 0.:
+    if dist - prev_dist >= 0.:
         reward = -100
 
     # Give medium-high reward if robot gets closer to target
