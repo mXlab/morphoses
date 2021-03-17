@@ -43,20 +43,24 @@ def delta(data, prev_data):
     return d
 
 # Deprecated: Returns the robot's instantaneous orientation.
-def compute_orientation(delta_data):
-    return np.angle(np.complex(delta_data[0], delta_data[1]))
+def compute_orientation(delta_data, speed):
+    forward = np.sign(speed)
+    return np.angle(np.complex(forward*delta_data[0], forward*delta_data[1]))
 
 # Returns the robot's instantaneous direction to target, discretised as 0=front, 1=right, 2=left, 3=back. Optional: Roughly plots relevant vectors and past robot positions.
-def compute_direction_to_target(data, delta_data, target_position_state, plot):
+def compute_direction_to_target(data, delta_data, target_position_state, speed, plot):
     print('pos', [data[0], data[1]])
 
     # Computer vector for robot instantaneous direction.
-    delta_pos = [delta_data[0], delta_data[1]]
+    forward = np.sign(speed)
+    delta_pos = [forward*delta_data[0], forward*delta_data[1]] # invert according to current speed
+    print("velocity: ({}, {}) speed: {} orientation: {}".format(delta_pos[0], delta_pos[1], speed, np.degrees(compute_orientation(delta_data, speed))))
 
     # Compute vector from robot to target state.
     delta_robot_to_target = [target_position_state[0] - data[0], target_position_state[1] - data[1]]
 
     # Normalize vectors.
+
     delta_pos = delta_pos / np.linalg.norm(delta_pos)
     delta_robot_to_target = delta_robot_to_target / np.linalg.norm(delta_robot_to_target)
 
@@ -718,10 +722,15 @@ if __name__ == "__main__":
     plt.show()
 
     iter = 0
+
+    # Keep track of last value of nonzero speed
+    last_nonzero_speed = 1 # dummy value
+
     def handle_data(unused_addr, exp_id, t, x, y, qx, qy, qz, qw, speed_ticks, speed, steer, tag_x, tag_y, accumulated_sound_level):
         global notify_recv, use_ann
         global prev_data, prev_time, prev_state, prev_action, prev_corr_action, plot
         global avg_r, iter, max_r, min_r, count_action
+        global last_nonzero_speed
 
 #        start_time = time.perf_counter()
 
@@ -779,8 +788,8 @@ if __name__ == "__main__":
     #            delta_data = 100 * delta(data, prev_data) / (t - prev_time)
                 complete_data = np.concatenate((data, delta_data))
 
-                orientation = compute_orientation(delta_data)
-                direction_to_target = compute_direction_to_target(data, delta_data, target_position_state, plot)
+                orientation = compute_orientation(delta_data, last_nonzero_speed)
+                direction_to_target = compute_direction_to_target(data, delta_data, target_position_state, last_nonzero_speed, plot)
                 distance_to_target = compute_distance_to_target(data, target_position_state, target_radius)
 
                 complete_data = np.append(complete_data, orientation)
