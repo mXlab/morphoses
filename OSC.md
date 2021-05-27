@@ -15,6 +15,7 @@ IMU board:
 ### Receive
 
 | Boards | Message        | Types | Explanation |
+| ------ | -------------- | ----- | ----------- |
 | Main   | ```/motor/1``` | i     | Controls speed/pitch motor with values in [-255, 255] |
 | Main   | ```/motor/2``` | i     | Controls steer/roll motor with values in [-90, 90] (corresponding to angle) |
 | Both   | ```/bonjour``` |       | Connection message sent to the board; upon receiving it the board will update its ```destIP``` address to send its messages to the right place. |
@@ -22,6 +23,7 @@ IMU board:
 ### Send
 
 | Boards | Message              | Types | Explanation |
+| ------ | -------------------- | ----- | ----------- |
 | Main   | ```/motor/1/ticks``` | i     | Total number of ticks of speed/pitch motor (from encoder) |
 | Main   | ```/motor/2/ticks``` | i     | Total number of ticks of steer/roll motor (from encoder) |
 | Both   | ```/quat```          | ffff  | Quaternion values (from IMU) |
