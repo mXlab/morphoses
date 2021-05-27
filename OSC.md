@@ -28,7 +28,9 @@ IMU board:
 | Main   | ```/motor/2/ticks``` | i     | Total number of ticks of steer/roll motor (from encoder) |
 | Both   | ```/quat```          | ffff  | Quaternion values (from IMU) |
 | Both   | ```/euler```         | fff   | Euler angles (from IMU) |
-| Both   | ```/imu/i2c/error``` |       | Sent if the IMU has an I2C problem |
-| Both   | ```/imu/i2c/ok```    |       | Sent if the IMU is ok (no I2C problems) |
+| Main   | ```/main/bonjour```  |       | Sent by Main board in response to the ```/bonjour``` message to indicate reception.  |
+| IMU    | ```/imu/bonjour```   |       | Sent by IMU board in response to the ```/bonjour``` message to indicate reception.  |
+| Both    | ```/imu/i2c/error``` |       | Sent if the IMU has an I2C problem |
+| Both    | ```/imu/i2c/ok```    |       | Sent if the IMU is ok (no I2C problems) |
 
 
