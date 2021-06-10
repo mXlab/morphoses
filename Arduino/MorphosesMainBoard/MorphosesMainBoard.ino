@@ -8,10 +8,7 @@
  * INSTRUCTIONS: Copy Config.h.default to Config.h and adjust according to 
  * your own Wifi setup.
  * 
- * (c) 2018-2020 Sofian Audry, Martin Peach
- * 
- * 20170116 add /motor/2 position with i2c send
- * 20161205 add /motor/1 speed with i2c send
+ * (c) 2018-2021 Sofian Audry, Pierre Gaudet, Martin Peach
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,25 +23,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+// Includes /////////////////////////////////////
+
+// Configuration file.
 #include "Config.h"
 
-#include <SparkFun_BNO080_Arduino_Library.h>
-
+// WiFi & OSC.
 #include <OSCBundle.h>
-
-#include <Wire.h>
-
+#include <WiFiUdp.h>
 #ifdef ARDUINO_ARCH_ESP32
 #include <WiFi.h>
 #else
 #include <ESP8266WiFi.h>
 #endif
 
-#include <WiFiUdp.h>
-#include <SLIPEncodedSerial.h>
-SLIPEncodedSerial SLIPSerial(Serial);
+// IMU.
+#include <SparkFun_BNO080_Arduino_Library.h>
 
+// Constants ////////////////////////////////////
 #define WIFI_CONNECTION_TIMEOUT 5000
+
+// Variables & Objects //////////////////////////
 
 BNO080 imu;
 OSCBundle bndl;
@@ -53,12 +53,12 @@ WiFiUDP udp;
 IPAddress destIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, DEST_IP_3); // remote IP
 IPAddress broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
 
-char packetBuffer[128];
+bool imuInitialized = false;
+boolean sendOSC = true; // default
 
+// Function declarations ////////////////////////
 void sendOscBundle(boolean broadcast=false);
 void blinkIndicatorLed(unsigned long period, float pulseProportion=0.5, int nBlinks=1);
-
-bool imuInitialized = false;
 
 void setup()
 {
@@ -119,13 +119,13 @@ void receiveMessage() {
 
   if (packetSize)
   {
-    if (OSCDebug) {
+    if (DEBUG_MODE) {
       Serial.print("Received packet of size ");
       Serial.println(packetSize);
       Serial.print("From ");
     }
     IPAddress remote = udp.remoteIP();
-    if (OSCDebug) {
+    if (DEBUG_MODE) {
       for (int i = 0; i < 4; i++)
       {
         Serial.print(remote[i], DEC);
@@ -145,13 +145,13 @@ void receiveMessage() {
     switch(messIn.getError()) {
       case  OSC_OK:
         int messSize;
-        if (OSCDebug) Serial.println("no errors in packet");
+        if (DEBUG_MODE) Serial.println("no errors in packet");
         messSize = messIn.size();
-        if (SerialDebug) {
+        if (DEBUG_MODE) {
           Serial.print("messSize: ");
           Serial.println(messSize);
         }
-        if (OSCDebug) {
+        if (DEBUG_MODE) {
           char addressIn[64];
           messSize = messIn.getAddress(addressIn, 0, 64);
           Serial.print("messSize: ");
@@ -163,16 +163,16 @@ void receiveMessage() {
 
         break;
       case BUFFER_FULL:
-        if (OSCDebug) Serial.println("BUFFER_FULL error");
+        if (DEBUG_MODE) Serial.println("BUFFER_FULL error");
         break;
       case INVALID_OSC:
-        if (OSCDebug) Serial.println("INVALID_OSC error");
+        if (DEBUG_MODE) Serial.println("INVALID_OSC error");
         break;
       case ALLOCFAILED:
-        if (OSCDebug) Serial.println("ALLOCFAILED error");
+        if (DEBUG_MODE) Serial.println("ALLOCFAILED error");
         break;
       case INDEX_OUT_OF_BOUNDS:
-        if (OSCDebug) Serial.println("INDEX_OUT_OF_BOUNDS error");
+        if (DEBUG_MODE) Serial.println("INDEX_OUT_OF_BOUNDS error");
         break;
     }
   } //if (packetSize)
@@ -186,7 +186,7 @@ void processMotors()
 	byte tick2 = Wire.read();
 	byte tick1 = Wire.read();
 	byte tick0 = Wire.read();
-	if(SerialDebug) {
+	if(DEBUG_MODE) {
 	  Serial.print("received ");
 	  Serial.print(incomingCount);
 	  Serial.print(": (3)");
@@ -207,7 +207,7 @@ void processMotors()
 	tick2 = Wire.read();
 	tick1 = Wire.read();
 	tick0 = Wire.read();
-	if(SerialDebug) {
+	if(DEBUG_MODE) {
 	  Serial.print("received ");
 	  Serial.print(incomingCount);
 	  Serial.print(": (3)");
@@ -279,14 +279,14 @@ void initWifi()
   WiFi.mode(WIFI_AP_STA);
 #if AP_MODE
   /* You can remove the password parameter if you want the AP to be open. */
-  if (!WiFi.softAP(ssid, password)) {
+  if (!WiFi.softAP(WIFI_SSID, WIFI_PASSWORD)) {
     while(1); // Loop forever if setup didn't work
   }
 
   IPAddress myIP = WiFi.softAPIP();
 
 #else
-  WiFi.begin(ssid, password);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   // Wait for connection to complete.
   unsigned long startMillis = millis();
@@ -307,7 +307,7 @@ void initWifi()
   Serial.println("IP: ");
   Serial.println(myIP);
 
-  if (!udp.begin(localPort)) {
+  if (!udp.begin(LOCAL_PORT)) {
     while(1); // Loop forever if setup didn't work
   }
   Serial.println("Done");
@@ -317,15 +317,18 @@ void initWifi()
   sendOscBundle(true);
 }
 
-void waitForInputSerial() {
-  while (!Serial.available()) delay(10);
-  flushInputSerial();
+// Flush serial.
+void flushInputSerial(HardwareSerial& serial=Serial) {
+  while (serial.available())
+    serial.read();
 }
 
-void flushInputSerial() {
-  while (Serial.available())
-    Serial.read();
+// Wait until serial is ready.
+void waitForInputSerial(HardwareSerial& serial=Serial) {
+  while (!serial.available()) delay(10);
+  flushInputSerial(serial);
 }
+
 
 /// Smart-converts argument from message to integer.
 int32_t getArgAsInt(OSCMessage& msg, int index) {
@@ -349,32 +352,38 @@ boolean argIsNumber(OSCMessage& msg, int index) {
 void processMessage(OSCMessage& messIn) {
   // This message assigns destination IP to the remote IP from which the OSC message was sent.
   if (messIn.fullMatch("/bonjour")) {
-    if (OSCDebug) Serial.println("Init IP");
+    if (DEBUG_MODE) Serial.println("Init IP");
     destIP = udp.remoteIP();
   }
+  
+  // Stream OSC messages ON/OFF.
   else if (messIn.fullMatch("/stream")) {
-    if (OSCDebug) Serial.println("STREAM");
+    if (DEBUG_MODE) Serial.println("STREAM");
     if (argIsNumber(messIn, 0)) {
-      if (OSCDebug) Serial.print("stream value ");
+      if (DEBUG_MODE) Serial.print("stream value ");
       int32_t val = getArgAsInt(messIn, 0);
-      if (OSCDebug) Serial.println(val);
+      if (DEBUG_MODE) Serial.println(val);
       sendOSC = (val != 0);
     }
   }
+
+  // Power motors ON/OFF.
   else if (messIn.fullMatch("/power")) {
-    if (OSCDebug) Serial.println("POWER");
+    if (DEBUG_MODE) Serial.println("POWER");
     if (argIsNumber(messIn, 0)) {
-      if (OSCDebug) Serial.print("power value ");
+      if (DEBUG_MODE) Serial.print("power value ");
       int32_t val = getArgAsInt(messIn, 0);
-      if (OSCDebug) Serial.println(val);
+      if (DEBUG_MODE) Serial.println(val);
       digitalWrite(power, val ? LOW : HIGH);
     }
   }
+
+  // Drive speed/pitch/forward-backward motor.
   else if (messIn.fullMatch("/motor/1")) {
     if (argIsNumber(messIn, 0)) {
-      if (OSCDebug) Serial.print("motor 1 value ");
+      if (DEBUG_MODE) Serial.print("motor 1 value ");
       int32_t val = getArgAsInt(messIn, 0);
-      if (OSCDebug) Serial.println(val);
+      if (DEBUG_MODE) Serial.println(val);
       char val8 = (char)(val&0xFF);
       Wire.beginTransmission(MOTOR1_I2C_ADDRESS); // transmit to device #8
       Wire.write(MOTOR_SPEED); // sends one byte
@@ -385,11 +394,13 @@ void processMessage(OSCMessage& messIn) {
       Wire.endTransmission(); // stop transmitting
     }
   }
+
+  // Drive steer/tilt/left-right motor.
   else if (messIn.fullMatch("/motor/2")) {
     if (argIsNumber(messIn, 0)) {
-      if (OSCDebug) Serial.print("motor 2 value ");
+      if (DEBUG_MODE) Serial.print("motor 2 value ");
       int32_t val = getArgAsInt(messIn, 0);
-      if (OSCDebug) Serial.println(val);
+      if (DEBUG_MODE) Serial.println(val);
       char val8 = (char)(val&0xFF);
       Wire.beginTransmission(MOTOR2_I2C_ADDRESS); // transmit to device #8
       Wire.write(MOTOR_POSITION); // sends one byte
@@ -400,40 +411,44 @@ void processMessage(OSCMessage& messIn) {
       Wire.endTransmission(); // stop transmitting
     }
   }
+
+  // Reset tilt motor to initial position.
   else if (messIn.fullMatch("/reset/2")) {
     // no args
-    if (OSCDebug) Serial.println("reset 2");
+    if (DEBUG_MODE) Serial.println("reset 2");
     Wire.beginTransmission(MOTOR2_I2C_ADDRESS); // transmit to device #8
     Wire.write(MOTOR_RESET); // sends one byte
     Wire.endTransmission(); // stop transmitting
   }
+
+  // RGB led control.
 #ifndef ARDUINO_ARCH_ESP32 // RGB Leds only available on ESP8266
   else if (messIn.fullMatch("/red")) {
-    if (OSCDebug) Serial.println("RED");
+    if (DEBUG_MODE) Serial.println("RED");
     if (argIsNumber(messIn, 0)) {
-      if (OSCDebug) Serial.print("value ");
+      if (DEBUG_MODE) Serial.print("value ");
       int32_t val = getArgAsInt(messIn, 0);
-      if (OSCDebug) Serial.println(val);
+      if (DEBUG_MODE) Serial.println(val);
       //digitalWrite(redLed, (val != 0));
       analogWrite(redLed, (val%256));
     }
   }
   else if (messIn.fullMatch("/green")) {
-    if (OSCDebug) Serial.println("GREEN");
+    if (DEBUG_MODE) Serial.println("GREEN");
     if (argIsNumber(messIn, 0)) {
-      if (OSCDebug) Serial.print("value ");
+      if (DEBUG_MODE) Serial.print("value ");
       int32_t val = getArgAsInt(messIn, 0);
-      if (OSCDebug) Serial.println(val);
+      if (DEBUG_MODE) Serial.println(val);
       //digitalWrite(greenLed, (val != 0));
       analogWrite(greenLed, (val%256));
     }
   }
   else if (messIn.fullMatch("/blue")) {
-    if (OSCDebug) Serial.println("BLUE");
+    if (DEBUG_MODE) Serial.println("BLUE");
     if (argIsNumber(messIn, 0)) {
-      if (OSCDebug) Serial.print("value ");
+      if (DEBUG_MODE) Serial.print("value ");
       int32_t val = getArgAsInt(messIn, 0);
-      if (OSCDebug) Serial.println(val);
+      if (DEBUG_MODE) Serial.println(val);
       //digitalWrite(blueLed, (val != 0));
       analogWrite(blueLed, (val%256));
     }
@@ -441,19 +456,12 @@ void processMessage(OSCMessage& messIn) {
 #endif
 }
 
+// Sends currently built bundle (with optional broadcasting option).
 void sendOscBundle(boolean broadcast) {
   if (sendOSC) {
-
-    if (useUdp) {
-      udp.beginPacket(broadcast ? broadcastIP : destIP, destPort);
-      bndl.send(udp); // send the bytes to the SLIP stream
-      udp.endPacket(); // mark the end of the OSC Packet
-    }
-    else {
-      SLIPSerial.beginPacket();
-      bndl.send(SLIPSerial); // send the bytes to the SLIP stream
-      SLIPSerial.endPacket(); // mark the end of the OSC Packet
-    }
+    udp.beginPacket(broadcast ? broadcastIP : destIP, DEST_PORT);
+    bndl.send(udp); // send the bytes to the SLIP stream
+    udp.endPacket(); // mark the end of the OSC Packet
   }
   bndl.empty(); // empty the bundle to free room for a new one
 }
