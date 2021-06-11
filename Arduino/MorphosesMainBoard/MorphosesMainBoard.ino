@@ -28,6 +28,8 @@
 
 // Configuration file.
 #include "Config.h"
+#include "Motors.h"
+#include "Pixels.h"
 
 // WiFi & OSC.
 #include <OSCBundle.h>
@@ -37,6 +39,8 @@
 #else
 #include <ESP8266WiFi.h>
 #endif
+#include <ArduinoOTA.h>
+
 
 // IMU.
 #include <SparkFun_BNO080_Arduino_Library.h>
@@ -62,8 +66,11 @@ void blinkIndicatorLed(unsigned long period, float pulseProportion=0.5, int nBli
 
 void setup()
 {
-  pinMode(power, OUTPUT);
-  digitalWrite(power, HIGH);
+//  pinMode(power, OUTPUT);
+//  digitalWrite(power, HIGH);
+
+  initPixels();
+  initMotors();
 
   Wire.begin();
 
@@ -79,25 +86,15 @@ void setup()
 //  pinMode(intPin, INPUT); // interrupt out from the IMU
 //  digitalWrite(intPin, LOW);
 
-#ifndef ARDUINO_ARCH_ESP32
-  pinMode(redLed, OUTPUT);
-  pinMode(greenLed, OUTPUT);
-  pinMode(blueLed, OUTPUT);
-  digitalWrite(redLed, HIGH);
-  digitalWrite(greenLed, HIGH);
-  digitalWrite(blueLed, HIGH);
-#endif
-
 	// Initialize Wifi and UDP.
 	initWifi();
 
-#ifndef ARDUINO_ARCH_ESP32
-  digitalWrite(blueLed, LOW);
-#endif
 }
 
 void loop()
 {
+   ArduinoOTA.handle();
+   
   // Check connection status: reconnect if connection lost.
   if (WiFi.status() != WL_CONNECTED)
     initWifi();
@@ -239,8 +236,9 @@ bool processImu() {
 
 void sendData() {
   // Process motor ticks only if IMU ready.
-  if (processImu())
-    processMotors();
+  processImu();
+//  if (processImu())
+//    processMotors();
 
   // Send OSC bundle.
   sendOscBundle();
@@ -251,12 +249,12 @@ void initIMU() {
   {
     if (!imu.begin()) {
       Serial.println("BNO080 not detected at default I2C address. Check your jumpers and the hookup guide. Freezing...");
-      bndl.add("/imu/i2c/error");
+      bndl.add("/main/i2c/error");
       sendOscBundle();
       blinkIndicatorLed(1000, 0.1);
     }
     else {  
-      bndl.add("/imu/i2c/ok");
+      bndl.add("/main/i2c/ok");
       sendOscBundle();
       Wire.setClock(400000); //Increase I2C data rate to 400kHz
       imu.enableRotationVector(50); //Send data update every 50ms
@@ -266,29 +264,57 @@ void initIMU() {
   }
 }
 
+void initOTA() {
+  // Port defaults to 3232
+  // ArduinoOTA.setPort(3232);
+
+  // Hostname defaults to esp3232-[MAC]
+  ArduinoOTA.setHostname("robot-1-main");
+
+  // No authentication by default
+  // ArduinoOTA.setPassword("admin");
+
+  // Password can be set with it's md5 value as well
+  // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
+  // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
+
+  ArduinoOTA
+    .onStart([]() {
+      String type;
+      if (ArduinoOTA.getCommand() == U_FLASH)
+        type = "sketch";
+      else // U_SPIFFS
+        type = "filesystem";
+
+      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+      Serial.println("Start updating " + type);
+    })
+    .onEnd([]() {
+      Serial.println("\nEnd");
+    })
+    .onProgress([](unsigned int progress, unsigned int total) {
+      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    })
+    .onError([](ota_error_t error) {
+      Serial.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    });
+
+  ArduinoOTA.begin();
+}
+
 void initWifi()
 {
-  /**
-   * Set up an access point
-   * @param ssid          Pointer to the SSID (max 63 char).
-   * @param passphrase    (for WPA2 min 8 char, for open use NULL)
-   * @param channel       WiFi channel number, 1 - 13.
-   * @param ssid_hidden   Network cloaking (0 = broadcast SSID, 1 = hide SSID)
-   */
   // now start the wifi
   WiFi.mode(WIFI_AP_STA);
-#if AP_MODE
-  /* You can remove the password parameter if you want the AP to be open. */
-  if (!WiFi.softAP(WIFI_SSID, WIFI_PASSWORD)) {
-    while(1); // Loop forever if setup didn't work
-  }
-
-  IPAddress myIP = WiFi.softAPIP();
-
-#else
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   // Wait for connection to complete.
+  
   unsigned long startMillis = millis();
   while (WiFi.status() != WL_CONNECTED && 
          millis() - startMillis < WIFI_CONNECTION_TIMEOUT) {
@@ -302,8 +328,10 @@ void initWifi()
     ESP.restart();
   }
 
+  initOTA();
+
   IPAddress myIP = WiFi.localIP();
-#endif
+
   Serial.println("IP: ");
   Serial.println(myIP);
 
@@ -344,6 +372,17 @@ int32_t getArgAsInt(OSCMessage& msg, int index) {
   }
 }
 
+float getArgAsFloat(OSCMessage& msg, int index) {
+  if (msg.isFloat(index))
+    return msg.getFloat(index);
+  else if (msg.isDouble(index))
+    return (float)msg.getDouble(index);
+  else if (msg.isBoolean(index))
+    return (msg.getBoolean(index) ? 1 : 0);
+  else
+    return (float)msg.getInt(index);
+}
+
 /// Returns true iff argument from message is convertible to a number.
 boolean argIsNumber(OSCMessage& msg, int index) {
   return (msg.isInt(index) || msg.isFloat(index) || msg.isDouble(index) || msg.isBoolean(index));
@@ -354,6 +393,8 @@ void processMessage(OSCMessage& messIn) {
   if (messIn.fullMatch("/bonjour")) {
     if (DEBUG_MODE) Serial.println("Init IP");
     destIP = udp.remoteIP();
+    bndl.add("/bonjour").add(WiFi.localIP()[3]);
+    sendOscBundle();
   }
   
   // Stream OSC messages ON/OFF.
@@ -374,41 +415,27 @@ void processMessage(OSCMessage& messIn) {
       if (DEBUG_MODE) Serial.print("power value ");
       int32_t val = getArgAsInt(messIn, 0);
       if (DEBUG_MODE) Serial.println(val);
-      digitalWrite(power, val ? LOW : HIGH);
+      setMotorPower( val != 0 );
     }
   }
 
   // Drive speed/pitch/forward-backward motor.
-  else if (messIn.fullMatch("/motor/1")) {
+  else if (messIn.fullMatch("/speed")) {
     if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("motor 1 value ");
-      int32_t val = getArgAsInt(messIn, 0);
+      if (DEBUG_MODE) Serial.print("speed motor value ");
+      float val = getArgAsFloat(messIn, 0);
       if (DEBUG_MODE) Serial.println(val);
-      char val8 = (char)(val&0xFF);
-      Wire.beginTransmission(MOTOR1_I2C_ADDRESS); // transmit to device #8
-      Wire.write(MOTOR_SPEED); // sends one byte
-      Wire.write(val>>24); // send 4 bytes bigendian 32-bit int
-      Wire.write(val>>16);
-      Wire.write(val>>8);
-      Wire.write(val);
-      Wire.endTransmission(); // stop transmitting
+      setMotorSpeed(val);
     }
   }
 
   // Drive steer/tilt/left-right motor.
-  else if (messIn.fullMatch("/motor/2")) {
+  else if (messIn.fullMatch("/steer")) {
     if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("motor 2 value ");
-      int32_t val = getArgAsInt(messIn, 0);
+      if (DEBUG_MODE) Serial.print("steer motor value ");
+      float val = getArgAsFloat(messIn, 0);
       if (DEBUG_MODE) Serial.println(val);
-      char val8 = (char)(val&0xFF);
-      Wire.beginTransmission(MOTOR2_I2C_ADDRESS); // transmit to device #8
-      Wire.write(MOTOR_POSITION); // sends one byte
-      Wire.write(val>>24); // send 4 bytes bigendian 32-bit int
-      Wire.write(val>>16);
-      Wire.write(val>>8);
-      Wire.write(val);
-      Wire.endTransmission(); // stop transmitting
+      setMotorSteer(val);
     }
   }
 
@@ -421,39 +448,16 @@ void processMessage(OSCMessage& messIn) {
     Wire.endTransmission(); // stop transmitting
   }
 
-  // RGB led control.
-#ifndef ARDUINO_ARCH_ESP32 // RGB Leds only available on ESP8266
-  else if (messIn.fullMatch("/red")) {
-    if (DEBUG_MODE) Serial.println("RED");
+  else if (messIn.fullMatch("/rgb")) {
     if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("value ");
-      int32_t val = getArgAsInt(messIn, 0);
-      if (DEBUG_MODE) Serial.println(val);
-      //digitalWrite(redLed, (val != 0));
-      analogWrite(redLed, (val%256));
+      if (DEBUG_MODE) Serial.print("RGB colors ");
+      int r = getArgAsInt(messIn, 0);
+      int g = getArgAsInt(messIn, 1);
+      int b = getArgAsInt(messIn, 2);
+      setPixels(r, b, g);
     }
   }
-  else if (messIn.fullMatch("/green")) {
-    if (DEBUG_MODE) Serial.println("GREEN");
-    if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("value ");
-      int32_t val = getArgAsInt(messIn, 0);
-      if (DEBUG_MODE) Serial.println(val);
-      //digitalWrite(greenLed, (val != 0));
-      analogWrite(greenLed, (val%256));
-    }
-  }
-  else if (messIn.fullMatch("/blue")) {
-    if (DEBUG_MODE) Serial.println("BLUE");
-    if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("value ");
-      int32_t val = getArgAsInt(messIn, 0);
-      if (DEBUG_MODE) Serial.println(val);
-      //digitalWrite(blueLed, (val != 0));
-      analogWrite(blueLed, (val%256));
-    }
-  }
-#endif
+
 }
 
 // Sends currently built bundle (with optional broadcasting option).
