@@ -1,4 +1,9 @@
 #include <Dynamixel2Arduino.h>
+#include <Wire.h>
+
+#define MOTORS_SPEED_MAX 70
+#define MOTORS_STEER_MAX 45
+#define MOTORS_STEER_MIDDLE 180
 
 // Dynamixel parameters ***********************************
 #define DXL_SERIAL   Serial1
@@ -41,7 +46,7 @@ void initMotors() {
   dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_ID2, profile_velocity_steering);
 }
 
-void setMotorPower(bool on) {
+void setMotorsPower(bool on) {
   if (on) {
     dxl.torqueOn(DXL_ID);
     dxl.torqueOn(DXL_ID2);
@@ -51,14 +56,20 @@ void setMotorPower(bool on) {
   }
 }
 
-#define MAX_SPEED 70
-void setMotorSpeed(float speed) {
-  int velocity = constrain(round(speed * MAX_SPEED), -MAX_SPEED, MAX_SPEED);
-  dxl.setGoalVelocity(DXL_ID, velocity, UNIT_RAW); // +n=CCW, -n=CW
+void processMotors()
+{
 }
 
-#define MAX_STEER 45
-void setMotorSteer(float steer) {
-  int angle = 180 + constrain(round(steer * MAX_STEER), -MAX_STEER, MAX_STEER);
-  dxl.setGoalPosition(DXL_ID2, angle, UNIT_DEGREE);
+// Remaps normalised value in [-1, 1] to [midPoint-maxRange, midPoint+maxRange].
+int safeRemapNorm(float unitVal, int maxRange, int midPoint=0) {
+  float remappedVal = midPoint + constrain(unitVal, -1, 1) * maxRange;
+  return round(remappedVal);
+}
+
+void setMotorsSpeed(float speed) {
+  dxl.setGoalVelocity(DXL_ID, safeRemapNorm(speed, MOTORS_SPEED_MAX), UNIT_RAW); // +n=CCW, -n=CW
+}
+
+void setMotorsSteer(float steer) {
+  dxl.setGoalPosition(DXL_ID2, safeRemapNorm(steer, MOTORS_STEER_MAX, MOTORS_STEER_MIDDLE), UNIT_DEGREE);
 }
