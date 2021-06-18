@@ -34,9 +34,11 @@
 #include "Motors.h"
 #include "Pixels.h"
 #include "IMU.h"
+#include <Chrono.h>
 
 // Variables & Objects //////////////////////////
 
+Chrono sendDataChrono;
 
 void setup()
 {
@@ -78,7 +80,10 @@ void loop()
     processMessage(message);
 
   // Send messages.
-  sendData();
+  if (sendDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
+    sendData();
+    sendDataChrono.restart();
+  }
 }
 
 void sendData() {
