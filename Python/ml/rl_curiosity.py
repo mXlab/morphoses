@@ -22,9 +22,7 @@ from pythonosc import osc_server
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 
-# This is to allow the inclusion of common python code in the ../mp folder
 import sys
-sys.path.append('../')
 
 import mp.preprocessing as mpp
 import tilecoding.representation as rep
