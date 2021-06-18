@@ -2,14 +2,14 @@
 #define MORPHOSES_CONFIG_
 
 // Network configuration.
-#define WIFI_SSID "the_ssid"
-#define WIFI_PASSWORD "the_password"
+#define WIFI_SSID "thessid"
+#define WIFI_PASSWORD "thepassword"
 
-// Local port is 8 followed by last IP number.
-#define LOCAL_PORT 8110
+// Interval between each sending of data (in milliseconds).
+#define SEND_DATA_INTERVAL 200
 
-// Destination port is always 8000.
-#define DEST_PORT 8000
+// Local (input) port is always 8000.
+#define LOCAL_PORT 8000
 
 // IP address of destination (PC).
 #define DEST_IP_0 192
@@ -18,9 +18,6 @@
 #define DEST_IP_3 100
 
 // Set to true to enable debugging outputs on the serial (consumes power).
-#define DEBUG_MODE false
-
-// Set to true to use ESP in access point (AP) mode (not recommended).
-#define AP_MODE false 
+#define DEBUG_MODE true
 
 #endif
