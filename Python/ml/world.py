@@ -162,5 +162,8 @@ class World:
     def store_quaternion(self, entity_name, quat):
         self.entities[entity_name].store_quaternion(quat, self.get_time())
 
+    def store_quaternion_main(self, entity_name, quat):
+        self.entities[entity_name].store_quaternion_main(quat, self.get_time())
+
     def debug(self):
         print(self.entities)
