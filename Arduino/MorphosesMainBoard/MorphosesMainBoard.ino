@@ -42,14 +42,17 @@ Chrono sendDataChrono;
 
 void setup()
 {
+  // Init neopixels.
   initPixels();
+
+  // Init motors.
   initMotors();
 
+  // Start I2C.
   Wire.begin();
 
-  // TWBR = 12;  // 400 kbit/sec I2C speed
+  // Start serial.
   Serial.begin(115200);
-  
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
@@ -111,9 +114,15 @@ void processMessage(OSCMessage& messIn) {
       if (DEBUG_MODE) Serial.print("stream value ");
       int32_t val = getArgAsInt(messIn, 0);
       if (DEBUG_MODE) Serial.println(val);
-      sendOSC = (val != 0);
-        Serial.print("SENDOSC:"); Serial.println(sendOSC);
-
+      boolean stream = (val != 0);
+      // If new value, enable/disable OSC & wake/sleep IMU.
+      if (sendOSC != stream) {
+        sendOSC = stream;
+        if (sendOSC)
+          wakeImu();
+        else
+          sleepImu();
+      }
     }
   }
 
