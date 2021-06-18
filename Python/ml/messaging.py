@@ -11,11 +11,15 @@ import paho.mqtt.client as mqtt
 import json
 
 class OscHelper:
-    def __init__(self, name, ip, send_port, receive_port):
-        print("Creating OSC link at IP {} send = {} recv = {}".format(ip, send_port, receive_port))
+    def __init__(self, name, ip, send_port, recv_port):
+        print("Creating OSC link at IP {} send = {} recv = {}".format(ip, send_port, recv_port))
         self.name = name
+        self.ip = ip
+        self.send_port = send_port
+        self.recv_port = recv_port
         osc_udp_client(ip, int(send_port), self.client_name())
-        osc_udp_server("0.0.0.0", int(receive_port), self.server_name())
+        osc_udp_server("0.0.0.0", int(recv_port), self.server_name())
+        self.maps = {}
 
     def client_name(self):
         return self.name + "_client"
@@ -23,15 +27,27 @@ class OscHelper:
     def server_name(self):
         return self.name + "_server"
 
-    def map(self, path, function, extra=None):
-        osc_method(path, function, argscheme=osm.OSCARG_EXTRA + osm.OSCARG_DATA, extra=extra)
-
     def send_message(self, path, args):
         if not isinstance(args, list):
             args = [ args ]
         msg = oscbuildparse.OSCMessage(path, None, args)
         osc_send(msg, self.client_name())
         osc_process()
+
+    # Adds an OSC path by assigning it to a function, with optional extra data.
+    def map(self, path, function, extra=None):
+        self.maps[path] = { 'function': function, 'extra': extra }
+
+    # Dispatches OSC message to appropriate function, if it corresponds to helper.
+    def dispatch(self, address, ip, data):
+        # Check if address matches and if IP corresponds: if so, call mapped function.
+        if address in self.maps and ip == self.ip:
+            item = self.maps[address]
+            func = item['function']
+            if item['extra'] is None:
+                func(data)
+            else:
+                func(data, item['extra'])
 
 class MqttHelper:
     def __init__(self, ip, port, world, settings):
@@ -79,25 +95,35 @@ class Messaging:
         # Init OSC.
         osc_startup()
 
+        # Send all paths to the dispatch() method with information.
+        osc_method("*", self.dispatch, argscheme=osm.OSCARG_ADDRESS + osm.OSCARG_SRCIDENT + osm.OSCARG_DATA)
+
+        # Create array of OscHelper objects for communicating with the robots.
         self.osc_robots = []
         for robot in settings['robots']:
-            item = {}
-            name = item['name'] = robot['name']
+            name = robot['name']
             main = robot['main']
             imu  = robot['imu']
-            item['main'] = OscHelper(name + "-main", main['ip'], main['osc_send_port'], main['osc_recv_port'])
-            item['imu']  = OscHelper(name + "-imu",   imu['ip'],  imu['osc_send_port'],  imu['osc_recv_port'])
+            osc_main = OscHelper(name + "-main", main['ip'], main['osc_send_port'], main['osc_recv_port'])
+            osc_imu  = OscHelper(name + "-imu",   imu['ip'],  imu['osc_send_port'],  imu['osc_recv_port'])
 
-            item['main'].map("/quat", self.receive_quaternion_main, name)
-            item['imu'] .map("/quat", self.receive_quaternion,      name)
+            osc_main.map("/quat", self.receive_quaternion_main, name)
+            osc_imu .map("/quat", self.receive_quaternion,      name)
 
-            self.osc_robots.append(item)
+            self.osc_robots.append(osc_main)
+            self.osc_robots.append(osc_imu)
 
         # Init MQTT.
         try:
             self.mqtt = MqttHelper(settings['rtls_gateway']['ip'], settings['rtls_gateway']['rtls_recv_port'], world, settings)
         except Exception:
             print("Problem with starting MQTT, please check server.")
+            sys.exit()
+
+    def dispatch(self, address, src_info, data):
+        ip = src_info[0]
+        for osc in self.osc_robots:
+            osc.dispatch(address, ip, data)
 
     def loop(self):
         osc_process()
@@ -106,10 +132,10 @@ class Messaging:
     def terminate(self):
         osc_terminate()
 
-    def receive_quaternion(self, name, quat):
+    def receive_quaternion(self, quat, name):
         self.world.store_quaternion(name, quat)
 
-    def receive_quaternion_main(self, name, quat):
+    def receive_quaternion_main(self, quat, name):
         self.world.store_quaternion_main(name, quat)
 
 def interrupt(signup, frame):
