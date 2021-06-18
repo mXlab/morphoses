@@ -56,11 +56,12 @@ void setup()
 	initWifi();
 
   // Initialize OTA.
-  //initOTA(boardName);
+  initOTA(boardName);
 }
 
 void loop()
 {
+  // Update OTA.
   updateOTA();  
    
   // Check connection status: reconnect if connection lost.
