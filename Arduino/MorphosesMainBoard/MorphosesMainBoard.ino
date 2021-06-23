@@ -106,7 +106,12 @@ void processMessage(OSCMessage& messIn) {
     destIP = udp.remoteIP();
     bndl.add("/bonjour").add(boardName);
   }
-  
+
+  // Reboot the ESP.
+  else if (messIn.fullMatch("/reboot")) {
+    ESP.restart();
+  }
+
   // Stream OSC messages ON/OFF.
   else if (messIn.fullMatch("/stream")) {
     if (DEBUG_MODE) Serial.println("STREAM");
@@ -146,6 +151,7 @@ void processMessage(OSCMessage& messIn) {
       setMotorsSpeed(val);
     }
   }
+
 
   // Drive steer/tilt/left-right motor.
   else if (messIn.fullMatch("/steer")) {

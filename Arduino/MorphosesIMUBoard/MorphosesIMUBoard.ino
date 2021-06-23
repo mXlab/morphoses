@@ -98,6 +98,11 @@ void processMessage(OSCMessage& messIn) {
     bndl.add("/bonjour").add(boardName);
   }
   
+  // Reboot the ESP.
+  else if (messIn.fullMatch("/reboot")) {
+    ESP.restart();
+  }
+
   // Stream OSC messages ON/OFF.
   else if (messIn.fullMatch("/stream")) {
     if (DEBUG_MODE) Serial.println("STREAM");
