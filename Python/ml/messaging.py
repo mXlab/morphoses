@@ -7,6 +7,10 @@ from osc4py3.as_eventloop import *
 from osc4py3 import oscbuildparse
 from osc4py3 import oscmethod as osm
 
+from pythonosc import osc_message_builder
+from pythonosc import udp_client
+
+
 import paho.mqtt.client as mqtt
 import json
 
@@ -17,7 +21,7 @@ class OscHelper:
         self.ip = ip
         self.send_port = send_port
         self.recv_port = recv_port
-        osc_udp_client(ip, int(send_port), self.client_name())
+        self.client = udp_client.SimpleUDPClient(ip, int(send_port))
         osc_udp_server("0.0.0.0", int(recv_port), self.server_name())
         self.maps = {}
 
@@ -30,9 +34,8 @@ class OscHelper:
     def send_message(self, path, args):
         if not isinstance(args, list):
             args = [ args ]
-        msg = oscbuildparse.OSCMessage(path, None, args)
-        osc_send(msg, self.client_name())
-        osc_process()
+        self.client.send_message(path, args)
+        print("Sending message {} {} to {}".format(path, str(args), self.client_name()))
 
     # Adds an OSC path by assigning it to a function, with optional extra data.
     def map(self, path, function, extra=None):
@@ -80,7 +83,7 @@ class MqttHelper:
 
     # The callback for when a PUBLISH message is received from the server.
     def mqtt_on_message(self, client, userdata, msg):
-        print(msg.topic+" "+str(msg.payload))
+        # print(msg.topic+" "+str(msg.payload))
         data = json.loads(msg.payload)
         pos = data['position']
         if (pos['quality'] > 0): # only update if quality is good
@@ -99,7 +102,7 @@ class Messaging:
         osc_method("*", self.dispatch, argscheme=osm.OSCARG_ADDRESS + osm.OSCARG_SRCIDENT + osm.OSCARG_DATA)
 
         # Create array of OscHelper objects for communicating with the robots.
-        self.osc_robots = []
+        self.osc_robots = {}
         for robot in settings['robots']:
             name = robot['name']
             main = robot['main']
@@ -110,8 +113,7 @@ class Messaging:
             osc_main.map("/quat", self.receive_quaternion_main, name)
             osc_imu .map("/quat", self.receive_quaternion,      name)
 
-            self.osc_robots.append(osc_main)
-            self.osc_robots.append(osc_imu)
+            self.osc_robots[name] = { 'main': osc_main, 'imu': osc_imu }
 
         # Init MQTT.
         try:
@@ -120,10 +122,14 @@ class Messaging:
             print("Problem with starting MQTT, please check server.")
             sys.exit()
 
+    def send(self, robot_name, address, args, board_name='main'):
+        self.osc_robots[robot_name][board_name].send_message(address, args)
+
     def dispatch(self, address, src_info, data):
         ip = src_info[0]
-        for osc in self.osc_robots:
-            osc.dispatch(address, ip, data)
+        for robot in self.osc_robots.values():
+            for node in robot.values():
+                node.dispatch(address, ip, data)
 
     def loop(self):
         osc_process()
@@ -139,9 +145,10 @@ class Messaging:
         self.world.store_quaternion_main(name, quat)
 
 def interrupt(signup, frame):
-    global messaging
+    global my_world, stop
     print("Exiting program...")
-    messaging.terminate()
+    my_world.terminate()
+    stop = True
     sys.exit()
 
 signal.signal(signal.SIGINT, interrupt)
@@ -149,11 +156,12 @@ signal.signal(signal.SIGINT, interrupt)
 if __name__ == '__main__':
     import yaml
     import world
+
+    stop = False
     settings = yaml.load(open('settings.yml', 'r'), Loader=yaml.SafeLoader)
-    w = world.World(settings)
-    messaging = Messaging(w, settings)
-    while True:
-        messaging.loop()
-        w.update()
-        w.debug()
-#        time.sleep(1)
+    my_world = world.World(settings)
+    while not stop:
+        my_world.step()
+#        my_world.debug()
+#        time.sleep(0.5)
+

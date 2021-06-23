@@ -2,11 +2,9 @@ import numpy as np
 import math
 import time
 
-import mp.preprocessing as mpp
+from utils import *
 
-# Returns the signed difference between two angles.
-def dist_angles(a1, a2):
-    return math.atan2(math.sin(a1-a2), math.cos(a1-a2))
+import messaging
 
 # Returns the difference between current and previous datapoints.
 def delta(data, prev_data):
@@ -17,25 +15,26 @@ def delta(data, prev_data):
     d[8] = dist_angles(data[8]*two_pi, prev_data[8]*two_pi)
     return d
 
-def map(x, in_min, in_max, out_min, out_max):
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
-
-def map01(x, in_min, in_max):
-    return (x - in_min) / (in_max - in_min)
-
 # Holds one data point, allowing to compute its delta and standardization.
 class Data:
     def __init__(self, value=0,
                  min_value=-1, max_value=+1,
-                 max_change_per_second=0.1,
+                 max_change_per_second=1,
+                 auto_scale=True,
                  is_angle=False):
         self.value = value
         self.prev_value = value
         self.delta_value = 0
         self.stored_value = value
-        self.min_value = min_value
-        self.max_value = max_value
-        self.max_change_per_second = max_change_per_second
+        self.auto_scale = auto_scale
+        if self.auto_scale:
+            self.min_value = +9999
+            self.max_value = -9999
+            self.max_change_per_second = -9999
+        else:
+            self.min_value = min_value
+            self.max_value = max_value
+            self.max_change_per_second = max_change_per_second
         self.is_angle = is_angle
         self.stored_time = None
         self.prev_time = None
@@ -44,6 +43,9 @@ class Data:
     def store(self, value, t):
         self.stored_value = value
         self.stored_time = t
+        if self.auto_scale:
+            self.min_value = min(self.min_value, self.stored_value)
+            self.max_value = max(self.max_value, self.stored_value)
 
     # Update values based on stored value.
     def update(self):
@@ -80,15 +82,19 @@ class Data:
             self.delta_value = delta_value / interval
         else:
             self.delta_value = 0
+        if self.auto_scale:
+            self.max_change_per_second = max(self.max_change_per_second, abs(self.delta_value))
 
     def __repr__(self):
-        return str( "s:{} v:{} d:{}".format(self.stored_value, self.value, self.delta_value))
+        return str(self.stored_value)
+#        return str( "s:{} v:{} d:{}".format(self.stored_value, self.value, self.delta_value))
 
 class EntityData:
-    def __init__(self, labels):
+    def __init__(self):
         self.data = {}
-        for l in labels:
-            self.data[l] = Data()
+
+    def add_data(self, label, **kwargs):
+        self.data[label] = Data(kwargs)
 
     def store(self, label, value, t):
         if isinstance(label, list):
@@ -102,31 +108,46 @@ class EntityData:
         for d in self.data.values():
             d.update()
 
+    def get(self, label):
+        return self.data[label]
+
     def __repr__(self):
         return str(self.data)
 
 class RobotData(EntityData):
     def __init__(self):
-        super().__init__(['x', 'y',
-                          'qx', 'qy', 'qz', 'qw', 'rx', 'ry', 'rz',
-                          'mqx', 'mqy', 'mqz', 'mqw', 'mrx', 'mry', 'mrz'])
+        super().__init__()
+        self.add_data('x')
+        self.add_data('y')
+        self.add_data('qx')
+        self.add_data('qy')
+        self.add_data('qz')
+        self.add_data('qw')
+        self.add_data('rx', is_angle=True, auto_scale=False, max_change_per_second=90)
+        self.add_data('ry', is_angle=True, auto_scale=False, max_change_per_second=90)
+        self.add_data('rz', is_angle=True, auto_scale=False, max_change_per_second=90)
+        # super().__init__(['x', 'y',
+        #                   'qx', 'qy', 'qz', 'qw', 'rx', 'ry', 'rz',
+        #                   'mqx', 'mqy', 'mqz', 'mqw', 'mrx', 'mry', 'mrz'])
 
     def store_position(self, position, t):
         self.store(['x', 'y'], position, t)
 
     def store_quaternion(self, quat, t):
         self.store(['qx', 'qy', 'qz', 'qw'], quat, t)
-        rx, ry, rz = mpp.quaternion_to_euler(quat[0], quat[1], quat[2], quat[3])
+        rx, ry, rz = quaternion_to_euler(quat[0], quat[1], quat[2], quat[3])
         self.store(['rx', 'ry', 'rz'], [rx, ry, rz], t)
 
     def store_quaternion_main(self, quat, t):
         self.store(['mqx', 'mqy', 'mqz', 'mqw'], quat, t)
-        rx, ry, rz = mpp.quaternion_to_euler(quat[0], quat[1], quat[2], quat[3])
+        rx, ry, rz = quaternion_to_euler(quat[0], quat[1], quat[2], quat[3])
         self.store(['mrx', 'mry', 'mrz'], [rx, ry, rz], t)
 
 class ThingData(EntityData):
     def __init__(self):
-        super().__init__(['x', 'y'])
+        super().__init__()
+        self.add_data('x')
+        self.add_data('y')
 
     def store_position(self, position, t):
         self.store(['x', 'y'], position, t)
@@ -142,12 +163,67 @@ class World:
             thing_name = thing['name']
             self.entities[thing_name] = ThingData()
 
-    def get(self, entity_name, variable, standardized=True):
-        if variable.startswith('d_'):
-            var = variable[2:] # remove the 'd_' part
-            return self.entities[entity_name][var].get_delta(standardized)
+        self.messaging = messaging.Messaging(self, settings)
+
+        self.max_speed = settings['motors']['max_speed']
+        self.max_steer = settings['motors']['max_steer']
+
+    def get(self, agent, variable, standardized=True):
+        # Process variables as list.
+        if isinstance(variable, list):
+            values = []
+            for v in variable:
+                values.append(self.get(agent, v, standardized))
+            return np.array(values)
+
+        # Process single variable.
         else:
-            return self.entities[entity_name][variable].get(standardized)
+            entity_name, variable, delta = self._get_variable_info(agent, variable)
+            data = self.entities[entity_name].get(variable)
+            if delta:
+                return data.get_delta(standardized)
+            else:
+                return data.get(standardized)
+
+    def _get_variable_info(self, agent, variable):
+        # Extract entity from 'entity.variable' format.
+        if '.' in variable:
+            entity_name, var = variable.split('.')
+            if entity_name == 'this':
+                entity_name = agent.get_name()
+            variable = var
+        else:
+            entity_name = agent.get_name()
+        # Check delta variables.
+        if variable.startswith('d_'):
+            variable = variable[2:]  # remove the 'd_' part
+            delta = True
+        else:
+            delta = False
+        # Return info as tuple.
+        return entity_name, variable, delta
+
+    def do_action(self, agent, action):
+        self.messaging.send(agent.get_name(), "/speed", np.clip(action[0], -self.max_speed, self.max_speed))
+        self.messaging.send(agent.get_name(), "/steer", np.clip(action[1], -self.max_steer, self.max_steer))
+
+    def set_color(self, agent, rgb):
+        pass
+#        self.messaging.send(agent.get_name(), "/rgb", rgb)
+
+
+    def step(self):
+        self.messaging.loop()
+        self.update()
+        self.debug()
+
+    def sleep(self, t):
+        start_time = time.time()
+        while time.time() - start_time < t:
+            self.messaging.loop()
+
+    def terminate(self):
+        self.messaging.terminate()
 
     def update(self):
         for entity in self.entities.values():
@@ -164,6 +240,9 @@ class World:
 
     def store_quaternion_main(self, entity_name, quat):
         self.entities[entity_name].store_quaternion_main(quat, self.get_time())
+
+    def set_motors(self, entity_name, speed, steer):
+        pass
 
     def debug(self):
         print(self.entities)
