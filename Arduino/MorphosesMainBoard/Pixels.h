@@ -23,8 +23,9 @@ void setPixels(int r, int g, int b) {
   // Write all pixels.
   for (int i=0; i<pixels.numPixels(); i++)
     pixels.setPixelColor(i, pixels.Color(r, g, b));
-  portDISABLE_INTERRUPTS();
-  pixels.show();   // Send the updated pixel colors to the hardware.
-  portENABLE_INTERRUPTS();
+
+//  portDISABLE_INTERRUPTS();  
+  // Send the updated pixel colors to the hardware.
   pixels.show();   
+//  portENABLE_INTERRUPTS();
 }
