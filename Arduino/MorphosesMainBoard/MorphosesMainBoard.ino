@@ -166,10 +166,13 @@ void processMessage(OSCMessage& messIn) {
   else if (messIn.fullMatch("/rgb")) {
     if (argIsNumber(messIn, 0)) {
       if (DEBUG_MODE) Serial.print("RGB colors ");
-      int r = getArgAsInt(messIn, 0);
-      int g = getArgAsInt(messIn, 1);
-      int b = getArgAsInt(messIn, 2);
-      setPixels(r, b, g);
+      if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
+        int r = getArgAsInt(messIn, 0);
+        int g = getArgAsInt(messIn, 1);
+        int b = getArgAsInt(messIn, 2);
+        if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
+        setPixels(r, b, g);
+      }
     }
   }
 }
