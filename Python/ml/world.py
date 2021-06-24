@@ -115,10 +115,10 @@ class EntityData:
         return str(self.data)
 
 class RobotData(EntityData):
-    def __init__(self):
+    def __init__(self, version, boundaries):
         super().__init__()
-        self.add_data('x')
-        self.add_data('y')
+        self.add_data('x', auto_scale=False, min_value=boundaries['x_min'], max_value=boundaries['x_max'])
+        self.add_data('y', auto_scale=False, min_value=boundaries['y_min'], max_value=boundaries['y_max'])
         self.add_data('qx')
         self.add_data('qy')
         self.add_data('qz')
@@ -126,9 +126,10 @@ class RobotData(EntityData):
         self.add_data('rx', is_angle=True, auto_scale=False, max_change_per_second=90)
         self.add_data('ry', is_angle=True, auto_scale=False, max_change_per_second=90)
         self.add_data('rz', is_angle=True, auto_scale=False, max_change_per_second=90)
-        # super().__init__(['x', 'y',
-        #                   'qx', 'qy', 'qz', 'qw', 'rx', 'ry', 'rz',
-        #                   'mqx', 'mqy', 'mqz', 'mqw', 'mrx', 'mry', 'mrz'])
+        self.version = version
+
+    def get_version(self):
+        return self.version
 
     def store_position(self, position, t):
         self.store(['x', 'y'], position, t)
@@ -158,7 +159,7 @@ class World:
         self.entities = {}
         for robot in settings['robots']:
             robot_name = robot['name']
-            self.entities[robot_name] = RobotData()
+            self.entities[robot_name] = RobotData(robot['version'], settings['boundaries'])
         for thing in settings['things']:
             thing_name = thing['name']
             self.entities[thing_name] = ThingData()
@@ -204,13 +205,22 @@ class World:
         return entity_name, variable, delta
 
     def do_action(self, agent, action):
-        self.messaging.send(agent.get_name(), "/speed", np.clip(action[0], -self.max_speed, self.max_speed))
-        self.messaging.send(agent.get_name(), "/steer", np.clip(action[1], -self.max_steer, self.max_steer))
+        speed = np.clip(action[0], -self.max_speed, self.max_speed)
+        steer = np.clip(action[1], -self.max_steer, self.max_steer)
+        if self.entities[agent.get_name()].get_version() >= 3:
+            self.messaging.send(agent.get_name(), "/speed", speed)
+            self.messaging.send(agent.get_name(), "/steer", steer)
+        else:
+            self.messaging.send(agent.get_name(), "/motor/1", round(speed*128))
+            self.messaging.send(agent.get_name(), "/motor/2", round(steer*90))
 
     def set_color(self, agent, rgb):
-        pass
-#        self.messaging.send(agent.get_name(), "/rgb", rgb)
-
+        if self.entities[agent.get_name()].get_version() >= 3:
+            self.messaging.send(agent.get_name(), "/rgb", rgb)
+        else:
+            self.messaging.send(agent.get_name(), "/red",   rgb[0])
+            self.messaging.send(agent.get_name(), "/green", rgb[1])
+            self.messaging.send(agent.get_name(), "/blue",  rgb[2])
 
     def step(self):
         self.messaging.loop()
