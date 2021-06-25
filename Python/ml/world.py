@@ -109,6 +109,13 @@ class EntityData:
     def get(self, label):
         return self.data[label]
 
+    def get_value(self, label, delta=False, standardized=True):
+        data = self.get(label)
+        if delta:
+            return data.get_delta(standardized)
+        else:
+            return data.get(standardized)
+
     def store_polar(self, target_name, target, t):
         # Compute distance to target.
         distance = math.dist( (self.get_value('x', standardized=False), self.get_value('y', standardized=False)),
