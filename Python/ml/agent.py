@@ -24,6 +24,9 @@ class Agent:
         self.time_step = np.max(kwargs.get('time_step', 0), 0)
         self.time_balance = np.max(kwargs.get('time_balance', 0), 0)
 
+        self.max_speed = np.max(kwargs.get('max_speed', 1), 0)
+        self.max_steer = np.max(kwargs.get('max_steer', 1), 0)
+
         self.use_sarsa = kwargs.get('use_sarsa', True)
 
         self.state_profile = kwargs.get('state_profile', [])
@@ -91,6 +94,12 @@ class Agent:
 
     def get_name(self):
         return self.name
+
+    def get_max_speed(self):
+        return self.max_speed
+
+    def get_max_steer(self):
+        return self.max_steer
 
     def begin(self):
         self.prev_state = self.get_state()
