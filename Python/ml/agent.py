@@ -214,7 +214,7 @@ class Agent:
             self.model_q.fit(state_to_tile_coding(self.prev_state, self.tile_coding), target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
         else:
             target_vec = q_table_predict(self.model_q, self.prev_state, self.tile_coding)
-            q_table_update(self.model_q, state, self.tile_coding, target, self.prev_action, self.learning_rate)
+            q_table_update(self.model_q, self.tile_coding, self.prev_state, self.prev_action, target, self.learning_rate)
 
 
         # Convert action ID to actual action.
