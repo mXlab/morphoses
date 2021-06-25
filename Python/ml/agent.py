@@ -139,10 +139,11 @@ class Agent:
         r = self.curiosity_weight * r_int + (1 - self.curiosity_weight) * r_ext
         self.min_r = min(self.min_r, r)
         self.max_r = max(self.max_r, r)
-        r = np.clip(r, self.min_r, self.max_r)
-        scaled_r = (r - self.min_r) / (self.max_r - self.min_r + 0.000001) # TODO: improve this
-        brightness = round(scaled_r * 255)
-        self.world.set_color(self, [255 - brightness, brightness, 0])
+        scaled_r = utils.map01(r, self.min_r, self.max_r)
+        print("scaled reward: ", scaled_r)
+        self.world.set_color(self, utils.lerp_color(scaled_r, [64, 32, 16], [255, 128, 64]))
+        # self.world.set_color(self, utils.lerp_color(scaled_r, [255, 64, 0], [255, 128, 64]))
+#        self.world.set_color(self, [ round((1 - scaled_r)*255), round(scaled_r*200), 0])
 
 #            print(r)
 
