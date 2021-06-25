@@ -17,15 +17,13 @@ def delta(data, prev_data):
 
 # Holds one data point, allowing to compute its delta and standardization.
 class Data:
-    def __init__(self, value=0,
+    def __init__(self,
                  min_value=-1, max_value=+1,
                  max_change_per_second=1,
                  auto_scale=True,
                  is_angle=False):
-        self.value = value
-        self.prev_value = value
+        self.value = self.prev_value = self.stored_value = 0
         self.delta_value = 0
-        self.stored_value = value
         self.auto_scale = auto_scale
         if self.auto_scale:
             self.min_value = +9999
@@ -94,7 +92,7 @@ class EntityData:
         self.data = {}
 
     def add_data(self, label, **kwargs):
-        self.data[label] = Data(kwargs)
+        self.data[label] = Data(**kwargs)
 
     def store(self, label, value, t):
         if isinstance(label, list):
