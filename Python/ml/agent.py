@@ -216,12 +216,8 @@ class Agent:
             target_vec = q_table_predict(self.model_q, self.prev_state, self.tile_coding)
             q_table_update(self.model_q, self.tile_coding, self.prev_state, self.prev_action, target, self.learning_rate)
 
-
-        # Convert action ID to actual action.
-        actual_action = self.action_set.get_action(action)
-
         # Perform action in world.
-        self.world.do_action(self, actual_action)
+        self.world.do_action(self, self.action_set.get_action(action))
 
         # Save action and state for next iteration.
         self.prev_action = action
