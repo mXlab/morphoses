@@ -109,6 +109,30 @@ class EntityData:
     def get(self, label):
         return self.data[label]
 
+    def store_polar(self, target_name, target, t):
+        # Compute distance to target.
+        distance = math.dist( (self.get_value('x', standardized=False), self.get_value('y', standardized=False)),
+                              (target.get_value('x', standardized=False), target.get_value('y', standardized=False)) )
+        self.store('dist_{}'.format(target_name), distance, t)
+
+        # Computer vector for robot instantaneous direction.
+        forward = np.sign(self.get_value('speed'))
+        delta_pos = np.array([forward * self.get_value('x', delta=True), forward * self.get_value('y', delta=True)]) # invert according to current speed
+        # print("velocity: ({}, {}) speed: {}".format(delta_pos[0], delta_pos[1], self.get_value('speed')))
+
+        # Compute vector from robot to target state.
+        delta_robot_to_target = np.array([target.get_value('x') - self.get_value('x'), target.get_value('y') - self.get_value('y')])
+
+        # Normalize vectors.
+        delta_pos = normalize(delta_pos)
+        delta_robot_to_target = normalize(delta_robot_to_target)
+
+        # Compute relative angle.
+        dot_product = np.dot(delta_pos, delta_robot_to_target)
+        angle = np.arccos(dot_product)
+        angle = np.rad2deg(angle)
+        # print("** target: {} drt: {} dp: {} angle: {}".format(target_name, delta_robot_to_target, delta_pos, angle))
+        self.store('angle_{}'.format(target_name), angle, t)
     def __repr__(self):
         return str(self.data)
 
@@ -124,6 +148,12 @@ class RobotData(EntityData):
         self.add_data('rx', is_angle=True, auto_scale=False, max_change_per_second=90)
         self.add_data('ry', is_angle=True, auto_scale=False, max_change_per_second=90)
         self.add_data('rz', is_angle=True, auto_scale=False, max_change_per_second=90)
+
+        max_dist = math.dist( (boundaries['x_min'], boundaries['y_min']), (boundaries['x_max'], boundaries['y_max']) )
+        max_dist *= 0.5 # let's be realistic
+        for name in entities:
+            self.add_data('dist_{}'.format(name), auto_scale=False, min_value=0, max_value=max_dist)
+            self.add_data('angle_{}'.format(name), is_angle=True, auto_scale=False, min_value=0, max_value=360)
         self.version = version
 
     def get_version(self):
@@ -253,7 +283,15 @@ class World:
         return time.time() - self.start_time
 
     def store_position(self, entity_name, pos):
-        self.entities[entity_name].store_position(pos, self.get_time())
+        t = self.get_time()
+        entity = self.entities[entity_name]
+        entity.store_position(pos, t)
+
+        # Update distances relative to other robots and entities.
+        for name in self.robots:
+            other_robot = self.entities[name]
+            other_robot.store_polar(entity_name, entity, t)
+            entity.store_polar(name, other_robot, t)
 
     def store_quaternion(self, entity_name, quat):
         self.entities[entity_name].store_quaternion(quat, self.get_time())
