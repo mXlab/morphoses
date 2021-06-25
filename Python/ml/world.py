@@ -140,11 +140,12 @@ class EntityData:
         angle = np.rad2deg(angle)
         # print("** target: {} drt: {} dp: {} angle: {}".format(target_name, delta_robot_to_target, delta_pos, angle))
         self.store('angle_{}'.format(target_name), angle, t)
+
     def __repr__(self):
         return str(self.data)
 
 class RobotData(EntityData):
-    def __init__(self, version, boundaries):
+    def __init__(self, boundaries, entities, version):
         super().__init__()
         self.add_data('x', auto_scale=False, min_value=boundaries['x_min'], max_value=boundaries['x_max'])
         self.add_data('y', auto_scale=False, min_value=boundaries['y_min'], max_value=boundaries['y_max'])
@@ -185,10 +186,10 @@ class RobotData(EntityData):
         self.store(['speed', 'steer'], action, t)
 
 class ThingData(EntityData):
-    def __init__(self):
+    def __init__(self, boundaries):
         super().__init__()
-        self.add_data('x')
-        self.add_data('y')
+        self.add_data('x', auto_scale=False, min_value=boundaries['x_min'], max_value=boundaries['x_max'])
+        self.add_data('y', auto_scale=False, min_value=boundaries['y_min'], max_value=boundaries['y_max'])
 
     def store_position(self, position, t):
         self.store(['x', 'y'], position, t)
@@ -208,6 +209,7 @@ class World:
 
         self.max_speed = settings['motors']['max_speed']
         self.max_steer = settings['motors']['max_steer']
+        self.virtual_boundaries = settings['virtual_boundaries']
 
     def get(self, agent, variable, standardized=True):
         # Process variables as list.
@@ -275,6 +277,11 @@ class World:
             self.messaging.send(name, "/red",   rgb[0])
             self.messaging.send(name, "/green", rgb[1])
             self.messaging.send(name, "/blue",  rgb[2])
+
+    def is_inside_boundaries(self, agent):
+        x = self.get(agent, 'x', standardized=False)
+        y = self.get(agent, 'y', standardized=False)
+        return self.virtual_boundaries['x_min'] <= x and x <= self.virtual_boundaries['x_max'] and self.virtual_boundaries['y_min'] <= y and y <= self.virtual_boundaries['y_max']
 
     def step(self):
         self.messaging.loop()
