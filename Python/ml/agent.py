@@ -63,7 +63,7 @@ class Agent:
             self.n_inputs_q = self.n_inputs
 
         # Create model Q(state_t, action_t).
-        n_hidden_q = kwargs.get('n_hidden_q', 64)
+        n_hidden_q = kwargs.get('n_hidden_q', 32)
         if self.use_ann:
             self.model_q = Sequential()
             self.model_q.add(InputLayer(batch_input_shape=(1, self.n_inputs_q)))
@@ -82,7 +82,7 @@ class Agent:
 
         # Create forward model (for curiosity): predicts state_{t+1} = f(state_t, action_t)
         self.n_inputs_forward = self.n_inputs + self.n_actions
-        n_hidden_forward = kwargs.get('n_hidden_forward', 64)
+        n_hidden_forward = kwargs.get('n_hidden_forward', 32)
         self.model_forward = Sequential()
         self.model_forward.add(InputLayer(batch_input_shape=(1, self.n_inputs_forward)))
         if n_hidden_forward > 0:
