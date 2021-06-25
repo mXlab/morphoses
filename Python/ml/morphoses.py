@@ -20,10 +20,20 @@ if __name__ == "__main__":
     world = World(settings)
 
     # Create agents (for now just one agent).
-    agent = Agent(world=world, **run_settings)
+    behaviors = run_settings['behaviors']
+    robots = run_settings['robots']
+    agents = []
+    for robot in robots:
+        b = robots[robot]
+        agents.append(Agent(world=world, name=robot, **behaviors[b]))
 
-    agent.begin()
+    for a in agents:
+        a.begin()
+
+    world.sleep(1)
+    world.update()
 
     while True:
         world.step()
-        agent.step()
+        for a in agents:
+            a.step()
