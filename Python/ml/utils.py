@@ -1,3 +1,5 @@
+import math
+import numpy as np
 # Map value to new range.
 def map(value, fromMin, fromMax, toMin, toMax):
     # Avoids divisions by zero.
@@ -10,13 +12,25 @@ def map01(x, in_min, in_max):
         return 0.5
     return (x - in_min) / (in_max - in_min)
 
+def normalize(vec):
+    norm = np.linalg.norm(vec)
+    if norm == 0:
+        return vec
+    else:
+        return vec / norm
+
+def lerp_color(t, from_color, to_color):
+    color = []
+    for i in range(3):
+        color.append( (1-t) * from_color[i] + t * to_color[i])
+    return color
+
 # Returns the signed difference between two angles.
 def dist_angles(a1, a2):
     return math.atan2(math.sin(a1-a2), math.cos(a1-a2))
 
 # Transforms quaternion coordinates into Euler angles (in degrees).
 def quaternion_to_euler(x, y, z, w):
-    import math
     # Roll.
     t0 = +2.0 * (w * x + y * z)
     t1 = +1.0 - 2.0 * (x * x + y * y)
