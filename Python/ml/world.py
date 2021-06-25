@@ -210,17 +210,29 @@ class World:
         if self.entities[agent.get_name()].get_version() >= 3:
             self.messaging.send(agent.get_name(), "/speed", speed)
             self.messaging.send(agent.get_name(), "/steer", steer)
+    def set_motors(self, agent, speed, steer):
+        if isinstance(agent, str):
+            name = agent
         else:
-            self.messaging.send(agent.get_name(), "/motor/1", round(speed*128))
-            self.messaging.send(agent.get_name(), "/motor/2", round(steer*90))
+            name = agent.get_name()
+        if self.entities[name].get_version() >= 3:
+            self.messaging.send(name, "/speed", speed)
+            self.messaging.send(name, "/steer", steer)
+        else:
+            self.messaging.send(name, "/motor/1", round(speed*128))
+            self.messaging.send(name, "/motor/2", round(steer*90))
 
     def set_color(self, agent, rgb):
-        if self.entities[agent.get_name()].get_version() >= 3:
-            self.messaging.send(agent.get_name(), "/rgb", rgb)
+        if isinstance(agent, str):
+            name = agent
         else:
-            self.messaging.send(agent.get_name(), "/red",   rgb[0])
-            self.messaging.send(agent.get_name(), "/green", rgb[1])
-            self.messaging.send(agent.get_name(), "/blue",  rgb[2])
+            name = agent.get_name()
+        if self.entities[name].get_version() >= 3:
+            self.messaging.send(name, "/rgb", rgb)
+        else:
+            self.messaging.send(name, "/red",   rgb[0])
+            self.messaging.send(name, "/green", rgb[1])
+            self.messaging.send(name, "/blue",  rgb[2])
 
     def step(self):
         self.messaging.loop()
@@ -250,9 +262,6 @@ class World:
 
     def store_quaternion_main(self, entity_name, quat):
         self.entities[entity_name].store_quaternion_main(quat, self.get_time())
-
-    def set_motors(self, entity_name, speed, steer):
-        pass
 
     def debug(self):
         print(self.entities)
