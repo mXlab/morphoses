@@ -100,14 +100,14 @@ class Agent:
         self.max_r = -9999
         self.min_r = +9999
         self.iter = 0
+        self.prev_corr_action = None
 
     def step(self):
         # If the robot is within virtual fence: Perform standard RL loop.
-#        if self.is_inside_boudaries():
-        if True:
+        if self.is_inside_boundaries():
             self.step_rl()
-#        else:
-#            self.step_recenter()
+        else:
+            self.step_recenter()
 
     def is_inside_boundaries(self):
         return True
@@ -229,7 +229,56 @@ class Agent:
             self.world.sleep(self.time_balance)
 
     def step_recenter(self):
-        pass
+        print('Outside virtual fence', 0)
+
+        # Signal that I am out.
+        self.world.set_color(self, [0, 0, 255])
+
+        # Pause and stabilise the robot
+        self.world.set_motors(self, 0, 0)
+        time.sleep(1)
+
+        # If no correction was made on robot position, use previous action as previous correction action.
+        if self.prev_corr_action is None:
+            self.prev_corr_action = self.action_set.get_action(self.prev_action)
+
+        # Get signs of previous speed and steer actions.
+        sgn_speed = np.sign(self.prev_corr_action[0])
+        sgn_steer = np.sign(self.prev_corr_action[1])
+
+        # If previous speed action was zero, take random speed action during short time. (Could be improved...)
+        if sgn_speed == 0:
+            corr_speed = random.choice([-1., 1.])
+            time_corr_action = 2
+
+        # Else, correct speed as opposite previous speed action during long time.
+        else:
+            corr_speed = -1. * self.prev_corr_action[0]
+            time_corr_action = 6
+
+        # If previous steer action was zero, choose random steer action. (Could be improved...)
+        if sgn_steer == 0:
+            corr_steer = random.choice([-1., 1.]) * 0.5
+
+        # Else, correct steer as opposite previous steer action.
+        else:
+            corr_steer = -1. * self.prev_corr_action[1]
+
+        corr_action = [corr_speed, corr_steer]
+        print('corr_action', corr_action)
+
+        # Send corrective action to robot.
+        self.world.set_motors(self, corr_action[0], corr_action[1])
+
+        # Store previous corrective action.
+        self.prev_corr_action = corr_action
+
+        # Wait
+        time.sleep(time_corr_action)
+
+        # Pause and stabilise the robot
+        self.world.set_motors(self, 0, 0)
+        time.sleep(1)
 
     def get_state(self):
         return np.reshape(np.array(self.world.get(self, self.state_profile)), (1, self.n_inputs))
