@@ -155,6 +155,8 @@ class RobotData(EntityData):
         self.add_data('rx', is_angle=True, auto_scale=False, max_change_per_second=90)
         self.add_data('ry', is_angle=True, auto_scale=False, max_change_per_second=90)
         self.add_data('rz', is_angle=True, auto_scale=False, max_change_per_second=90)
+        self.add_data('speed', min_value=-1, max_value=1, auto_scale=False)
+        self.add_data('steer', min_value=-1, max_value=1, auto_scale=False)
 
         max_dist = math.dist( (boundaries['x_min'], boundaries['y_min']), (boundaries['x_max'], boundaries['y_max']) )
         max_dist *= 0.5 # let's be realistic
@@ -178,6 +180,9 @@ class RobotData(EntityData):
         self.store(['mqx', 'mqy', 'mqz', 'mqw'], quat, t)
         rx, ry, rz = quaternion_to_euler(quat[0], quat[1], quat[2], quat[3])
         self.store(['mrx', 'mry', 'mrz'], [rx, ry, rz], t)
+
+    def store_action(self, action, t):
+        self.store(['speed', 'steer'], action, t)
 
 class ThingData(EntityData):
     def __init__(self):
@@ -240,11 +245,13 @@ class World:
         return entity_name, variable, delta
 
     def do_action(self, agent, action):
-        speed = np.clip(action[0], -self.max_speed, self.max_speed)
-        steer = np.clip(action[1], -self.max_steer, self.max_steer)
-        if self.entities[agent.get_name()].get_version() >= 3:
-            self.messaging.send(agent.get_name(), "/speed", speed)
-            self.messaging.send(agent.get_name(), "/steer", steer)
+        # Store action in entity.
+        self.entities[agent.get_name()].store_action(action, self.get_time())
+        # Perform actual action.
+        speed = np.clip(action[0], -agent.get_max_speed(), agent.get_max_speed())
+        steer = np.clip(action[1], -agent.get_max_steer(), agent.get_max_steer())
+        self.set_motors(agent, speed, steer)
+
     def set_motors(self, agent, speed, steer):
         if isinstance(agent, str):
             name = agent
