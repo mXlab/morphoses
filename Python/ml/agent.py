@@ -324,17 +324,15 @@ def q_table_predict(q_table, state, tc):
     q_sum = np.zeros(q_table.shape[1])
     for c in code:
         q_sum += q_table[c]
-    return q_sum
+    return q_sum / len(code)
 
-def q_table_update(q_table, state, tc, target, action, lr):
+def q_table_update(q_table, tc, state, action, target, lr):
     code = tc(state[0])
     if code.size == 1:
         code = [code]
-    n_bins = len(code)
-    x = 0
     for c in code:
         # print("Update Q({},{}): {} to target {} with lr {}".format(c, action, q_table[c][action], target / n_bins, lr))
-        q_table[c,action] -= lr * (q_table[c][action] - target / n_bins)
+        q_table[c, action] -= lr * (q_table[c, action] - target)
         # print("==> {}".format(q_table[c][action]))
 
 
