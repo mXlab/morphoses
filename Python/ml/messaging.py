@@ -151,11 +151,12 @@ def interrupt(signup, frame):
     stop = True
     sys.exit()
 
-signal.signal(signal.SIGINT, interrupt)
 
 if __name__ == '__main__':
     import yaml
     import world
+
+    signal.signal(signal.SIGINT, interrupt)
 
     stop = False
     settings = yaml.load(open('settings.yml', 'r'), Loader=yaml.SafeLoader)
