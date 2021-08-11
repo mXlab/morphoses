@@ -184,9 +184,9 @@ class RobotData(EntityData):
         rx, ry, rz = quaternion_to_euler(quat[0], quat[1], quat[2], quat[3])
         self.store(['rx', 'ry', 'rz'], [rx, ry, rz], t)
 
-    def store_quaternion_main(self, quat, t):
+    def store_quaternion_main(self, quat, t, zOffset):
         self.store(['mqx', 'mqy', 'mqz', 'mqw'], quat, t)
-        rx, ry, rz = quaternion_to_euler(quat[0], quat[1], quat[2], quat[3])
+        rx, ry, rz = quaternion_to_euler(quat[0], quat[1], quat[2], quat[3], zOffset)
         self.store(['mrx', 'mry', 'mrz'], [rx, ry, rz], t)
 
     def store_action(self, action, t):
