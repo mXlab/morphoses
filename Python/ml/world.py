@@ -156,6 +156,14 @@ class RobotData(EntityData):
         self.add_data('rx', is_angle=True)
         self.add_data('ry', is_angle=True)
         self.add_data('rz', is_angle=True)
+
+        self.add_data('mqx')
+        self.add_data('mqy')
+        self.add_data('mqz')
+        self.add_data('mqw')
+        self.add_data('mrx', is_angle=True)
+        self.add_data('mry', is_angle=True)
+        self.add_data('mrz', is_angle=True)
         self.add_data('speed', min_value=-1, max_value=1, auto_scale=False)
         self.add_data('steer', min_value=-1, max_value=1, auto_scale=False)
 
