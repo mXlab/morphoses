@@ -277,8 +277,8 @@ class World:
         # Store action in entity.
         self.entities[agent.get_name()].store_action(action, self.get_time())
         # Perform actual action.
-        speed = np.clip(action[0], -agent.get_max_speed(), agent.get_max_speed())
-        steer = np.clip(action[1], -agent.get_max_steer(), agent.get_max_steer())
+        speed = float(np.clip(action[0], -agent.get_max_speed(), agent.get_max_speed()))
+        steer = float(np.clip(action[1], -agent.get_max_steer(), agent.get_max_steer()))
         self.set_motors(agent, speed, steer)
 
     def set_motors(self, agent, speed, steer):
