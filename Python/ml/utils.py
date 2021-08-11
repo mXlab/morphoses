@@ -55,7 +55,7 @@ def dist_angles(a1, a2):
     return math.atan2(math.sin(a1-a2), math.cos(a1-a2))
 
 # Transforms quaternion coordinates into Euler angles (in degrees).
-def quaternion_to_euler(x, y, z, w):
+def quaternion_to_euler(x, y, z, w, zOffset=0):
     # Roll.
     t0 = +2.0 * (w * x + y * z)
     t1 = +1.0 - 2.0 * (x * x + y * y)
@@ -69,5 +69,8 @@ def quaternion_to_euler(x, y, z, w):
     t3 = +2.0 * (w * z + x * y)
     t4 = +1.0 - 2.0 * (y * y + z * z)
     Z = math.degrees(math.atan2(t3, t4)) # in [-180, 180]
+
+    # Adjust yaw according to offset.
+    Z = wrap_angle_180(Z + zOffset)
 
     return X, Y, Z
