@@ -1,14 +1,20 @@
+import time
+import random
 import numpy as np
-import state, reward, action
+
+import action
+import reward
+import utils
+
+import tilecoding.representation as rep
 
 from keras.models import Sequential
 from keras.layers import Dense, InputLayer
 from keras.utils.np_utils import to_categorical
 from keras import optimizers
 
-import time
-import tilecoding.representation as rep
 
+# Agent class.
 class Agent:
     def __init__(self, name, world, **kwargs):
         self.name = name
@@ -48,11 +54,15 @@ class Agent:
 
         # Create tiling if needed.
         if self.use_tile_coding:
-            n_state_tiles = kwargs.get('n_state_tiles', 10)
+            n_state_tiles = kwargs.get('n_state_tiles', 5)
             n_state_tilings = kwargs.get('n_state_tilings', 1)
+            if isinstance(n_state_tiles, int):
+                n_state_tiles = [n_state_tiles]
+            if isinstance(n_state_tilings, int):
+                n_state_tilings = [n_state_tilings]
             self.tile_coding = rep.TileCoding(input_indices=[np.arange(self.n_inputs)],
-                                         ntiles=[n_state_tiles],
-                                         ntilings=[n_state_tilings],
+                                         ntiles=n_state_tiles,
+                                         ntilings=n_state_tilings,
                                          hashing=None,
                                          bias_term=False,
                                          state_range=[np.full(self.n_inputs, 0), np.full(self.n_inputs, 1)],
@@ -149,10 +159,7 @@ class Agent:
         self.min_r = min(self.min_r, r)
         self.max_r = max(self.max_r, r)
         scaled_r = utils.map01(r, self.min_r, self.max_r)
-        print("scaled reward: ", scaled_r)
-        self.world.set_color(self, utils.lerp_color(scaled_r, [64, 32, 16], [255, 128, 64]))
-        # self.world.set_color(self, utils.lerp_color(scaled_r, [255, 64, 0], [255, 128, 64]))
-#        self.world.set_color(self, [ round((1 - scaled_r)*255), round(scaled_r*200), 0])
+        self.display(state, scaled_r)
 
 #            print(r)
 
@@ -163,9 +170,7 @@ class Agent:
         else:
             self.avg_r -= (1-self.gamma) * (self.avg_r - r_array)
 
-
-
-        print("{} => {}".format(state, r))
+        print("({}, {}) => {}".format(self.prev_state, self.action_set.get_action(self.prev_action), r))
         n_iter_log = 10
         if self.iter % n_iter_log == 0:
             print("t={} average reward = (int: {} ext: {} total: {})".format(iter, self.avg_r[0], self.avg_r[1], self.avg_r[2]))
@@ -286,16 +291,33 @@ class Agent:
         self.world.set_motors(self, 0, 0)
         time.sleep(1)
 
-    def get_state(self):
+    def display(self, state, scaled_reward):
+        # Calculate color representative of reward.
+        color = utils.lerp_color(scaled_reward, [64, 32, 16], [255, 128, 64])
+        # Display as RGB color.
+        self.world.set_color(self, color)
+        # Broadcast as OSC.
+        info = state[0].tolist() + [scaled_reward]
+        self.world.send_info(self.get_name(), "/info", info)
+
+    def get_state(self, raw=False):
         return np.reshape(np.array(self.world.get(self, self.state_profile)), (1, self.n_inputs))
 
 
 # Return list of reward functions from textual reward profile.
 def get_extrinsic_rewards(reward_profile):
     extrinsic_rewards = []
-    for reward_name in reward_profile:
-        reward_function = getattr(reward, "reward_" + reward_name)
-        extrinsic_rewards += [ reward_function ]
+    # Compute total weight.
+    total_weight = 0
+    for profile in reward_profile:
+        profile['weight'] = profile.get('weight', 1.0)
+        total_weight += profile['weight']
+    # Create extrinsic rewards list.
+    for profile in reward_profile:
+        profile['weight'] /= total_weight
+        profile['function'] = getattr(reward, "reward_" + profile['type'])
+        profile['args'] = profile.get('args', {})
+        extrinsic_rewards += [ profile ]
     return extrinsic_rewards
 
 # State to tile coding - one hot encoding
