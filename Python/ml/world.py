@@ -203,20 +203,40 @@ class ThingData(EntityData):
 
 class World:
     def __init__(self, settings):
-        self.start_time = time.time()
+        # Build lists of entities.
+        self.robots = []
+        self.things = []
+        for robot in settings['robots']:
+            robot_name = robot['name']
+            self.robots.append(robot_name)
+        for thing in settings['things']:
+            thing_name = thing['name']
+            self.things.append(thing_name)
+        entities_list = self.robots + self.things
+
+        # Create entities data structures (robots & things).
         self.entities = {}
         for robot in settings['robots']:
             robot_name = robot['name']
-            self.entities[robot_name] = RobotData(robot['version'], settings['boundaries'])
+            self.entities[robot_name] = RobotData(settings['boundaries'], entities_list, robot['version'])
         for thing in settings['things']:
             thing_name = thing['name']
-            self.entities[thing_name] = ThingData()
+            self.entities[thing_name] = ThingData(settings['boundaries'])
 
+        # Create messaging system.
         self.messaging = messaging.Messaging(self, settings)
 
-        self.max_speed = settings['motors']['max_speed']
-        self.max_steer = settings['motors']['max_steer']
+        # # Set max speed and steer.
+        # self.max_speed = settings['motors']['max_speed']
+        # self.max_steer = settings['motors']['max_steer']
+
         self.virtual_boundaries = settings['virtual_boundaries']
+        self.close_dist = settings['close_dist']
+
+        self.room_heading = settings['room_heading']
+
+        # Save current starting time.
+        self.start_time = time.time()
 
     def get(self, agent, variable, standardized=True):
         # Process variables as list.
