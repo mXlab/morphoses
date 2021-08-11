@@ -12,6 +12,13 @@ def map01(x, in_min, in_max):
         return 0.5
     return (x - in_min) / (in_max - in_min)
 
+# Wraps an angle in degrees to be in [-180, 180].
+def wrap_angle_180(angle):
+    while angle > 180:
+        angle -= 360
+    while angle < -180:
+        angle += 360
+    return angle
 def normalize(vec):
     norm = np.linalg.norm(vec)
     if norm == 0:
