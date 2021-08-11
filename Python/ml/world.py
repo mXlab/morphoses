@@ -361,5 +361,8 @@ class World:
         # Correct euler yaw with room heading offset.
         self.entities[entity_name].store_quaternion_main(quat, self.get_time(), -self.room_heading)
 
+    def send_info(self, entity_name, address, args):
+        self.messaging.send_info("{}/{}".format(address, entity_name), args)
+
     def debug(self):
         print(self.entities)

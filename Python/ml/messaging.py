@@ -115,6 +115,10 @@ class Messaging:
 
             self.osc_robots[name] = { 'main': osc_main, 'imu': osc_imu }
 
+        # Local info logging client.
+        self.info_client = udp_client.SimpleUDPClient("localhost", 8001)
+        # self.info_client = udp_client.SimpleUDPClient("192.168.0.150", 8001)
+
         # Init MQTT.
         try:
             self.mqtt = MqttHelper(settings['rtls_gateway']['ip'], settings['rtls_gateway']['rtls_recv_port'], world, settings)
@@ -124,6 +128,9 @@ class Messaging:
 
     def send(self, robot_name, address, args, board_name='main'):
         self.osc_robots[robot_name][board_name].send_message(address, args)
+
+    def send_info(self, address, args):
+        self.info_client.send_message(address, args)
 
     def dispatch(self, address, src_info, data):
         ip = src_info[0]
