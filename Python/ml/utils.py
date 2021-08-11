@@ -19,6 +19,24 @@ def wrap_angle_180(angle):
     while angle < -180:
         angle += 360
     return angle
+
+def quadrant(angle):
+    # If target in a 90-degree angular extent in front of the robot: front.
+    if -45. < angle < 45:
+        return 0
+
+    # If target in a 90-degree angular extent at right of the robot: right.
+    elif -135. < angle < -45:
+        return 1
+
+    # If target in a 90-degree angular extent at left of the robot: left.
+    elif 45 < angle < 135:
+        return 2
+
+    # If target in a 90-degree angular extent behind the robot: back.
+    else:
+        return 3
+
 def normalize(vec):
     norm = np.linalg.norm(vec)
     if norm == 0:
