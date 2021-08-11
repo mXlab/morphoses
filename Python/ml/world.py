@@ -310,6 +310,14 @@ class World:
         y = self.get(agent, 'y', standardized=False)
         return self.virtual_boundaries['x_min'] <= x and x <= self.virtual_boundaries['x_max'] and self.virtual_boundaries['y_min'] <= y and y <= self.virtual_boundaries['y_max']
 
+    def begin(self):
+        for robot in self.robots:
+            self.set_motors(robot, 0, 0)
+            self.set_color(robot, [0, 255, 255])
+            self.messaging.send(robot, "/power", 1)
+            self.messaging.send(robot, "/stream", 1)
+            self.messaging.send(robot, "/stream", 1, board_name='imu')
+
     def step(self):
         self.messaging.loop()
         self.update()
@@ -321,6 +329,12 @@ class World:
             self.messaging.loop()
 
     def terminate(self):
+        for robot in self.robots:
+            self.set_motors(robot, 0, 0)
+            self.set_color(robot, [0, 0, 0])
+            # self.messaging.send(robot, "/power", 0)
+            # self.messaging.send(robot, "/stream", 0)
+            # self.messaging.send(robot, "/stream", 0, board_name='imu')
         self.messaging.terminate()
 
     def update(self):
