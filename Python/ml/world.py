@@ -352,14 +352,14 @@ class World:
         # Update distances relative to other robots and entities.
         for name in self.robots:
             other_robot = self.entities[name]
-            other_robot.store_polar(entity_name, entity, t)
-            entity.store_polar(name, other_robot, t)
+            other_robot.store_polar(entity_name, entity, self.close_dist, t)
 
     def store_quaternion(self, entity_name, quat):
         self.entities[entity_name].store_quaternion(quat, self.get_time())
 
     def store_quaternion_main(self, entity_name, quat):
-        self.entities[entity_name].store_quaternion_main(quat, self.get_time())
+        # Correct euler yaw with room heading offset.
+        self.entities[entity_name].store_quaternion_main(quat, self.get_time(), -self.room_heading)
 
     def debug(self):
         print(self.entities)
