@@ -1,9 +1,36 @@
 import argparse
 import yaml
+import signal
+import sys
+import time
+
+import threading
+
 from agent import Agent
 from world import World
 
+def interrupt(signup, frame):
+    global world
+    print("Exiting program...")
+    world.terminate()
+    sys.exit()
+
+import logging
+
+format = "%(asctime)s: %(message)s"
+logging.basicConfig(format=format, level=logging.INFO,
+                    datefmt="%H:%M:%S")
+
+
+def step_agent(agent):
+    logging.info("Stepping agent {}".format(agent.get_name()))
+    agent.step()
+    logging.info("End step agent {}".format(agent.get_name()))
+
 if __name__ == "__main__":
+
+    signal.signal(signal.SIGINT, interrupt)
+
     # Create parser
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -27,6 +54,7 @@ if __name__ == "__main__":
         b = robots[robot]
         agents.append(Agent(world=world, name=robot, **behaviors[b]))
 
+    world.begin()
     for a in agents:
         a.begin()
 
