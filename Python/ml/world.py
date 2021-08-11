@@ -116,30 +116,23 @@ class EntityData:
         else:
             return data.get(standardized)
 
-    def store_polar(self, target_name, target, t):
+    def store_polar(self, target_name, target, close_dist, t):
         # Compute distance to target.
         distance = math.dist( (self.get_value('x', standardized=False), self.get_value('y', standardized=False)),
                               (target.get_value('x', standardized=False), target.get_value('y', standardized=False)) )
         self.store('dist_{}'.format(target_name), distance, t)
 
-        # Computer vector for robot instantaneous direction.
-        forward = np.sign(self.get_value('speed'))
-        delta_pos = np.array([forward * self.get_value('x', delta=True), forward * self.get_value('y', delta=True)]) # invert according to current speed
-        # print("velocity: ({}, {}) speed: {}".format(delta_pos[0], delta_pos[1], self.get_value('speed')))
+        # Compute the "is close" state.
+        is_close = 1.0 if distance < close_dist else 0
+        self.store('close_{}'.format(target_name), is_close, t)
 
         # Compute vector from robot to target state.
-        delta_robot_to_target = np.array([target.get_value('x') - self.get_value('x'), target.get_value('y') - self.get_value('y')])
-
-        # Normalize vectors.
-        delta_pos = normalize(delta_pos)
-        delta_robot_to_target = normalize(delta_robot_to_target)
-
-        # Compute relative angle.
-        dot_product = np.dot(delta_pos, delta_robot_to_target)
-        angle = np.arccos(dot_product)
-        angle = np.rad2deg(angle)
+        angle_robot_to_target = np.rad2deg(math.atan2(target.get_value('y') - self.get_value('y'), target.get_value('x') - self.get_value('x')))
+        heading = self.get_value('mrz', standardized=False)
+        angle = wrap_angle_180(angle_robot_to_target - heading)
         # print("** target: {} drt: {} dp: {} angle: {}".format(target_name, delta_robot_to_target, delta_pos, angle))
         self.store('angle_{}'.format(target_name), angle, t)
+        self.store("quadrant_{}".format(target_name), quadrant(angle), t)
 
     def __repr__(self):
         return str(self.data)
