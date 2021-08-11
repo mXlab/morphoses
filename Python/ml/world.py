@@ -164,14 +164,20 @@ class RobotData(EntityData):
         self.add_data('mrx', is_angle=True)
         self.add_data('mry', is_angle=True)
         self.add_data('mrz', is_angle=True)
+
         self.add_data('speed', min_value=-1, max_value=1, auto_scale=False)
         self.add_data('steer', min_value=-1, max_value=1, auto_scale=False)
+        # self.add_data('rx', is_angle=True, auto_scale=False, max_change_per_second=90)
+        # self.add_data('ry', is_angle=True, auto_scale=False, max_change_per_second=90)
+        # self.add_data('rz', is_angle=True, auto_scale=False, max_change_per_second=90)
 
         max_dist = math.dist( (boundaries['x_min'], boundaries['y_min']), (boundaries['x_max'], boundaries['y_max']) )
         max_dist *= 0.5 # let's be realistic
         for name in entities:
             self.add_data('dist_{}'.format(name), auto_scale=False, min_value=0, max_value=max_dist)
-            self.add_data('angle_{}'.format(name), is_angle=True, auto_scale=False, min_value=0, max_value=360)
+            self.add_data('close_{}'.format(name), auto_scale=False, min_value=0, max_value=1)
+            self.add_data('angle_{}'.format(name), is_angle=True, auto_scale=False, min_value=-180, max_value=180)
+            self.add_data('quadrant_{}'.format(name), auto_scale=False, min_value=0, max_value=3)
         self.version = version
 
     def get_version(self):
