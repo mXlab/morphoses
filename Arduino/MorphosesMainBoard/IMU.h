@@ -20,6 +20,7 @@ void initImu() {
     Wire.setClock(400000); //Increase I2C data rate to 400kHz
     imu.enableRotationVector(50); //Send data update every 50ms
 //      imu.enableMagnetometer(50);
+    imu.calibrateAll();
     imuInitialized = true;
   }
   // Add details and send.
