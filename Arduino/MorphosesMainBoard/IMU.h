@@ -44,8 +44,8 @@ bool processImu() {
   if (dataAvailable && sendOSC)
   {
     bndl.add("/quat").add(imu.getQuatI()).add(imu.getQuatJ()).add(imu.getQuatK()).add(imu.getQuatReal());
-//    bndl.add("/euler").add((float)degrees(imu.getRoll())).add((float)degrees(imu.getPitch())).add((float)degrees(imu.getYaw()));
-//      bndl.add("/mag").add(imu.getMagX()).add(imu.getMagY()).add(imu.getMagZ());
+    bndl.add("/euler").add((float)degrees(imu.getRoll())).add((float)degrees(imu.getPitch())).add((float)degrees(imu.getYaw()));
+    bndl.add("/mag").add(imu.getMagX()).add(imu.getMagY()).add(imu.getMagZ());
   }
   return dataAvailable;
 }
