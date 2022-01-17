@@ -176,4 +176,20 @@ void processMessage(OSCMessage& messIn) {
       }
     }
   }
+
+  else if (messIn.fullMatch("/rgb-one")) {
+    if (argIsNumber(messIn, 0)) {
+      if (DEBUG_MODE) Serial.print("RGB colors ");
+      if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2) && argIsNumber(messIn, 3)) { 
+        int i = getArgAsInt(messIn, 0);
+        int r = getArgAsInt(messIn, 1);
+        int g = getArgAsInt(messIn, 2);
+        int b = getArgAsInt(messIn, 3);
+        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
+        if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
+        setPixel(i, r, b, g, w);
+      }
+    }
+  }
+
 }

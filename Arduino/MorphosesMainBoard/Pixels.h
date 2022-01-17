@@ -15,14 +15,23 @@ void initPixels() {
   pixels.begin(); 
 }
 
+void setPixel(int i, int r, int g, int b, int w=0) {
+  pixels.setPixelColor(i, pixels.Color(r, g, b, w));
 
-void setPixels(int r, int g, int b) {
+//  portDISABLE_INTERRUPTS();  
+  // Send the updated pixel colors to the hardware.
+  pixels.show();   
+//  portENABLE_INTERRUPTS();
+}
+
+void setPixels(int r, int g, int b, int w=0) {
   // Set all pixel colors to 'off'
   pixels.clear();
 
   // Write all pixels.
   for (int i=0; i<pixels.numPixels(); i++)
-    pixels.setPixelColor(i, pixels.Color(r, g, b));
+//    if (i != 6 && i != 7)
+    pixels.setPixelColor(i, pixels.Color(r, g, b, w));
 
 //  portDISABLE_INTERRUPTS();  
   // Send the updated pixel colors to the hardware.
