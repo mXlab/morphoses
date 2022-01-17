@@ -303,6 +303,9 @@ class Agent:
         info = state[0].tolist() + [scaled_reward]
         self.world.send_info(self.get_name(), "/info", info)
 
+    def state_is_ready(self):
+        return self.world.is_valid(self, self.state_profile)
+
     def get_state(self, raw=False):
         return np.reshape(np.array(self.world.get(self, self.state_profile)), (1, self.n_inputs))
 
