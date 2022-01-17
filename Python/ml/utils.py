@@ -74,3 +74,68 @@ def quaternion_to_euler(x, y, z, w, zOffset=0):
     Z = wrap_angle_180(Z + zOffset)
 
     return X, Y, Z
+
+# Deprecated: Returns the robot's instantaneous orientation.
+def compute_orientation(delta_data, speed):
+    forward = np.sign(speed)
+    return np.angle(np.complex(forward*delta_data[0], forward*delta_data[1]))
+
+# Returns the robot's instantaneous direction to target, discretised as 0=front, 1=right, 2=left, 3=back. Optional: Roughly plots relevant vectors and past robot positions.
+def compute_direction_to_target(data, delta_data, target_position_state, speed, plot):
+    print('pos', [data[0], data[1]])
+
+    # Computer vector for robot instantaneous direction.
+    forward = np.sign(speed)
+    delta_pos = [forward*delta_data[0], forward*delta_data[1]] # invert according to current speed
+    print("velocity: ({}, {}) speed: {} orientation: {}".format(delta_pos[0], delta_pos[1], speed, np.degrees(compute_orientation(delta_data, speed))))
+
+    # Compute vector from robot to target state.
+    delta_robot_to_target = [target_position_state[0] - data[0], target_position_state[1] - data[1]]
+
+    # Normalize vectors.
+
+    delta_pos = delta_pos / np.linalg.norm(delta_pos)
+    delta_robot_to_target = delta_robot_to_target / np.linalg.norm(delta_robot_to_target)
+
+    # Compute relative angle.
+    dot_product = np.dot(delta_pos, delta_robot_to_target)
+    angle = np.arccos(dot_product)
+    angle = np.rad2deg(angle)
+
+    # If target in a 90-degree angular extent in front of the robot: front.
+    if -45. < angle < 45:
+        state = 0.
+
+    # If target in a 90-degree angular extent at right of the robot: right.
+    elif -135. < angle < -45:
+        state = 1. / 3.
+
+    # If target in a 90-degree angular extent at left of the robot: left.
+    elif 45 < angle < 135:
+        state = 2. / 3.
+
+    # If target in a 90-degree angular extent behind the robot: back.
+    else:
+        state = 1.
+
+    # Optional: Roughly plots relevant vectors and past robot positions.
+    if plot:
+        origin = [data[0]], [data[1]]
+
+        plt.subplot(121)
+        plt.cla()
+        plt.xlim(0., 1.)
+        plt.ylim(0., 1.)
+        plt.quiver(*origin, [delta_pos[0], delta_robot_to_target[0]], [delta_pos[1], delta_robot_to_target[1]], color=['r','b'])
+        plt.scatter(target_position_state[0], target_position_state[1])
+        plt.xlabel('state: ' + str(state) + ', ' + 'angle: ' + str(angle))
+
+        plt.subplot(122)
+        plt.xlim(0., 1.)
+        plt.ylim(0., 1.)
+        plt.scatter(data[0], data[1], s=1, c='#000000')
+        #plt.scatter(target_position_state[0], target_position_state[1])
+        plt.draw()
+        plt.pause(0.001)
+
+    return state
