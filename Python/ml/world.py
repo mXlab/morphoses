@@ -261,6 +261,23 @@ class World:
         # Save current starting time.
         self.start_time = time.time()
 
+    def is_valid(self, agent, variable):
+        # Process variables as list.
+        if isinstance(variable, list):
+            values = []
+            valid = True
+            for v in variable:
+                if not self.is_valid(agent, v):
+                    print("Invalid variable for agent {}: {}".format(agent, v))
+                    valid = False
+            return valid
+
+        # Process single variable.
+        else:
+            entity_name, variable, __ = self._get_variable_info(agent, variable)
+            data = self.entities[entity_name].get(variable)
+            return data.is_valid()
+
     def get(self, agent, variable, standardized=True):
         # Process variables as list.
         if isinstance(variable, list):
