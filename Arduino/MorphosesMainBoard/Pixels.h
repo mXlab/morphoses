@@ -3,11 +3,9 @@
 // NEOPIXELs parameters ************************************
 
 // Which pin on the Arduino is connected to the NeoPixels?
-#define PIN 13
-// How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS 4
+#define PIXELS_PIN 13
 
-Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel pixels(NUM_PIXELS, PIXELS_PIN, PIXELS_TYPE);
 //**************************************************************
 
 void initPixels() {
