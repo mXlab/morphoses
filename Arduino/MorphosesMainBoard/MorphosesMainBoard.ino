@@ -170,8 +170,9 @@ void processMessage(OSCMessage& messIn) {
         int r = getArgAsInt(messIn, 0);
         int g = getArgAsInt(messIn, 1);
         int b = getArgAsInt(messIn, 2);
+        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
         if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-        setPixels(r, b, g);
+        setPixels(r, b, g, w);
       }
     }
   }

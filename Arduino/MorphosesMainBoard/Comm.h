@@ -42,8 +42,13 @@ boolean argIsNumber(OSCMessage& msg, int index);
 // ** WARNING **: The beginPacket() & sendPacket() functions need to be called regularly
 // otherwise the program seems to have trouble receiving data and loses some packets. It 
 // is unclear why, but this seems to resolve the issue.
+#if DUAL_IMU
+void sendOscBundle(boolean broadcast=false, boolean force=false, boolean mainImu=true) {
+  udp.beginPacket(broadcast ? broadcastIP : destIP, destPort + (mainImu ? 0 : 1)); // ** keep this line** (see warning above)
+#else
 void sendOscBundle(boolean broadcast=false, boolean force=false) {
   udp.beginPacket(broadcast ? broadcastIP : destIP, destPort); // ** keep this line** (see warning above)
+#endif
   if (sendOSC || force) {
     bndl.send(udp); // send the bytes to the SLIP stream
     bndl.empty(); // empty the bundle to free room for a new one
