@@ -22,13 +22,14 @@ def reward_sum(world, agent, variables, absolute=True, invert=False):
     sum /= len(variables)
     return sum
 
+def reward_single(world, agent, variable, absolute=True, invert=False):
     # Get standardized values (all in [0, 1]).
-    complete_data = world.get(agent, variables)
+    data = world.get(agent, variable)
     # Option: for delta values, you can use absolute values centered at 0.5.
     if absolute:
-        complete_data = abs(complete_data - 0.5) * 2
-    # Compute averaged sum of values.
-    r = sum(complete_data) / len(complete_data)
+        data = abs(data - 0.5) * 2 # Remap in [0, 1].
+    # Reward equals data in [-1, 1].
+    r = utils.map(data, 0, 1, -1, 1)
     # Option: invert.
     if invert:
         r = -r
