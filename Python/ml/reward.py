@@ -16,6 +16,12 @@ def reward(world, agent, rewards):
 
 # Extrinsic reward function helpers.
 def reward_sum(world, agent, variables, absolute=True, invert=False):
+    sum = 0
+    for v in variables:
+        sum += reward_single(world, agent, v, absolute, invert)
+    sum /= len(variables)
+    return sum
+
     # Get standardized values (all in [0, 1]).
     complete_data = world.get(agent, variables)
     # Option: for delta values, you can use absolute values centered at 0.5.
