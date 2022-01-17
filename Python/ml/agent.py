@@ -133,8 +133,7 @@ class Agent:
             self.step_recenter()
 
     def is_inside_boundaries(self):
-        return True
-        # return self.world.is_inside_boundaries(self)
+        return self.world.is_inside_boundaries(self)
 
     # Performs one step of Q-learning loop.
     def step_rl(self):
