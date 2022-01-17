@@ -74,4 +74,24 @@ void setMotorsSteer(float steer) {
   dxl.setGoalPosition(DXL_ID_STEER, safeRemapNorm(steer, MOTORS_STEER_MAX, MOTORS_STEER_MIDDLE), UNIT_DEGREE);
 }
 
+float getBatteryVoltage() {
+  return dxl.readControlTableItem(PRESENT_INPUT_VOLTAGE, DXL_ID_SPEED) / 10.0f;
+}
+
+int getMotorSpeedTemperature() {
+  return dxl.readControlTableItem(PRESENT_TEMPERATURE, DXL_ID_SPEED);
+}
+
+int getMotorSteerTemperature() {
+  return dxl.readControlTableItem(PRESENT_TEMPERATURE, DXL_ID_STEER);
+}
+
+void sendMotorsInfo() {
+  bndl.add("/info/battery").add(getBatteryVoltage());
+  bndl.add("/info/voltage").add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_STEER));
+  bndl.add("/info/temperature").add(getMotorSpeedTemperature()).add(getMotorSteerTemperature());
+  bndl.add("/info/current").add(dxl.readControlTableItem(PRESENT_CURRENT, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_CURRENT, DXL_ID_STEER));
+  bndl.add("/info/load").add(dxl.readControlTableItem(PRESENT_LOAD, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_LOAD, DXL_ID_STEER));
+  sendOscBundle();
+}
 }

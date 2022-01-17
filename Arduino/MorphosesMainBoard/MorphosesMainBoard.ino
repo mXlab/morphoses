@@ -94,6 +94,8 @@ void sendData() {
   processImu();
 //  if (processImu())
 //    processMotors();
+  if (DEBUG_MODE)
+    sendMotorsInfo();
 
   // Send OSC bundle.
   sendOscBundle();
