@@ -239,7 +239,7 @@ class Agent:
 
         # Structure learning by having the robot take a pause in a stabilised state (zero speed, zero steering).
         if self.time_balance > 0:
-            self.world.set_motors(self, 0, 0)
+            self.world.set_speed(self, 0)
             self.world.sleep(self.time_balance)
 
     def step_recenter(self):
