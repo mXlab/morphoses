@@ -103,6 +103,14 @@ class EntityData:
     def add_data(self, label, **kwargs):
         self.data[label] = Data(**kwargs)
 
+    def is_valid(self, labels):
+        if not isinstance(labels, list):
+            labels = [ labels ]
+        for var in labels:
+            if not self.data[var].is_valid():
+                return False
+        return True
+
     def store(self, label, value, t):
         if isinstance(label, list):
             for i in range(len(label)):
