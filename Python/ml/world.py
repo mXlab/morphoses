@@ -6,40 +6,49 @@ from utils import *
 
 import messaging
 
-# Returns the difference between current and previous datapoints.
-def delta(data, prev_data):
-    two_pi = 2*math.pi
-    d = data - prev_data
-    d[6] = dist_angles(data[6]*two_pi, prev_data[6]*two_pi)
-    d[7] = dist_angles(data[7]*math.pi, prev_data[7]*math.pi)
-    d[8] = dist_angles(data[8]*two_pi, prev_data[8]*two_pi)
-    return d
-
 # Holds one data point, allowing to compute its delta and standardization.
 class Data:
     def __init__(self,
                  min_value=-1, max_value=+1,
-                 max_change_per_second=1,
+                 max_change_per_second=None,
                  auto_scale=True,
-                 is_angle=False):
-        self.value = self.prev_value = self.stored_value = 0
+                 auto_scale_delta=True,
+                 is_angle=False,
+                 smoothing=0.0):
+        self.value = self.prev_value = self.stored_value = None
         self.delta_value = 0
         self.auto_scale = auto_scale
+        self.auto_scale_delta = auto_scale_delta
         if self.auto_scale:
             self.min_value = +9999
             self.max_value = -9999
-            self.max_change_per_second = -9999
         else:
             self.min_value = min_value
             self.max_value = max_value
+        if max_change_per_second is None:
+            if self.auto_scale_delta:
+                self.max_change_per_second = -9999
+            else:
+                self.max_change_per_second = 1
+        else:
             self.max_change_per_second = max_change_per_second
         self.is_angle = is_angle
         self.stored_time = None
         self.prev_time = None
+        self.smoothing = np.clip(smoothing, 0.0, 1.0)
+
+    def is_valid(self):
+        return self.value is not None
 
     # Temporarily store value at time t (in seconds).
     def store(self, value, t):
-        self.stored_value = value
+        if self.stored_time is None:
+            self.stored_value = value
+        else:
+            # Smooth using an EMA. Adjusts smoothing factor based on: smoothing = base_smoothing ^ delta_time
+            smoothing = 1.0 - np.clip(math.pow(self.smoothing, t - self.stored_time), 0.0, 1.0)
+            self.stored_value += smoothing * (value - self.stored_value)
+            # self.stored_value = value
         self.stored_time = t
         if self.auto_scale:
             self.min_value = min(self.min_value, self.stored_value)
@@ -80,7 +89,7 @@ class Data:
             self.delta_value = delta_value / interval
         else:
             self.delta_value = 0
-        if self.auto_scale:
+        if self.auto_scale_delta:
             self.max_change_per_second = max(self.max_change_per_second, abs(self.delta_value))
 
     def __repr__(self):
@@ -140,8 +149,8 @@ class EntityData:
 class RobotData(EntityData):
     def __init__(self, boundaries, entities, version):
         super().__init__()
-        self.add_data('x', auto_scale=False, min_value=boundaries['x_min'], max_value=boundaries['x_max'])
-        self.add_data('y', auto_scale=False, min_value=boundaries['y_min'], max_value=boundaries['y_max'])
+        self.add_data('x', auto_scale=False, max_change_per_second=0.01, min_value=boundaries['x_min'], max_value=boundaries['x_max'], smoothing=0.1)
+        self.add_data('y', auto_scale=False, max_change_per_second=0.01, min_value=boundaries['y_min'], max_value=boundaries['y_max'], smoothing=0.1)
         self.add_data('qx')
         self.add_data('qy')
         self.add_data('qz')
@@ -158,8 +167,8 @@ class RobotData(EntityData):
         self.add_data('mry', is_angle=True)
         self.add_data('mrz', is_angle=True)
 
-        self.add_data('speed', min_value=-1, max_value=1, auto_scale=False)
-        self.add_data('steer', min_value=-1, max_value=1, auto_scale=False)
+        self.add_data('speed', min_value=-1, max_value=1, max_change_per_second=2, auto_scale=False, auto_scale_delta=False)
+        self.add_data('steer', min_value=-1, max_value=1, max_change_per_second=2, auto_scale=False, auto_scale_delta=False)
         # self.add_data('rx', is_angle=True, auto_scale=False, max_change_per_second=90)
         # self.add_data('ry', is_angle=True, auto_scale=False, max_change_per_second=90)
         # self.add_data('rz', is_angle=True, auto_scale=False, max_change_per_second=90)
@@ -195,8 +204,8 @@ class RobotData(EntityData):
 class ThingData(EntityData):
     def __init__(self, boundaries):
         super().__init__()
-        self.add_data('x', auto_scale=False, min_value=boundaries['x_min'], max_value=boundaries['x_max'])
-        self.add_data('y', auto_scale=False, min_value=boundaries['y_min'], max_value=boundaries['y_max'])
+        self.add_data('x', auto_scale=False, min_value=boundaries['x_min'], max_value=boundaries['x_max'], smoothing=0.1)
+        self.add_data('y', auto_scale=False, min_value=boundaries['y_min'], max_value=boundaries['y_max'], smoothing=0.1)
 
     def store_position(self, position, t):
         self.store(['x', 'y'], position, t)
