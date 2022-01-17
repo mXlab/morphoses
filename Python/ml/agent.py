@@ -112,6 +112,10 @@ class Agent:
         return self.max_steer
 
     def begin(self):
+        while not self.state_is_ready():
+            self.world.update()
+            self.world.sleep(0.1)
+
         self.prev_state = self.get_state()
         self.prev_action = 0 # dummy
         self.r = 0
