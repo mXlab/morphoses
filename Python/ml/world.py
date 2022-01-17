@@ -135,21 +135,27 @@ class EntityData:
 
     def store_polar(self, target_name, target, close_dist, t):
         # Compute distance to target.
-        distance = math.dist( (self.get_value('x', standardized=False), self.get_value('y', standardized=False)),
-                              (target.get_value('x', standardized=False), target.get_value('y', standardized=False)) )
-        self.store('dist_{}'.format(target_name), distance, t)
+        if self.is_valid(['x', 'y']) and target.is_valid(['x', 'y']):
+            x = self.get_value('x', standardized=False)
+            y = self.get_value('y', standardized=False)
+            tx = target.get_value('x', standardized=False)
+            ty = target.get_value('y', standardized=False)
+            distance = math.dist( (self.get_value('x', standardized=False), self.get_value('y', standardized=False)),
+                                  (target.get_value('x', standardized=False), target.get_value('y', standardized=False)) )
+            self.store('dist_{}'.format(target_name), distance, t)
 
-        # Compute the "is close" state.
-        is_close = 1.0 if distance < close_dist else 0
-        self.store('close_{}'.format(target_name), is_close, t)
+            # Compute the "is close" state.
+            is_close = 1.0 if distance < close_dist else 0
+            self.store('close_{}'.format(target_name), is_close, t)
 
-        # Compute vector from robot to target state.
-        angle_robot_to_target = np.rad2deg(math.atan2(target.get_value('y') - self.get_value('y'), target.get_value('x') - self.get_value('x')))
-        heading = self.get_value('mrz', standardized=False)
-        angle = wrap_angle_180(angle_robot_to_target - heading)
-        # print("** target: {} drt: {} dp: {} angle: {}".format(target_name, delta_robot_to_target, delta_pos, angle))
-        self.store('angle_{}'.format(target_name), angle, t)
-        self.store("quadrant_{}".format(target_name), quadrant(angle), t)
+            # Compute vector from robot to target state.
+            angle_robot_to_target = np.rad2deg(math.atan2(target.get_value('y') - self.get_value('y'), target.get_value('x') - self.get_value('x')))
+            if self.is_valid('mrz'):
+                heading = self.get_value('mrz', standardized=False)
+                angle = wrap_angle_180(angle_robot_to_target - heading)
+                #print("** target: {} drt: {} dp: {} angle: {}".format(target_name, delta_robot_to_target, delta_pos, angle))
+                self.store('angle_{}'.format(target_name), angle, t)
+                self.store("quadrant_{}".format(target_name), quadrant(angle), t)
 
     def __repr__(self):
         return str(self.data)
