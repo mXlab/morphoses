@@ -75,6 +75,6 @@ bool processImu() {
   sendOscBundle();
 #if DUAL_IMU
   processImu(imuSide);
-  sendOscBundle(false, false, false);
+  sendOscBundle(false, destPortSide);
 #endif
 }

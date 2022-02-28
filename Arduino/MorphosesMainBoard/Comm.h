@@ -23,6 +23,10 @@ int boardID;
 
 // The destination port is 8 followed by the boardID.
 int destPort;
+#if DUAL_IMU
+int destPortSide;
+#endif
+int destPortInfo;
 
 // A human readable name for the board.
 char boardName[16];
@@ -42,13 +46,8 @@ boolean argIsNumber(OSCMessage& msg, int index);
 // ** WARNING **: The beginPacket() & sendPacket() functions need to be called regularly
 // otherwise the program seems to have trouble receiving data and loses some packets. It 
 // is unclear why, but this seems to resolve the issue.
-#if DUAL_IMU
-void sendOscBundle(boolean broadcast=false, boolean force=false, boolean mainImu=true) {
-  udp.beginPacket(broadcast ? broadcastIP : destIP, destPort + (mainImu ? 0 : 1)); // ** keep this line** (see warning above)
-#else
-void sendOscBundle(boolean broadcast=false, boolean force=false) {
-  udp.beginPacket(broadcast ? broadcastIP : destIP, destPort); // ** keep this line** (see warning above)
-#endif
+void sendOscBundle(boolean broadcast=false, int port=destPort, boolean force=false) {
+  udp.beginPacket(broadcast ? broadcastIP : destIP, port); // ** keep this line** (see warning above)
   if (sendOSC || force) {
     bndl.send(udp); // send the bytes to the SLIP stream
     bndl.empty(); // empty the bundle to free room for a new one
@@ -130,6 +129,10 @@ bool receiveMessage(OSCMessage& messIn) {
 void initBoardInfo(int id) {
   boardID = id;
   destPort = 8000 + boardID;
+  #if DUAL_IMU
+  destPortSide = destPort + 1;
+  #endif
+  destPortInfo = destPort + 2;
   sprintf(boardName, "robot%d-%s", (boardID % 100) / 10, (boardID % 10 == 0 ? "main" : "imu"));
 }
 

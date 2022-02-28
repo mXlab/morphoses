@@ -92,6 +92,6 @@ void sendMotorsInfo() {
   bndl.add("/info/temperature").add(getMotorSpeedTemperature()).add(getMotorSteerTemperature());
   bndl.add("/info/current").add(dxl.readControlTableItem(PRESENT_CURRENT, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_CURRENT, DXL_ID_STEER));
   bndl.add("/info/load").add(dxl.readControlTableItem(PRESENT_LOAD, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_LOAD, DXL_ID_STEER));
-  sendOscBundle();
+  sendOscBundle(false, destPortInfo);
 }
 }
