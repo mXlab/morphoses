@@ -194,4 +194,19 @@ void processMessage(OSCMessage& messIn) {
     }
   }
 
+  else if (messIn.fullMatch("/rgb-region")) {
+    if (argIsNumber(messIn, 0)) {
+      if (DEBUG_MODE) Serial.print("RGB colors ");
+      if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2) && argIsNumber(messIn, 3)) { 
+        PixelRegion region = (PixelRegion) getArgAsInt(messIn, 0);
+        int r = getArgAsInt(messIn, 1);
+        int g = getArgAsInt(messIn, 2);
+        int b = getArgAsInt(messIn, 3);
+        int w = argIsNumber(messIn, 4) ? getArgAsInt(messIn, 4) : 0;
+        if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
+        setPixelsRegion(region, r, b, g, w);
+      }
+    }
+  }
+
 }
