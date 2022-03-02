@@ -1,12 +1,46 @@
 # Morphosis Project Code and Resources
 This repository features scripts and resources for the ongoing Morphosis project.
 
+## Launching an experiment
+
+Launching an experiment requires to run the Python 3 script ```morphoses.py <behavior_file.yml>```
+
+## Local Network Configuration
+
+```
+ [[ MAIN ]]    [[ IMU ]]
+  |     ^       |    ^
+  |     |       |    |
+(81x0)  |    (81x1)  |  
+  |   (8000)    |  (8000)
+  |     |       |    |
+  V     |       V    |
+{{ -- morphoses.py -- }}
+```
+
+Default IP addresses (need to be setup on the router):
+
+| Device           | IP            | Recv port | Send port |
+| ---- | --- | :---: | :---: |
+| Robot 1 MAIN Esp | 192.168.0.110 | 8000      | 8110      |
+| Robot 1 IMU Esp  | 192.168.0.111 | 8000      | 8111      |
+| Robot 2 MAIN Esp | 192.168.0.120 | 8000      | 8120      |
+| Robot 2 IMU Esp  | 192.168.0.121 | 8000      | 8121      |
+| Robot 3 MAIN Esp | 192.168.0.130 | 8000      | 8130      |
+| Robot 3 IMU Esp  | 192.168.0.131 | 8000      | 8131      |
+| Computer         | 192.168.0.100 | 81xx      | 8000      |
+| RTLS Gateway     | 192.168.0.200 | 1883 (MQTT) | 1883 (MQTT) |
+
 ## Subfolders
 
 ### Python
 
 Contains python scripts for interacting with a Unity simulation and for conducting machine learning
 experiments.
+
+### Machine Learning Scripts
+
+All the ML scripts are in the Python/ml subfolder.
 
 ### Unity
 
@@ -40,8 +74,9 @@ Contains the Unity project for generating simulated data.
 
 - OSC (CNMAT version by A. Freed & Y. Mann)
 - Sparkfun BNO080 IMU
+- Chrono
 
-## Update Wifi configuration on main ESP8266 board
+## Update Wifi configuration on main ESP32 board
 
 - From the root of the project: `cd MorphosesMainBoard`
 - Copy config file: `cp MorphosesConfig.h.example MorphosesConfig.h`
@@ -51,79 +86,12 @@ Contains the Unity project for generating simulated data.
 Setup wifi AP here:
 
 ```
-const char *ssid = "ball"; // Pointer to the SSID (max 63 char)
-const char *password = "roller"; // for WPA2 min 8 char, for open use NULL
+#define WIFI_SSID "Morphoses"
+#define WIFI_PASSWORD "<password>"
 ```
 
-Setup IP address of HOST here:
 
-```
-#define DEST_IP_0 192
-#define DEST_IP_1 168
-#define DEST_IP_2 0
-#define DEST_IP_3 100
-```
-
-# Tech notes
-
-## Relay pin
-
-The relay pin needs to be put to HIGH in order to cut the current to the motors. This was done because when the ESP8266 is launched, there is a "spike" on pin 0 which would have triggered the motor initialization process (where it goes from side to side once). However, there is a way to fix it, by reprogramming the motor-control arduinos to wait (ie. adding a delay() in their setup()) so that they are not affected by the spike.
-
-## Programming of microcontrollers
-
-There are two kinds of microcontrollers on the robot:
- * ESP8266 Thing
- * Arduino Mini
-
-Both types need to be programmed using a 3.3V FTDI cable. *Do NOT use a 5V FTDI cable/interface because the ESP8266 runs at 3.3V and you could break it.*
-
-## Encoder Specs
-
-Roller motor: 1365 impulsions per turn
-Tilter motor: 1323 impulsions per turn
-
-### ESP8266 Thing
-
-Step 1: Connect the FTDI cable to the right input pins.
-
-```
-          |
-GREEN --- | DTR
-YELLOW -- | TX0
-ORANGE -- | RX1
-RED ----- | 3V3
-BROWN --- | NC
-BLACK --- | GND
-          |
-```
-
-Step 2: Connect the DTR jumper.
-
-Step 3: Select Boards > ESP8266 Thing and upload sketch.
-
-If you have trouble with the ESP8266 please see [Troubleshooting the ESP8266](https://morphoseis.wordpress.com/2017/08/09/troubleshooting-the-esp8266/).
-
-### Arduino Mini
-
-Step 1: Connect the FTDI cable to the right input pins.
-
-```
-          -----------
-GREEN --- | DTR
-YELLOW -- | TX0
-ORANGE -- | RX1
-RED ----- | VCC
-BROWN --- | GND
-BLACK --- | GND
-          -----------
-```
-
-Step 2: Select Boards > *Arduino Nano* and Processor > *ATmega328P (Old Bootloader)*
-
-*Do NOT select Boards > Arduino Mini as it seems to be causing problems of the kind "avrdude: stk500_getsync() attempt ... of 10: not in sync: resp=0x0d" at upload.*
-
-# Mac installation
+# Mac installation (old)
 
 Below are specific instructions to follow when installing the project on MacOS 10.11.6 (as the project was initially developed on Ubuntu).
 
@@ -151,36 +119,4 @@ Resolve TensorFlow issue with AVX instruction sets:
 - From the root of the project: `cd ./Python`
 - Launch Python virtual environment: `source ./bin/activate`
 - Install TensorFlow 1.5: `pip install tensorflow==1.5`
-
-# Machine Learning Scripts
-
-All the ML scripts are in the Python/ml subfolder.
-
-## Launching an experiment
-
-Launching an experiment requires to run the Python 3 script ```morphoses.py <behavior_file.yml>```
-
-```
- [[ MAIN ]]    [[ IMU ]]
-  |     ^       |    ^
-  |     |       |    |
-(81x0)  |    (81x1)  |  
-  |   (8000)    |  (8000)
-  |     |       |    |
-  V     |       V    |
-{{ -- morphoses.py -- }}
-```
-
-Default IP addresses (need to be setup on the router):
-
-| Device           | IP            | Recv port | Send port |
-| ---- | --- | :---: | :---: |
-| Robot 1 MAIN Esp | 192.168.0.110 | 8000      | 8110      |
-| Robot 1 IMU Esp  | 192.168.0.111 | 8000      | 8111      |
-| Robot 2 MAIN Esp | 192.168.0.120 | 8000      | 8120      |
-| Robot 2 IMU Esp  | 192.168.0.121 | 8000      | 8121      |
-| Robot 3 MAIN Esp | 192.168.0.130 | 8000      | 8130      |
-| Robot 3 IMU Esp  | 192.168.0.131 | 8000      | 8131      |
-| Computer         | 192.168.0.100 | 81xx      | 8000      |
-| RTLS Gateway     | 192.168.0.200 | 1883 (MQTT) | 1883 (MQTT) |
 
