@@ -385,6 +385,7 @@ class World:
         print("Init robots")
         for robot in self.robots:
             self.set_motors(robot, 0, 0)
+            self.entities[robot].store_action([0, 0], self.get_time())
             self.set_color(robot, [0, 255, 255])
             self.messaging.send(robot, "/power", 1)
             self.messaging.send(robot, "/stream", 1)
