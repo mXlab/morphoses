@@ -158,30 +158,29 @@ All the ML scripts are in the Python/ml subfolder.
 
 ## Launching an experiment
 
-Launching an experiment requires to run 2 programs:
-- The Pythion script ```rl_curiosity.py```: runs the reinforcement learning process with tons of options
-- The Python script ```robot_osc_bridge.py```: interfaces between ```RobotOscBridge``` and ```rl_curiosity.py``` to send and receive appropriately formatted OSC signals
+Launching an experiment requires to run the Python 3 script ```morphoses.py <behavior_file.yml>```
 
 ```
  [[ MAIN ]]    [[ IMU ]]
   |     ^       |    ^
   |     |       |    |
-(8766)  |    (8767)  |  
-  |   (8765)    |  (8765)
+(81x0)  |    (81x1)  |  
+  |   (8000)    |  (8000)
   |     |       |    |
   V     |       V    |
-{{ robot_osc_bridge.py }}
-        |     ^
-        |     |
-     (7767)  (7765)
-        |     |
-        V     |
- {{ rl_curiosity.py }}
+{{ -- morphoses.py -- }}
 ```
 
 Default IP addresses (need to be setup on the router):
 
-* MAIN Esp : 192.168.0.100
-* IMU Esp : 192.168.0.101
-* Computer: 192.168.0.110
-* RTLS Gateway: 192.168.0.120
+| Device           | IP            | Recv port | Send port |
+| ---- | --- | :---: | :---: |
+| Robot 1 MAIN Esp | 192.168.0.110 | 8000      | 8110      |
+| Robot 1 IMU Esp  | 192.168.0.111 | 8000      | 8111      |
+| Robot 2 MAIN Esp | 192.168.0.120 | 8000      | 8120      |
+| Robot 2 IMU Esp  | 192.168.0.121 | 8000      | 8121      |
+| Robot 3 MAIN Esp | 192.168.0.130 | 8000      | 8130      |
+| Robot 3 IMU Esp  | 192.168.0.131 | 8000      | 8131      |
+| Computer         | 192.168.0.100 | 81xx      | 8000      |
+| RTLS Gateway     | 192.168.0.200 | 1883 (MQTT) | 1883 (MQTT) |
+
