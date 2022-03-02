@@ -321,25 +321,43 @@ class World:
         steer = float(np.clip(action[1], -agent.get_max_steer(), agent.get_max_steer()))
         self.set_motors(agent, speed, steer)
 
-    def set_motors(self, agent, speed, steer):
+        # self.send_info('robot1', '/data', [self.get(agent, 'x'), self.get(agent, 'y'), self.get(agent, 'mrz', False)])
+
+    def set_speed(self, agent, speed):
         if isinstance(agent, str):
             name = agent
         else:
             name = agent.get_name()
-        if self.entities[name].get_version() >= 3:
+        entity = self.entities[name]
+        if entity.get_version() >= 3:
             self.messaging.send(name, "/speed", speed)
-            self.messaging.send(name, "/steer", steer)
         else:
             self.messaging.send(name, "/motor/1", round(speed*128))
+
+    def set_steer(self, agent, steer):
+        if isinstance(agent, str):
+            name = agent
+        else:
+            name = agent.get_name()
+        entity = self.entities[name]
+        if entity.get_version() >= 3:
+            self.messaging.send(name, "/steer", steer)
+        else:
             self.messaging.send(name, "/motor/2", round(steer*90))
+
+    def set_motors(self, agent, speed, steer):
+        self.set_speed(agent, speed)
+        self.set_steer(agent, steer)
 
     def set_color(self, agent, rgb):
         if isinstance(agent, str):
             name = agent
         else:
             name = agent.get_name()
-        if self.entities[name].get_version() >= 3:
-            self.messaging.send(name, "/rgb", rgb)
+        entity = self.entities[name]
+        if entity.get_version() >= 3:
+            self.messaging.send(name, "/rgb-region", [2] + rgb)
+            # self.messaging.send(name, "/rgb", rgb)
         else:
             self.messaging.send(name, "/red",   rgb[0])
             self.messaging.send(name, "/green", rgb[1])
@@ -351,6 +369,10 @@ class World:
         return self.virtual_boundaries['x_min'] <= x and x <= self.virtual_boundaries['x_max'] and self.virtual_boundaries['y_min'] <= y and y <= self.virtual_boundaries['y_max']
 
     def begin(self):
+        print("Messaging begin")
+        self.messaging.begin()
+
+        print("Init robots")
         for robot in self.robots:
             self.set_motors(robot, 0, 0)
             self.set_color(robot, [0, 255, 255])
