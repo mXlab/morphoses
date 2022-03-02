@@ -209,4 +209,24 @@ void processMessage(OSCMessage& messIn) {
     }
   }
 
+  else if (messIn.fullMatch("/calibrate-begin")) {
+    beginCalibrateImu(imu, true);
+#if DUAL_IMU
+    beginCalibrateImu(imuSide, false);
+#endif
+  }
+
+  else if (messIn.fullMatch("/calibrate-end")) {
+    endCalibrateImu(imu, true);
+#if DUAL_IMU
+    endCalibrateImu(imuSide, false);
+#endif
+  }
+
+  else if (messIn.fullMatch("/calibrate-save")) {
+    saveCalibrateImu(imu, true);
+#if DUAL_IMU
+    saveCalibrateImu(imuSide, false);
+#endif
+  }
 }

@@ -1,4 +1,5 @@
 #include <SparkFun_BNO080_Arduino_Library.h>
+#include <Chrono.h>
 
 BNO080 imu;
 #if DUAL_IMU
@@ -40,6 +41,39 @@ void initImu() {
 #if DUAL_IMU
   initImu(imuSide, false);
 #endif
+}
+
+void beginCalibrateImu(BNO080& imu_, boolean i2cUseDefault) {
+  imu_.calibrateAll();
+  bndl.add(boardName).add("imu-calibration-begin").add(i2cUseDefault);
+  sendOscBundle();
+}
+
+void endCalibrateImu(BNO080& imu_, boolean i2cUseDefault) {
+  imu_.endCalibration();
+  bndl.add(boardName).add("imu-calibration-end").add(i2cUseDefault);
+  sendOscBundle();
+}
+
+void saveCalibrateImu(BNO080& imu_, boolean i2cUseDefault) {
+  imu_.saveCalibration();
+  imu_.requestCalibrationStatus();
+  Chrono calibrationChrono;
+  calibrationChrono.start();
+  bool isSaved = false;
+  while (!calibrationChrono.hasPassed(100)) {
+    if (imu_.dataAvailable() && imu_.calibrationComplete()) {
+      isSaved = true;
+      break;
+    }
+  }
+
+  if (isSaved)
+    bndl.add("/done");
+  else
+    bndl.add("/error");
+  bndl.add(boardName).add("imu-calibration-save").add(i2cUseDefault);
+  sendOscBundle();
 }
 
 void sleepImu() {
