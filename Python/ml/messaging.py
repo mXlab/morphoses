@@ -83,7 +83,7 @@ class MqttHelper:
         # print(msg.topic+" "+str(msg.payload))
         data = json.loads(msg.payload)
         pos = data['position']
-        if (pos['quality'] > 0): # only update if quality is good
+        if (pos['quality'] > 50): # only update if quality is good
             node_id = msg.topic[9:13]
             if node_id in self.rtls_nodes.keys():
                 self.world.store_position(self.rtls_nodes[node_id], [float(pos['x']), float(pos['y'])])
