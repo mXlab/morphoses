@@ -162,7 +162,7 @@ class Agent:
         self.min_r = min(self.min_r, r)
         self.max_r = max(self.max_r, r)
         scaled_r = utils.map01(r, self.min_r, self.max_r)
-        self.display(state, scaled_r)
+        self.display(state, r, scaled_r)
 
 #            print(r)
 
@@ -294,13 +294,16 @@ class Agent:
         self.world.set_motors(self, 0, 0)
         time.sleep(1)
 
-    def display(self, state, scaled_reward):
+    def display(self, state, reward, scaled_reward):
         # Calculate color representative of reward.
-        color = utils.lerp_color(scaled_reward, [64, 32, 16], [255, 128, 64])
+        # Rouge: 28, 0, 0
+        # Jaune: 28, 14, 0
+        color = utils.lerp_color(scaled_reward, [28, 0, 0], [28, 14, 0])
+        # color = utils.lerp_color(scaled_reward, [64, 32, 16], [255, 128, 64])
         # Display as RGB color.
         self.world.set_color(self, color)
         # Broadcast as OSC.
-        info = state[0].tolist() + [scaled_reward]
+        info = state[0].tolist() + [reward]
         self.world.send_info(self.get_name(), "/info", info)
 
     def state_is_ready(self):
