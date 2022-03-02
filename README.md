@@ -14,8 +14,14 @@ Launching an experiment requires to run the Python 3 script ```morphoses.py <beh
 (81x0)  |    (81x1)  |  
   |   (8000)    |  (8000)
   |     |       |    |
-  V     |       V    |
+  v     |       v    |
 {{ -- morphoses.py -- }}
+           ^
+           |
+      (mqtt:1883)
+           |
+           v
+{{ -- RTLS gateway -- }}
 ```
 
 Default IP addresses (need to be setup on the router):
