@@ -68,9 +68,6 @@ class MqttHelper:
         for entity in settings['robots'] + settings['things']:
             self.rtls_nodes[entity['rtls_id']] = entity['name']
 
-    def loop(self):
-        self.mqtt_client.loop()
-
     # The callback for when the client receives a CONNACK response from the server.
     def mqtt_on_connect(self, client, args, flags, rc):
         print("Connected with result code "+str(rc))
@@ -90,6 +87,13 @@ class MqttHelper:
             node_id = msg.topic[9:13]
             if node_id in self.rtls_nodes.keys():
                 self.world.store_position(self.rtls_nodes[node_id], [float(pos['x']), float(pos['y'])])
+
+    def begin(self):
+        # Start threaded loop.
+        self.mqtt_client.loop_start()
+
+    def terminate(self):
+        self.mqtt_client.loop_stop()
 
 class Messaging:
     def __init__(self, world, settings):
@@ -140,10 +144,14 @@ class Messaging:
 
     def loop(self):
         osc_process()
-        self.mqtt.loop()
+#        self.mqtt.loop()
+
+    def begin(self):
+        self.mqtt.begin()
 
     def terminate(self):
         osc_terminate()
+        self.mqtt.terminate()
 
     def receive_quaternion(self, quat, name):
         self.world.store_quaternion(name, quat)
