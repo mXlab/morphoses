@@ -229,4 +229,17 @@ void processMessage(OSCMessage& messIn) {
     saveCalibrateImu(imuSide, false);
 #endif
   }
+
+  else if (messIn.fullMatch("/tare-now")) {
+    imu.tareNow(true);
+  }
+
+  else if (messIn.fullMatch("/tare-save")) {
+    imu.saveTare();
+  }
+
+  else if (messIn.fullMatch("/tare-clear")) {
+    imu.clearTare();
+  }
+
 }
