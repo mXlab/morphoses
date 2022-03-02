@@ -1,9 +1,6 @@
-# Morphosis Project Code and Resources
-This repository features scripts and resources for the ongoing Morphosis project.
+# Morphosis Project
 
-## Launching an experiment
-
-Launching an experiment requires to run the Python 3 script ```morphoses.py <behavior_file.yml>```
+This repository features scripts and resources for the ongoing Morphosis project by Sofian Audry and Rosalie D. Gagné.
 
 ## Local Network Configuration
 
@@ -55,6 +52,12 @@ TARE needs to be performed on an already calibrated unit.
 2. Trigger tare by sending OSC command ```/tare-now```. You should see the Z euler angle become close to zero (0).
 3. Save tare by sending OSC command ```/tare-save```.
 4. (optional) Reboot the robot and move it a little bit so that it refreshes itself: it should then find back more-or-less its heading.
+
+## Launching an Experiment
+
+Launching an experiment requires to run the Python 3 script ```morphoses.py <behavior_file.yml>```
+
+
 ## Subfolders
 
 ### Python
