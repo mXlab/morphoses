@@ -37,6 +37,24 @@ Default IP addresses (need to be setup on the router):
 | Computer         | 192.168.0.100 | 81xx      | 8000      |
 | RTLS Gateway     | 192.168.0.200 | 1883 (MQTT) | 1883 (MQTT) |
 
+## Robot Calibration and TARE
+
+### Calibration
+
+When entering a new location it is best to calibrate the robot IMUs. In order to do so:
+1. Begin calibration by sending OSC command ```/calibrate-begin```
+2. Calibrate **accelerometer** by putting the robot in 6 different positions (as in the 6 faces of a "cube") and hold each position for ~2 seconds.
+3. Calibrate **gyroscope** by putting the robot on the ground and let it stabilize, then wait ~2-3 seconds.
+4. Calibrate **magnetometer** by rotating the device ~180° and back to the beginning position in each axis (pitch, roll, yaw) at a speed of about ~2 seconds for each axis.
+5. Save calibration settings sending OSC command ```/calibrate-save```
+ 
+### TARE
+
+TARE needs to be performed on an already calibrated unit.
+1. Put robot facing along the x axis of the room (according to the virtual coordinate system of the UWB positional system). Make sure the robot is stable and does not move.
+2. Trigger tare by sending OSC command ```/tare-now```. You should see the Z euler angle become close to zero (0).
+3. Save tare by sending OSC command ```/tare-save```.
+4. (optional) Reboot the robot and move it a little bit so that it refreshes itself: it should then find back more-or-less its heading.
 ## Subfolders
 
 ### Python
