@@ -390,6 +390,10 @@ class World:
             self.messaging.send(robot, "/stream", 1)
             self.messaging.send(robot, "/stream", 1, board_name='imu')
 
+        # Call an update to initialize data.
+        print("Init data")
+        self.update()
+
     def step(self):
         self.messaging.loop()
         self.update()
