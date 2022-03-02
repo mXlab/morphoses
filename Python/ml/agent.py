@@ -1,3 +1,4 @@
+import math
 import time
 import random
 import numpy as np
@@ -125,15 +126,19 @@ class Agent:
         self.iter = 0
         self.prev_corr_action = None
 
+        self.recentering = False
+
     def step(self):
         # If the robot is within virtual fence: Perform standard RL loop.
         if self.is_inside_boundaries():
+            self.recentering = False
             self.step_rl()
         else:
+            self.recentering = True
             self.step_recenter()
 
     def is_inside_boundaries(self):
-        return self.world.is_inside_boundaries(self)
+        return self.world.is_inside_boundaries(self, self.recentering)
 
     # Performs one step of Q-learning loop.
     def step_rl(self):
@@ -243,56 +248,30 @@ class Agent:
             self.world.sleep(self.time_balance)
 
     def step_recenter(self):
-        print('Outside virtual fence', 0)
-
-        # Signal that I am out.
         self.world.set_color(self, [0, 0, 255])
 
-        # Pause and stabilise the robot
-        self.world.set_motors(self, 0, 0)
-        time.sleep(1)
+        self.world.send_info(self.get_name(), "/position", [self.world.get(self, 'x', standardized=False), self.world.get(self, 'y', standardized=False)])
 
-        # If no correction was made on robot position, use previous action as previous correction action.
-        if self.prev_corr_action is None:
-            self.prev_corr_action = self.action_set.get_action(self.prev_action)
+        heading = self.world.get(self, 'angle_center', standardized=False)
 
-        # Get signs of previous speed and steer actions.
-        sgn_speed = np.sign(self.prev_corr_action[0])
-        sgn_steer = np.sign(self.prev_corr_action[1])
+        if heading is not None:
+            is_close = self.world.get(self, 'dist_center', standardized=False) < 0.3
+            # heading = -heading
+            if is_close:
+                speed = steer = 0
+            else:
+                if -90 < heading and heading < 90:
+                    speed = +1
+                else:
+                    speed = -1
+                steer = -math.sin(math.radians(heading))
+            speed *= 0.25
+            steer *= 0.8
 
-        # If previous speed action was zero, take random speed action during short time. (Could be improved...)
-        if sgn_speed == 0:
-            corr_speed = random.choice([-1., 1.])
-            time_corr_action = 2
+            print("Heading {} speed {} steer {}".format(heading, speed, steer))
+            self.world.set_motors(self, speed, steer)
 
-        # Else, correct speed as opposite previous speed action during long time.
-        else:
-            corr_speed = -1. * self.prev_corr_action[0]
-            time_corr_action = 6
-
-        # If previous steer action was zero, choose random steer action. (Could be improved...)
-        if sgn_steer == 0:
-            corr_steer = random.choice([-1., 1.]) * 0.5
-
-        # Else, correct steer as opposite previous steer action.
-        else:
-            corr_steer = -1. * self.prev_corr_action[1]
-
-        corr_action = [corr_speed, corr_steer]
-        print('corr_action', corr_action)
-
-        # Send corrective action to robot.
-        self.world.set_motors(self, corr_action[0], corr_action[1])
-
-        # Store previous corrective action.
-        self.prev_corr_action = corr_action
-
-        # Wait
-        time.sleep(time_corr_action)
-
-        # Pause and stabilise the robot
-        self.world.set_motors(self, 0, 0)
-        time.sleep(1)
+        self.world.sleep(1)
 
     def display(self, state, reward, scaled_reward):
         # Calculate color representative of reward.

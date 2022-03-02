@@ -235,7 +235,7 @@ class World:
         for thing in settings['things']:
             thing_name = thing['name']
             self.things.append(thing_name)
-        entities_list = self.robots + self.things
+        entities_list = self.robots + self.things + ['center']
 
         # Create entities data structures (robots & things).
         self.entities = {}
@@ -245,6 +245,12 @@ class World:
         for thing in settings['things']:
             thing_name = thing['name']
             self.entities[thing_name] = ThingData(settings['boundaries'])
+
+        self.entities['center'] = ThingData(settings['boundaries'])
+        vb = settings['virtual_boundaries']
+        x_center = 0.5 * (vb['x_min'] + vb['x_max'])
+        y_center = 0.5 * (vb['y_min'] + vb['y_max'])
+        self.entities['center'].store_position([ x_center, y_center ], 0)
 
         # Create messaging system.
         self.messaging = messaging.Messaging(self, settings)
@@ -363,10 +369,14 @@ class World:
             self.messaging.send(name, "/green", rgb[1])
             self.messaging.send(name, "/blue",  rgb[2])
 
-    def is_inside_boundaries(self, agent):
+    def is_inside_boundaries(self, agent, use_recenter_offset=True):
         x = self.get(agent, 'x', standardized=False)
         y = self.get(agent, 'y', standardized=False)
-        return self.virtual_boundaries['x_min'] <= x and x <= self.virtual_boundaries['x_max'] and self.virtual_boundaries['y_min'] <= y and y <= self.virtual_boundaries['y_max']
+        offset = self.virtual_boundaries['recenter_offset'] if use_recenter_offset else 0
+        return self.virtual_boundaries['x_min']+offset <= x and \
+               x <= self.virtual_boundaries['x_max']-offset and \
+               self.virtual_boundaries['y_min']+offset <= y and \
+               y <= self.virtual_boundaries['y_max']-offset
 
     def begin(self):
         print("Messaging begin")
@@ -411,10 +421,14 @@ class World:
         entity = self.entities[entity_name]
         entity.store_position(pos, t)
 
-        # Update distances relative to other robots and entities.
+        # Update distances relative to other robots.
         for name in self.robots:
             other_robot = self.entities[name]
             other_robot.store_polar(entity_name, entity, self.close_dist, t)
+
+        if entity_name in self.robots:
+            for name in self.entities:
+                entity.store_polar(name, self.entities[name], self.close_dist, t)
 
     def store_quaternion(self, entity_name, quat):
         self.entities[entity_name].store_quaternion(quat, self.get_time())
