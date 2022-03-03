@@ -97,6 +97,7 @@ class MqttHelper:
 
 class Messaging:
     def __init__(self, world, settings):
+        self.manager = None
         self.world = world
 
         # Init OSC.
@@ -123,12 +124,19 @@ class Messaging:
         self.info_client = udp_client.SimpleUDPClient("localhost", 8001)
         # self.info_client = udp_client.SimpleUDPClient("192.168.0.150", 8001)
 
+        control_interface_settings = settings['control_interface']
+        self.osc_control_interface = OscHelper("control-interface", control_interface_settings['ip'], control_interface_settings['osc_send_port'], control_interface_settings['osc_recv_port'])
+        self.osc_control_interface.map("/morphoses/set-behavior", self.set_behavior, "")
+
         # Init MQTT.
         try:
             self.mqtt = MqttHelper(settings['rtls_gateway']['ip'], settings['rtls_gateway']['rtls_recv_port'], world, settings)
         except Exception:
             print("Problem with starting MQTT, please check server.")
             sys.exit()
+
+    def set_manager(self, manager):
+        self.manager = manager
 
     def send(self, robot_name, address, args, board_name='main'):
         self.osc_robots[robot_name][board_name].send_message(address, args)
@@ -141,6 +149,8 @@ class Messaging:
         for robot in self.osc_robots.values():
             for node in robot.values():
                 node.dispatch(address, ip, data)
+
+        self.osc_control_interface.dispatch(address, ip, data)
 
     def loop(self):
         osc_process()
@@ -158,6 +168,12 @@ class Messaging:
 
     def receive_quaternion_main(self, quat, name):
         self.world.store_quaternion_main(name, quat)
+
+    def set_behavior(self, args, extra):
+        robot_name, behavior_name = args
+        print("*** CHANGING BEHAVIOR: {} => {}".format(robot_name, behavior_name))
+        self.manager.set_current_agent(robot_name, behavior_name)
+
 
 def interrupt(signup, frame):
     global my_world, stop

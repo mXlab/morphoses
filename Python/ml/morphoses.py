@@ -8,24 +8,13 @@ import threading
 
 from agent import Agent
 from world import World
+from manager import Manager
 
 def interrupt(signup, frame):
     global world
     print("Exiting program...")
     world.terminate()
     sys.exit()
-
-import logging
-
-format = "%(asctime)s: %(message)s"
-logging.basicConfig(format=format, level=logging.INFO,
-                    datefmt="%H:%M:%S")
-
-
-def step_agent(agent):
-    logging.info("Stepping agent {}".format(agent.get_name()))
-    agent.step()
-    logging.info("End step agent {}".format(agent.get_name()))
 
 if __name__ == "__main__":
 
@@ -49,19 +38,11 @@ if __name__ == "__main__":
     # Create agents (for now just one agent).
     behaviors = run_settings['behaviors']
     robots = run_settings['robots']
-    agents = []
-    for robot in robots:
-        b = robots[robot]
-        agents.append(Agent(world=world, name=robot, **behaviors[b]))
 
-    world.begin()
-    for a in agents:
-        a.begin()
+    manager = Manager(world, run_settings)
+    world.set_manager(manager)
 
-    world.sleep(1)
-    world.update()
+    manager.begin()
 
     while True:
-        world.step()
-        for a in agents:
-            a.step()
+        manager.step()

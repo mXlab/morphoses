@@ -103,6 +103,8 @@ class Agent:
         print("=== Model forward ===")
         print(self.model_forward.summary())
 
+        self.has_begin = False
+
     def get_name(self):
         return self.name
 
@@ -128,7 +130,12 @@ class Agent:
 
         self.recentering = False
 
+        self.has_begin = True
+
     def step(self):
+        if not self.has_begin:
+            self.begin()
+
         # If the robot is within virtual fence: Perform standard RL loop.
         if self.is_inside_boundaries():
             self.recentering = False

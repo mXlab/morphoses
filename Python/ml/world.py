@@ -267,6 +267,9 @@ class World:
         # Save current starting time.
         self.start_time = time.time()
 
+    def set_manager(self, manager):
+        self.messaging.set_manager(manager)
+
     def is_valid(self, agent, variable):
         # Process variables as list.
         if isinstance(variable, list):
