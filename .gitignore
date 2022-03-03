@@ -147,5 +147,9 @@ Documents/
 *.3dm
 *.max
 
+# Hidden files
+.~lock*
+.ipynb_*
+
 # Custom
 Config.h
