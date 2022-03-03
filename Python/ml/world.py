@@ -376,10 +376,10 @@ class World:
         x = self.get(agent, 'x', standardized=False)
         y = self.get(agent, 'y', standardized=False)
         offset = self.virtual_boundaries['recenter_offset'] if use_recenter_offset else 0
-        return self.virtual_boundaries['x_min']+offset <= x and \
-               x <= self.virtual_boundaries['x_max']-offset and \
-               self.virtual_boundaries['y_min']+offset <= y and \
-               y <= self.virtual_boundaries['y_max']-offset
+        return      self.virtual_boundaries['x_min'] + offset <= x and \
+               x <= self.virtual_boundaries['x_max'] - offset and \
+                    self.virtual_boundaries['y_min'] + offset <= y and \
+               y <= self.virtual_boundaries['y_max'] - offset
 
     def begin(self):
         print("Messaging begin")
