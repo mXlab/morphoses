@@ -1,23 +1,12 @@
-#ifndef MORPHOSES_CONFIG_
-#define MORPHOSES_CONFIG_
-
 // Network configuration.
-#define WIFI_SSID "thessid"
-#define WIFI_PASSWORD "thepassword"
+#define WIFI_SSID "the_ssid"
+#define WIFI_PASSWORD "the_password"
+
+// Change according to robot ID.
+#define ROBOT_ID 1
 
 // Interval between each sending of data (in milliseconds).
-#define SEND_DATA_INTERVAL 200
-
-// Local (input) port is always 8000.
-#define LOCAL_PORT 8000
-
-// IP address of destination (PC).
-#define DEST_IP_0 192
-#define DEST_IP_1 168
-#define DEST_IP_2 0
-#define DEST_IP_3 100
+#define SEND_DATA_INTERVAL 100
 
 // Set to true to enable debugging outputs on the serial (consumes power).
 #define DEBUG_MODE true
-
-#endif

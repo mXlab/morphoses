@@ -5,10 +5,17 @@
  * the MAIN ESP board which is located in the center of the robot and is in
  * charge of controlling the motors.
  * 
- * INSTRUCTIONS: Copy Config.h.default to Config.h and adjust according to 
- * your own Wifi setup.
+ * Instructions 
+ * ------------
  * 
- * (c) 2018-2021 Sofian Audry, Pierre Gaudet, Martin Peach
+ * 1. Copy Config.h.default to Config.h and adjust according to 
+ *    your own Wifi setup.
+ * 
+ * 2. Install Arduino Library Dependencies: 
+ *    Adafruit_NeoPixel, ArduinoOTA, Chrono, CNMAT_OSC, Dynamixel2Arduino, 
+ *    SparkFun_BNO080_Arduino_Library
+ * 
+ * (c) 2018-2022 Sofian Audry, Pierre Gaudet, Martin Peach
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +35,7 @@
 
 // Configuration file.
 #include "Config.h"
+#include "Globals.h"
 #include "Utils.h"
 #include "OTA.h"
 #include "Comm.h"
