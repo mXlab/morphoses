@@ -37,6 +37,12 @@ def quadrant(angle):
     else:
         return 3
 
+# Returns relative heading to target from object in (x, y) with given heading (in degrees).
+def target_heading(x, y, heading, target_x, target_y):
+    absolute_heading_to_target = np.rad2deg(math.atan2(target_y - y, target_x - x))
+    # print("{} {} {}".format(absolute_heading_to_target, heading, wrap_angle_180(heading - absolute_heading_to_target)))
+    return wrap_angle_180(heading - absolute_heading_to_target)
+
 def normalize(vec):
     norm = np.linalg.norm(vec)
     if norm == 0:

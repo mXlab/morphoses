@@ -149,10 +149,11 @@ class EntityData:
             self.store('close_{}'.format(target_name), is_close, t)
 
             # Compute vector from robot to target state.
-            angle_robot_to_target = np.rad2deg(math.atan2(target.get_value('y') - self.get_value('y'), target.get_value('x') - self.get_value('x')))
             if self.is_valid('mrz'):
                 heading = self.get_value('mrz', standardized=False)
-                angle = wrap_angle_180(angle_robot_to_target - heading)
+                angle = target_heading(self.get_value('x', standardized=False), self.get_value('y', standardized=False),
+                                       heading,
+                                       target.get_value('x', standardized=False), target.get_value('y', standardized=False))
                 #print("** target: {} drt: {} dp: {} angle: {}".format(target_name, delta_robot_to_target, delta_pos, angle))
                 self.store('angle_{}'.format(target_name), angle, t)
                 self.store("quadrant_{}".format(target_name), quadrant(angle), t)
