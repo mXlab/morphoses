@@ -1,5 +1,6 @@
 import math
 import numpy as np
+
 # Map value to new range.
 def map(value, fromMin, fromMax, toMin, toMax):
     # Avoids divisions by zero.
@@ -20,16 +21,18 @@ def wrap_angle_180(angle):
         angle += 360
     return angle
 
+# Returns a number in [0, 1, 2, 3] corresponding to quadrant of angle in degrees.
+# 0 = front, 1 = left, 2 = right, 3 = back
 def quadrant(angle):
     # If target in a 90-degree angular extent in front of the robot: front.
     if -45. < angle < 45:
         return 0
 
-    # If target in a 90-degree angular extent at right of the robot: right.
+    # If target in a 90-degree angular extent at left of the robot: left.
     elif -135. < angle < -45:
         return 1
 
-    # If target in a 90-degree angular extent at left of the robot: left.
+    # If target in a 90-degree angular extent at right of the robot: right.
     elif 45 < angle < 135:
         return 2
 
@@ -43,6 +46,7 @@ def target_heading(x, y, heading, target_x, target_y):
     # print("{} {} {}".format(absolute_heading_to_target, heading, wrap_angle_180(heading - absolute_heading_to_target)))
     return wrap_angle_180(heading - absolute_heading_to_target)
 
+# Returns normalized vector.
 def normalize(vec):
     norm = np.linalg.norm(vec)
     if norm == 0:
@@ -50,6 +54,7 @@ def normalize(vec):
     else:
         return vec / norm
 
+# Returns linear interpolation between two colors.
 def lerp_color(t, from_color, to_color):
     color = []
     for i in range(3):
