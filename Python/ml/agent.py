@@ -261,24 +261,48 @@ class Agent:
 
         heading = self.world.get(self, 'angle_center', standardized=False)
 
+        # This is to force the robot to favor moving forward when it is at almost 90 degrees to avoid situations
+        # where it just moves forward and backwards forever. It will move forward  at +- (90 + heading_front_tolerance).
+        heading_front_tolerance = 30 # change this to allow for more or less tolerance
+
+        heading_front_max = 90 + heading_front_tolerance
+
         if heading is not None:
             is_close = self.world.get(self, 'dist_center', standardized=False) < 0.3
-            # heading = -heading
+
+            # Stop if too close.
             if is_close:
                 speed = steer = 0
+
+            # Else move towards target.
             else:
-                if -90 < heading and heading < 90:
+                # Target is in front (with tolerance)
+                if abs(heading) < heading_front_max:
                     speed = +1
+                # Target is in the back.
                 else:
                     speed = -1
-                steer = -math.sin(math.radians(heading))
-            speed *= 0.25
-            steer *= 0.8
 
-            print("Heading {} speed {} steer {}".format(heading, speed, steer))
+            # Base steering in [-1, 1] according to relative heading.
+            base_steer = math.sin(math.radians(heading))
+
+            # Decompose base steer in sign and absolute value.
+            steer_sign = math.copysign(1, base_steer)
+            steer_value = abs(base_steer)
+
+            # Recompute steer in [-1, 1] based on clamped value.
+            steer_max = math.sin(math.radians(heading_front_max))
+            steer = steer_sign * utils.map01( np.clip(steer_value, 0, steer_max), 0, steer_max )
+
+            # Adjust/moderate speed and steer.
+            speed *= 0.5
+            steer *= 1
+
             self.world.set_motors(self, speed, steer)
+            self.world.sleep(1)
 
-        self.world.sleep(1)
+        # self.world.set_motors(self, 0, 0)
+        # self.world.sleep(2)
 
     def display(self, state, reward, scaled_reward):
         # Calculate color representative of reward.
