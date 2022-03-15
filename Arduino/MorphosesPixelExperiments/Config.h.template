@@ -1,0 +1,15 @@
+// Network configuration.
+#define WIFI_SSID "Baby Moose -"
+#define WIFI_PASSWORD "solareclipse"
+
+// IP address of destination (PC).
+#define DEST_IP_0 192
+#define DEST_IP_1 168
+#define DEST_IP_2 0
+#define DEST_IP_3 32
+
+// Interval between each sending of data (in milliseconds).
+#define SEND_DATA_INTERVAL 100
+
+// Set to true to enable debugging outputs on the serial (consumes power).
+#define DEBUG_MODE true
