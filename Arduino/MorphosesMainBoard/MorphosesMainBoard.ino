@@ -14,7 +14,11 @@
  * 2. Install Arduino Library Dependencies: 
  *    Adafruit_NeoPixel, ArduinoOTA, Chrono, CNMAT_OSC, Dynamixel2Arduino, 
  *    SparkFun_BNO080_Arduino_Library
- * 
+ *    
+ * 3. ** IMPORTANT ** For uploading you need to use the board 
+ *    "Adafruit ESP32 Feather". Do *NOT* use Sparkfun ESP32 Thing or Thing Plus
+ *    otherwise you will have problems with reading the IMUs.
+ *    
  * (c) 2018-2022 Sofian Audry, Pierre Gaudet, Martin Peach
  *
  * This program is free software: you can redistribute it and/or modify
