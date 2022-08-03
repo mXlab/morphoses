@@ -94,4 +94,3 @@ void sendMotorsInfo() {
   bndl.add("/info/load").add(dxl.readControlTableItem(PRESENT_LOAD, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_LOAD, DXL_ID_STEER));
   sendOscBundle(false, destPortInfo);
 }
-}

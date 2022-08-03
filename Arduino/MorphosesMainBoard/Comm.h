@@ -15,8 +15,8 @@ boolean sendOSC = true; // default
 OSCBundle bndl;
 WiFiUDP udp;
 
-IPAddress destIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, DEST_IP_3); // remote IP
-IPAddress broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
+IPAddress* destIPs = 0;
+IPAddress  broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
 
 // The board ID corresponds to the 4th number of its IP.
 int boardID;
@@ -47,12 +47,17 @@ boolean argIsNumber(OSCMessage& msg, int index);
 // otherwise the program seems to have trouble receiving data and loses some packets. It 
 // is unclear why, but this seems to resolve the issue.
 void sendOscBundle(boolean broadcast=false, int port=destPort, boolean force=false) {
-  udp.beginPacket(broadcast ? broadcastIP : destIP, port); // ** keep this line** (see warning above)
-  if (sendOSC || force) {
-    bndl.send(udp); // send the bytes to the SLIP stream
-    bndl.empty(); // empty the bundle to free room for a new one
+  const byte ipSize = sizeof(destIPs) / sizeof(destIPs[0]);
+  // loop through registered IP addresses and send same packet to each of them
+  for (byte i = 0; i < ipSize; i++) {
+    udp.beginPacket(destIPs[i], port);
+
+    if (sendOSC || force) {
+      bndl.send(udp); // send the bytes to the SLIP stream
+      bndl.empty(); // empty the bundle to free room for a new one
+    }
+    udp.endPacket(); // mark the end of the OSC Packet ** keep this line** (see warning above)
   }
-  udp.endPacket(); // mark the end of the OSC Packet ** keep this line** (see warning above)
 }
 
 bool receiveMessage(OSCMessage& messIn) {
@@ -140,8 +145,18 @@ bool wifiIsConnected() {
   return (WiFi.status() == WL_CONNECTED);
 }
 
+void addIPAddress(IPAddress ip) {
+  //destIP = udp.remoteIP();
+}
+
 void initWifi()
 {
+  // allocate space for the IP addresses
+  destIPs = (IPAddress*) malloc(sizeof(IPAddress));
+  // add static IP as test
+  IPAddress ip(DEST_IP_0, DEST_IP_1, DEST_IP_2, DEST_IP_3);
+  destIPs[0] = ip;
+
   // now start the wifi
   WiFi.mode(WIFI_AP_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
