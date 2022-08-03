@@ -34,13 +34,17 @@
 // Includes /////////////////////////////////////
 
 // Configuration file.
+#include <PlaquetteLib.h>
+using namespace pq;
+
 #include "Config.h"
 #include "Globals.h"
 #include "Utils.h"
 #include "OTA.h"
 #include "Comm.h"
 #include "Pixels.h"
-#include <Chrono.h>
+//#include <Chrono.h>
+
 
 // Variables & Objects //////////////////////////
 
@@ -48,6 +52,7 @@ Chrono sendDataChrono;
 
 void setup()
 {
+  Plaquette.begin();
   // Init neopixels.
   initPixels();
 
@@ -66,8 +71,12 @@ void setup()
 
 void loop()
 {
+  Plaquette.step();
+  
   // Update OTA.
   updateOTA();  
+
+  updatePixels();
    
   // Check connection status: reconnect if connection lost.
   if (!wifiIsConnected())
@@ -77,12 +86,12 @@ void loop()
   OSCMessage message;
   if (receiveMessage(message))
     processMessage(message);
-
-  // Send messages.
-  if (sendDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
-    sendData();
-    sendDataChrono.restart();
-  }
+//
+//  // Send messages.
+//  if (sendDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
+//    sendData();
+//    sendDataChrono.restart();
+//  }
 }
 
 void sendData() {
@@ -162,6 +171,14 @@ void processMessage(OSCMessage& messIn) {
     }
   }
 
+  else if (messIn.fullMatch("/period")) {
+    if (argIsNumber(messIn, 0)) {
+      if (DEBUG_MODE) Serial.print("Change period ");
+      float p = getArgAsFloat(messIn, 0);
+      setOscillatorPeriod( p );
+      if (DEBUG_MODE) { Serial.println(); }
+    }
+  }
 
 
 }

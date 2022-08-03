@@ -8,6 +8,8 @@
 Adafruit_NeoPixel pixels(NUM_PIXELS, PIXELS_PIN, PIXELS_TYPE);
 //**************************************************************
 
+SineOsc oscillator;
+
 enum PixelRegion {
   ALL = 0,
   TOP = 1,
@@ -17,6 +19,16 @@ enum PixelRegion {
 void initPixels() {
   // INITIALIZE NeoPixel strip object (REQUIRED)  
   pixels.begin(); 
+
+  oscillator.period(1.0);
+}
+
+void setOscillatorPeriod(float p) {
+  oscillator.period(p);
+}
+
+void updatePixels() {
+  // ...
 }
 
 // Sets one pixel.
