@@ -47,7 +47,13 @@ boolean argIsNumber(OSCMessage& msg, int index);
 // otherwise the program seems to have trouble receiving data and loses some packets. It 
 // is unclear why, but this seems to resolve the issue.
 void sendOscBundle(boolean broadcast=false, int port=destPort, boolean force=false) {
-  udp.beginPacket(broadcast ? broadcastIP : destIP, port); // ** keep this line** (see warning above)
+  // start in multicast mode or normal mode
+  if (broadcast) {
+    udp.beginPacketMulticast(broadcastIP, port, WiFI.localIP());
+  } else {
+    udp.beginPacket(destIP, port);
+  }
+  
   if (sendOSC || force) {
     bndl.send(udp); // send the bytes to the SLIP stream
     bndl.empty(); // empty the bundle to free room for a new one
