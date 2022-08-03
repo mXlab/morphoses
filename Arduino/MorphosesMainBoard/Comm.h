@@ -15,8 +15,9 @@ boolean sendOSC = true; // default
 OSCBundle bndl;
 WiFiUDP udp;
 
-IPAddress* destIPs = 0;
-IPAddress  broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
+int numActiveIPs = 0;
+IPAddress** destIPs;        // array of IPAddress pointers
+IPAddress   broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
 
 // The board ID corresponds to the 4th number of its IP.
 int boardID;
@@ -47,9 +48,8 @@ boolean argIsNumber(OSCMessage& msg, int index);
 // otherwise the program seems to have trouble receiving data and loses some packets. It 
 // is unclear why, but this seems to resolve the issue.
 void sendOscBundle(boolean broadcast=false, int port=destPort, boolean force=false) {
-  const byte ipSize = sizeof(destIPs) / sizeof(destIPs[0]);
   // loop through registered IP addresses and send same packet to each of them
-  for (byte i = 0; i < ipSize; i++) {
+  for (byte i = 0; i < numActiveIPs; i++) {
     udp.beginPacket(destIPs[i], port);
 
     if (sendOSC || force) {
@@ -147,15 +147,32 @@ bool wifiIsConnected() {
 
 void addIPAddress(IPAddress ip) {
   //destIP = udp.remoteIP();
+  // determine if the address we want to add is already registered...
+  bool ipExists = false;
+  for (int i = 0; i < numActiveIPs; i++) {
+    if (*destIPs[i][3] === ip[3]) {
+      ipExists = true;
+      break;
+    }
+  }
+  if (ipExists) return;
+
+  // if it doesnt exist, we add it
+  // first, reallocate array since we now have one more IP (size incremented here aswell)
+  destIPs = (IPAddress**) realloc(destIPs, size(destIPs[0]) * (++numActiveIPs));
+  // add the new ip here
+  destIPs[numActiveIPs - 1] = &ip;
+
+  // just to test...
 }
 
 void initWifi()
 {
   // allocate space for the IP addresses
-  destIPs = (IPAddress*) malloc(sizeof(IPAddress));
+  destIPs = new IPAddress*[1];
+  numActiveIPs = 1;
   // add static IP as test
-  IPAddress ip(DEST_IP_0, DEST_IP_1, DEST_IP_2, DEST_IP_3);
-  destIPs[0] = ip;
+  destIPs[0] = new IPAddress(DEST_IP_0, DEST_IP_1, DEST_IP_2, DEST_IP_3);
 
   // now start the wifi
   WiFi.mode(WIFI_AP_STA);
