@@ -46,10 +46,10 @@ boolean argIsNumber(OSCMessage& msg, int index);
 // ** WARNING **: The beginPacket() & sendPacket() functions need to be called regularly
 // otherwise the program seems to have trouble receiving data and loses some packets. It 
 // is unclear why, but this seems to resolve the issue.
-void sendOscBundle(boolean broadcast=false, int port=destPort, boolean force=false) {
+void sendOscBundle(boolean multicast=true, int port=destPort, boolean force=false) {
   // start in multicast mode or normal mode
-  if (broadcast) {
-    udp.beginPacketMulticast(broadcastIP, port, WiFI.localIP());
+  if (multicast) {
+    udp.beginMulticastPacket();
   } else {
     udp.beginPacket(destIP, port);
   }
@@ -146,7 +146,7 @@ bool wifiIsConnected() {
   return (WiFi.status() == WL_CONNECTED);
 }
 
-void initWifi()
+void initWifi(bool multicast=true)
 {
   // now start the wifi
   WiFi.mode(WIFI_AP_STA);
@@ -174,9 +174,17 @@ void initWifi()
 
   initBoardInfo(myIP[3]);
 
+  // open multicast port if we want it
+  if (multicast) {
+    if (!udp.beginMulticast(broadcastIP, destPort)) {
+      while(1); // Loop forever if setup didn't work
+    }
+  }
+  
   if (!udp.begin(LOCAL_PORT)) {
     while(1); // Loop forever if setup didn't work
   }
+  
   Serial.println("Done");
 
   // Broadcast myself.
