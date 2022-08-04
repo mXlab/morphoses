@@ -150,6 +150,7 @@ void addIPAddress(IPAddress ip) {
   // determine if the address we want to add is already registered...
   bool ipExists = false;
   for (int i = 0; i < numActiveIPs; i++) {
+    // if the last byte matches
     if (*destIPs[i][3] === ip[3]) {
       ipExists = true;
       break;
@@ -161,9 +162,13 @@ void addIPAddress(IPAddress ip) {
   // first, reallocate array since we now have one more IP (size incremented here aswell)
   destIPs = (IPAddress**) realloc(destIPs, size(destIPs[0]) * (++numActiveIPs));
   // add the new ip here
-  destIPs[numActiveIPs - 1] = &ip;
+  destIPs[numActiveIPs - 1] = new IPAddress(ip[0], ip[1], ip[2], ip[3]);
 
-  // just to test...
+  // log for verification
+  if (DEBUG_MODE) {
+    Serial.print("added ");
+    Serial.println(*destIPs[numActiveIPs - 1]);
+  }
 }
 
 void initWifi()
