@@ -50,7 +50,7 @@ boolean argIsNumber(OSCMessage& msg, int index);
 void sendOscBundle(boolean broadcast=false, int port=destPort, boolean force=false) {
   // loop through registered IP addresses and send same packet to each of them
   for (byte i = 0; i < numActiveIPs; i++) {
-    udp.beginPacket(destIPs[i], port);
+    udp.beginPacket(*destIPs[i], port);
 
     if (sendOSC || force) {
       bndl.send(udp); // send the bytes to the SLIP stream

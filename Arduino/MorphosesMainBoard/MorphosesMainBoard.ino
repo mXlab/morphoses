@@ -113,12 +113,7 @@ void processMessage(OSCMessage& messIn) {
   // This message assigns destination IP to the remote IP from which the OSC message was sent.
   if (messIn.fullMatch("/bonjour")) {
     if (DEBUG_MODE) Serial.println("Init IP");
-
-    // determine if remote IP is already in the registry
-    // if yes: do not add it again
-    // if not: add it again
     addIPAddress(udp.remoteIP());
-    
     bndl.add("/bonjour").add(boardName);
   }
 
