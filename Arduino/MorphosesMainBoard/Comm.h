@@ -43,29 +43,36 @@ float getArgAsFloat(OSCMessage& msg, int index);
 /// Returns true iff argument from message is convertible to a number.
 boolean argIsNumber(OSCMessage& msg, int index);
 
+void sendOscBundleToIP(const IPAddress& ip, boolean force, int port) {
+  udp.beginPacket(ip, port);
+  if (sendOSC || force) {
+    bndl.send(udp); // send the bytes to the SLIP stream
+  }
+  udp.endPacket(); // mark the end of the OSC Packet ** keep this line** (see warning above)
+}
+
 // Sends currently built bundle (with optional broadcasting option).
 // ** WARNING **: The beginPacket() & sendPacket() functions need to be called regularly
 // otherwise the program seems to have trouble receiving data and loses some packets. It 
 // is unclear why, but this seems to resolve the issue.
-void sendOscBundle(boolean broadcast=false, int port=destPort, boolean force=false) {
-  // loop through registered IP addresses and send same packet to each of them
-  IPAddress* currIP;
-  for (byte i = 0; i < numActiveIPs; i++) {
-    // create temporary IP address
-    currIP = new IPAddress(DEST_IP_0, DEST_IP_1, DEST_IP_2, destIPs[i]);
-    // begin packet
-    udp.beginPacket(*currIP, port);
+void sendOscBundle(boolean broadcast=false, boolean force=false, int port=destPort) {
+  if (broadcast) {
+    sendOscBundleToIP(broadcastIP, force, port);
+  } 
+  
+  else {
+    // loop through registered IP addresses and send same packet to each of them
+    for (byte i = 0; i < numActiveIPs; i++) {
+      // create temporary IP address
+      IPAddress ip(DEST_IP_0, DEST_IP_1, DEST_IP_2, destIPs[i]);
 
-    if (sendOSC || force) {
-      bndl.send(udp); // send the bytes to the SLIP stream
+      // begin packet
+      sendOscBundleToIP(ip, force, port);
     }
-    udp.endPacket(); // mark the end of the OSC Packet ** keep this line** (see warning above)
-
-    // delete temp address
-    delete currIP;
   }
   bndl.empty(); // empty the bundle to free room for a new one
 }
+
 
 bool receiveMessage(OSCMessage& messIn, IPAddress* returnRemoteIP=0) {
     // if there's data available, read a packet
