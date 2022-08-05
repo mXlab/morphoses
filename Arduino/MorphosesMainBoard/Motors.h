@@ -25,6 +25,9 @@ uint32_t profile_acceleration_steering = 40;
 uint32_t profile_velocity_steering = 150;
 // ********************************************************
 
+float currentSpeed;
+float currentSteer;
+
 void initMotors() {
   // Set Port baudrate to 57600bps for DYNAMIXEL motors.
   dxl.begin(57600);
@@ -44,6 +47,8 @@ void initMotors() {
 
   dxl.writeControlTableItem(PROFILE_ACCELERATION, DXL_ID_STEER, profile_acceleration_steering);
   dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_ID_STEER, profile_velocity_steering);
+
+  currentSpeed = currentSteer = 0;
 }
 
 void setMotorsPower(bool on) {
@@ -68,11 +73,16 @@ int safeRemapNorm(float unitVal, int maxRange, int midPoint=0) {
 
 void setMotorsSpeed(float speed) {
   dxl.setGoalVelocity(DXL_ID_SPEED, safeRemapNorm(speed, MOTORS_SPEED_MAX), UNIT_RAW); // +n=CCW, -n=CW
+  currentSpeed = speed;
 }
 
 void setMotorsSteer(float steer) {
   dxl.setGoalPosition(DXL_ID_STEER, safeRemapNorm(steer, MOTORS_STEER_MAX, MOTORS_STEER_MIDDLE), UNIT_DEGREE);
+  currentSteer = steer;
 }
+
+float getSpeed() { return currentSpeed; }
+float getSteer() { return currentSteer; }
 
 float getBatteryVoltage() {
   return dxl.readControlTableItem(PRESENT_INPUT_VOLTAGE, DXL_ID_SPEED) / 10.0f;
@@ -87,11 +97,13 @@ int getMotorSteerTemperature() {
 }
 
 void sendMotorsInfo() {
-  bndl.add("/info/battery").add(getBatteryVoltage());
-  bndl.add("/info/voltage").add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_STEER));
-  bndl.add("/info/temperature").add(getMotorSpeedTemperature()).add(getMotorSteerTemperature());
-  bndl.add("/info/current").add(dxl.readControlTableItem(PRESENT_CURRENT, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_CURRENT, DXL_ID_STEER));
-  bndl.add("/info/load").add(dxl.readControlTableItem(PRESENT_LOAD, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_LOAD, DXL_ID_STEER));
-  sendOscBundle(false, destPortInfo);
-}
+  bndl.add("/battery").add(getBatteryVoltage());
+  bndl.add("/speed").add(getSpeed());
+  bndl.add("/steer").add(getSteer());
+//  bndl.add("/info/battery").add(getBatteryVoltage());
+//  bndl.add("/info/voltage").add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_STEER));
+//  bndl.add("/info/temperature").add(getMotorSpeedTemperature()).add(getMotorSteerTemperature());
+//  bndl.add("/info/current").add(dxl.readControlTableItem(PRESENT_CURRENT, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_CURRENT, DXL_ID_STEER));
+//  bndl.add("/info/load").add(dxl.readControlTableItem(PRESENT_LOAD, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_LOAD, DXL_ID_STEER));
+  sendOscBundle();
 }
