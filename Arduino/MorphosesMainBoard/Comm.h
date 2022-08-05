@@ -71,7 +71,7 @@ void sendOscBundle(boolean broadcast=false, int port=destPort, boolean force=fal
   bndl.empty(); // empty the bundle to free room for a new one
 }
 
-bool receiveMessage(OSCMessage& messIn) {
+bool receiveMessage(OSCMessage& messIn, IPAddress* returnRemoteIP=0) {
     // if there's data available, read a packet
   int packetSize = udp.parsePacket();
   bool messageReceived = false;
@@ -120,7 +120,7 @@ bool receiveMessage(OSCMessage& messIn) {
         messageReceived = true;
 
         Serial.println("Message received");
-        bndl.add("/bonjour").add(boardName);
+        bndl.add("/received").add(boardName).add(remote[3]);
         sendOscBundle(false, true); // force send so as to always respond
 
         break;
@@ -137,6 +137,10 @@ bool receiveMessage(OSCMessage& messIn) {
         if (DEBUG_MODE) Serial.println("INDEX_OUT_OF_BOUNDS error");
         break;
     }
+
+    if (returnRemoteIP)
+      *returnRemoteIP = remote;
+      
   } //if (packetSize)
   
   return messageReceived;
@@ -156,32 +160,33 @@ bool wifiIsConnected() {
   return (WiFi.status() == WL_CONNECTED);
 }
 
-void addIPAddress(IPAddress ip) {
-  //destIP = udp.remoteIP();
-  // determine if the address we want to add is already registered...
+void addDestinationIPAddress(byte ip3) {
+  // Determine if the address we want to add is already registered.
   bool ipExists = false;
   for (int i = 0; i < numActiveIPs; i++) {
     // if the last byte matches
-    if (destIPs[i] == ip[3]) {
+    if (destIPs[i] == ip3) {
       ipExists = true;
       break;
     }
   }
-  if (ipExists) return;
-
-  // if it doesnt exist, we add it
-  numActiveIPs = min(numActiveIPs+1, MAX_DEST_IPS); // cap at max length
-
-  // if we overflow, we go back to position 1
-  // position 0 is reserved for the ML system's IP address
-  lastAddedIPIndex = (++lastAddedIPIndex - 1) % MAX_DEST_IPS + 1;    // loop between 1 and MAX_DEST_IPS
-
-  destIPs[lastAddedIPIndex] = ip[3];
-
-  // log for verification
-  if (DEBUG_MODE) {
-    Serial.print("NEW IP: ");
-    Serial.println(ip);
+  
+  if (!ipExists) {
+  
+    // if it doesnt exist, we add it
+    numActiveIPs = min(numActiveIPs+1, MAX_DEST_IPS); // cap at max length
+  
+    // if we overflow, we go back to position 1
+    // position 0 is reserved for the ML system's IP address
+    lastAddedIPIndex = (++lastAddedIPIndex - 1) % MAX_DEST_IPS + 1;    // loop between 1 and MAX_DEST_IPS
+  
+    destIPs[lastAddedIPIndex] = ip3;
+  
+    // log for verification
+    if (DEBUG_MODE) {
+      Serial.print("NEW DEST. IP ADDED: ");
+      Serial.println(ip3);
+    }
   }
 }
 
