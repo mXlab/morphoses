@@ -90,9 +90,7 @@ void loop()
     initImu();
   
   // Check for incoming messages.
-  OSCMessage message;
-  if (receiveMessage(message))
-    processMessage(message);
+  processMessage();
 
   // Send messages.
   if (sendDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
@@ -113,12 +111,22 @@ void sendData() {
   sendOscBundle();
 }
 
-void processMessage(OSCMessage& messIn) {
+void processMessage() {
+  
+  OSCMessage messIn;
+  IPAddress remote;
+  if (!receiveMessage(messIn, &remote))
+    return;
+
   // This message assigns destination IP to the remote IP from which the OSC message was sent.
   if (messIn.fullMatch("/bonjour")) {
     if (DEBUG_MODE) Serial.println("Init IP");
-    destIP = udp.remoteIP();
-    bndl.add("/bonjour").add(boardName);
+    destIP = remote;
+    if (argIsNumber(messIn, 0)) {
+      destIP[3] = getArgAsInt(messIn, 0);
+    }
+    bndl.add("/bonjour").add(boardName).add(destIP[3]);
+    sendOscBundle();
   }
 
   // Reboot the ESP.

@@ -55,7 +55,7 @@ void sendOscBundle(boolean broadcast=false, int port=destPort, boolean force=fal
   udp.endPacket(); // mark the end of the OSC Packet ** keep this line** (see warning above)
 }
 
-bool receiveMessage(OSCMessage& messIn) {
+bool receiveMessage(OSCMessage& messIn, IPAddress* returnRemoteIP=0) {
     // if there's data available, read a packet
   int packetSize = udp.parsePacket();
   bool messageReceived = false;
@@ -104,7 +104,7 @@ bool receiveMessage(OSCMessage& messIn) {
         messageReceived = true;
 
         Serial.println("Message received");
-        bndl.add("/bonjour").add(boardName);
+        bndl.add("/received").add(boardName).add(remote[3]);
         sendOscBundle(false, true); // force send so as to always respond
 
         break;
@@ -121,6 +121,10 @@ bool receiveMessage(OSCMessage& messIn) {
         if (DEBUG_MODE) Serial.println("INDEX_OUT_OF_BOUNDS error");
         break;
     }
+
+    if (returnRemoteIP)
+      *returnRemoteIP = remote;
+      
   } //if (packetSize)
   
   return messageReceived;
