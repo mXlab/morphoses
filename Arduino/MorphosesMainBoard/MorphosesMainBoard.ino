@@ -85,10 +85,9 @@ void loop()
   if (!wifiIsConnected())
     initWifi();
 
-  // Init IMU if not already initialized.
-  if (!imuIsInitialized())
-    initImu();
-  
+  // Init IMUs if not already initialized.
+  initIMUs();
+
   // Check for incoming messages.
   processMessage();
 
@@ -101,7 +100,7 @@ void loop()
 
 void sendData() {
   // Process motor ticks only if IMU ready.
-  processImu();
+  processIMUs();
 //  if (processImu())
 //    processMotors();
   if (DEBUG_MODE)
@@ -145,9 +144,9 @@ void processMessage() {
       if (sendOSC != stream) {
         sendOSC = stream;
         if (sendOSC)
-          wakeImu();
+          wakeIMUs();
         else
-          sleepImu();
+          sleepIMUs();
       }
     }
   }
@@ -229,36 +228,27 @@ void processMessage() {
   }
 
   else if (messIn.fullMatch("/calibrate-begin")) {
-    beginCalibrateImu(imu, true);
-#if DUAL_IMU
-    beginCalibrateImu(imuSide, false);
-#endif
+    calibrateBeginIMUs();
   }
 
   else if (messIn.fullMatch("/calibrate-end")) {
-    endCalibrateImu(imu, true);
-#if DUAL_IMU
-    endCalibrateImu(imuSide, false);
-#endif
+    calibrateEndIMUs();
   }
 
   else if (messIn.fullMatch("/calibrate-save")) {
-    saveCalibrateImu(imu, true);
-#if DUAL_IMU
-    saveCalibrateImu(imuSide, false);
-#endif
+    calibrateSaveIMUs();
   }
 
   else if (messIn.fullMatch("/tare-now")) {
-    imu.tareNow(true);
+    imuMain.tareNow(true, TARE_GEOMAGNETIC_ROTATION_VECTOR);
   }
 
   else if (messIn.fullMatch("/tare-save")) {
-    imu.saveTare();
+    imuMain.saveTare();
   }
 
   else if (messIn.fullMatch("/tare-clear")) {
-    imu.clearTare();
+    imuMain.clearTare();
   }
 
 }

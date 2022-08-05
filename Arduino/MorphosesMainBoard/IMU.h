@@ -1,114 +1,179 @@
 #include <SparkFun_BNO080_Arduino_Library.h>
 #include <Chrono.h>
 
-BNO080 imu;
-#if DUAL_IMU
-BNO080 imuSide;
-#endif
 
-boolean imuInitialized = false;
+class MorphosesIMU : public BNO080 {
+  private:
+    boolean _isMain;
+//    boolean _recalibrationMode;
+    boolean _initialized;
+  
+  public:
+    MorphosesIMU(boolean isMain) : _isMain(isMain), _initialized(false) {}
 
-boolean imuIsInitialized() { 
-  return imuInitialized; 
-}
+    const char* name() const { return _isMain ? "main" : "side"; }
 
-void initImu(BNO080& imu_, boolean i2cUseDefault) {
-  uint8_t i2cAddr = i2cUseDefault ? 0x4B : 0x4A;
-  if (!imu_.begin(i2cAddr)) {
-    Serial.println("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
-    bndl.add("/error");
-    sendOscBundle();
-    blinkIndicatorLed(1000, 0.1);
-  }
-  else {
-    bndl.add("/ready");
-    Wire.setClock(400000); //Increase I2C data rate to 400kHz
-//    imu.calibrateAll();
-    imu_.enableRotationVector(50); //Send data update every 50ms
-    imu_.enableAccelerometer(50);
-
-//    imu.enableGameRotationVector(50);
-    imu_.enableMagnetometer(50);
-    imuInitialized = true;
-  }
-  // Add details and send.
-  bndl.add(boardName).add("imu-i2c").add(i2cUseDefault);
-  sendOscBundle();
-}
-
-void initImu() {
-  initImu(imu, true);
-#if DUAL_IMU
-  initImu(imuSide, false);
-#endif
-}
-
-void beginCalibrateImu(BNO080& imu_, boolean i2cUseDefault) {
-  imu_.calibrateAll();
-  bndl.add(boardName).add("imu-calibration-begin").add(i2cUseDefault);
-  sendOscBundle();
-}
-
-void endCalibrateImu(BNO080& imu_, boolean i2cUseDefault) {
-  imu_.endCalibration();
-  bndl.add(boardName).add("imu-calibration-end").add(i2cUseDefault);
-  sendOscBundle();
-}
-
-void saveCalibrateImu(BNO080& imu_, boolean i2cUseDefault) {
-  imu_.saveCalibration();
-  imu_.requestCalibrationStatus();
-  Chrono calibrationChrono;
-  calibrationChrono.start();
-  bool isSaved = false;
-  while (!calibrationChrono.hasPassed(100)) {
-    if (imu_.dataAvailable() && imu_.calibrationComplete()) {
-      isSaved = true;
-      break;
+    // Start an IMU-specific OSC Message by calling this with appropriate sub-address. Result will be "/{main,side}/<addr>".
+    OSCMessage& oscBundle(const char* addr) {
+      char fullAddr[32];
+      sprintf(fullAddr, "/%s%s", name(), addr);
+      return bndl.add(fullAddr);
     }
-  }
 
-  if (isSaved)
-    bndl.add("/done");
-  else
-    bndl.add("/error");
-  bndl.add(boardName).add("imu-calibration-save").add(i2cUseDefault);
+    uint8_t i2cAddress() const { return _isMain ? 0x4B : 0x4A; }
+
+    boolean isInitialized() const { return _initialized; }
+
+    void init() {
+      // Try to connect.
+      boolean isOk = begin( i2cAddress() );
+      if (!isOk) {
+        Serial.println("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
+        blinkIndicatorLed(1000, 0.1);
+      }
+
+      // Connected: initialize.
+      else {
+        Wire.setClock(400000); //Increase I2C data rate to 400kHz
+    //    imu.calibrateAll();
+    
+        // Enable geomagnetic rotation vector.
+        _enableRotationVector();
+          
+//        enableMagnetometer(IMU_SAMPLE_RATE);
+        
+        _initialized = true;
+      }
+      
+      // Add details and send.  
+      oscBundle(isOk ? "/ready" : "/error").add(boardName).add("i2c");
+      sendOscBundle();
+    }
+
+    boolean process() {
+      // Get data.
+      bool available = dataAvailable();
+    
+      // Send data over OSC.
+      if (available && sendOSC)
+      {
+        oscBundle("/quat").add(getQuatI()).add(getQuatJ()).add(getQuatK()).add(getQuatReal());
+        oscBundle("/rot").add((float)degrees(getRoll())).add((float)degrees(getPitch())).add((float)degrees(getYaw()));
+        oscBundle("/accur").add(getMagAccuracy()).add(degrees(getQuatRadianAccuracy()));
+        oscBundle("/mag").add(getMagX()).add(getMagY()).add(getMagZ());
+      }
+    
+    //  // Verify if accuracy is okay, otherwise try to re-calibrate.
+    //  if (getMagAccuracy() <= IMU_LOW_ACCURACY) {
+    //    recalibrationMode = true;
+    //
+    //    while (getMagAccuracy() < IMU_HIGH_ACCURACY) {
+    //      bndl.add("/error").add(boardName).add("accuracy").add(getMagAccuracy());
+    //      sendOscBundle();
+    //    
+    //      setMotorsPower(true);
+    //      setMotorsSpeed(1);
+    //      
+    //      setMotorsSteer(1);
+    //      delay(10000UL);
+    //      setMotorsSteer(-1);
+    //      delay(10000UL);
+    //    }
+    //  }
+      
+      return available;
+    }
+
+    void calibrateBegin() {
+      calibrateAll();
+      enableGameRotationVector(IMU_SAMPLE_RATE);
+      enableMagnetometer(IMU_SAMPLE_RATE);
+      oscBundle("/calibration-begin");
+    }
+
+    void calibrateEnd() {
+      endCalibration();
+      _enableRotationVector();
+      oscBundle("/calibration-end");
+    }
+
+    void calibrateSave() {
+      saveCalibration();
+      requestCalibrationStatus();
+      Chrono calibrationChrono;
+      calibrationChrono.start();
+      bool isSaved = false;
+      while (!calibrationChrono.hasPassed(100)) {
+        if (dataAvailable() && calibrationComplete()) {
+          isSaved = true;
+          break;
+        }
+      }
+    
+      if (isSaved)
+        oscBundle("/calibration-save-done");
+      else
+        oscBundle("/calibration-save-error");
+    }
+
+private:
+    void _enableRotationVector() {
+      if (_isMain)
+        setFeatureCommand(SENSOR_REPORTID_GEOMAGNETIC_ROTATION_VECTOR, IMU_SAMPLE_RATE);
+      else
+        enableRotationVector(IMU_SAMPLE_RATE);
+      enableMagnetometer(IMU_SAMPLE_RATE);
+    }
+
+
+};
+
+MorphosesIMU imuMain(true);
+MorphosesIMU imuSide(false);
+
+#define IMU_LOW_ACCURACY  1
+#define IMU_HIGH_ACCURACY 3
+
+void initIMUs() {
+  if (!imuMain.isInitialized())
+    imuMain.init();
+  if (!imuSide.isInitialized())
+    imuSide.init();
+
   sendOscBundle();
 }
 
-void sleepImu() {
-  imu.modeSleep();
-#if DUAL_IMU
+void calibrateBeginIMUs() {
+  imuMain.calibrateBegin();
+  imuSide.calibrateBegin();
+  sendOscBundle();
+}
+
+void calibrateEndIMUs() {
+  imuMain.calibrateEnd();
+  imuSide.calibrateEnd();  
+  sendOscBundle();
+}
+
+void calibrateSaveIMUs() {
+  imuMain.calibrateSave();
+  imuSide.calibrateSave();  
+  sendOscBundle();
+}
+
+void sleepIMUs() {
+  imuMain.modeSleep();
   imuSide.modeSleep();
-#endif
 }
 
-void wakeImu() {
-  imu.modeOn();
-#if DUAL_IMU
+void wakeIMUs() {
+  imuMain.modeOn();
   imuSide.modeOn();
-#endif
 }
 
-bool processImu(BNO080& imu_) {
-  // Get data.
-  bool dataAvailable = imu_.dataAvailable();
 
-  // Send data over OSC.
-  if (dataAvailable && sendOSC)
-  {
-    bndl.add("/quat").add(imu_.getQuatI()).add(imu_.getQuatJ()).add(imu_.getQuatK()).add(imu_.getQuatReal());
-    bndl.add("/euler").add((float)degrees(imu_.getRoll())).add((float)degrees(imu_.getPitch())).add((float)degrees(imu_.getYaw()));
-    bndl.add("/mag").add(imu_.getMagX()).add(imu_.getMagY()).add(imu_.getMagZ());
-  }
-  return dataAvailable;
-}
-
-bool processImu() {
-  processImu(imu);
+bool processIMUs() {
+  imuMain.process();
+  imuSide.process();
   sendOscBundle();
-#if DUAL_IMU
-  processImu(imuSide);
-  sendOscBundle(false, destPortSide);
-#endif
 }

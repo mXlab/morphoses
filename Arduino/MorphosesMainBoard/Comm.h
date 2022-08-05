@@ -28,10 +28,6 @@ int boardID;
 
 // The destination port is 8 followed by the boardID.
 int destPort;
-#if DUAL_IMU
-int destPortSide;
-#endif
-int destPortInfo;
 
 // A human readable name for the board.
 char boardName[16];
@@ -149,11 +145,7 @@ bool receiveMessage(OSCMessage& messIn, IPAddress* returnRemoteIP=0) {
 void initBoardInfo(int id) {
   boardID = id;
   destPort = 8000 + boardID;
-  #if DUAL_IMU
-  destPortSide = destPort + 1;
-  #endif
-  destPortInfo = destPort + 2;
-  sprintf(boardName, "robot%d-%s", (boardID % 100) / 10, (boardID % 10 == 0 ? "main" : "imu"));
+  sprintf(boardName, "robot%d", (boardID % 100) / 10); // eg. "robot1"
 }
 
 bool wifiIsConnected() {

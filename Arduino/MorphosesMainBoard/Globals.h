@@ -8,7 +8,7 @@
 #define DEST_IP_3 100
 
 #if ROBOT_ID == 1
-#define DUAL_IMU true
+#define NUM_PIXELS 32
 #define NUM_PIXELS 8
 #define PIXELS_TYPE (NEO_GRB + NEO_KHZ800)
 //const uint8_t PIXEL_ZONES[][] = {
@@ -18,7 +18,6 @@
 //};
 
 #else // ROBOT_ID == 2
-#define DUAL_IMU true
 #define NUM_PIXELS 32
 #define PIXELS_TYPE (NEO_BRGW + NEO_KHZ800)
 
