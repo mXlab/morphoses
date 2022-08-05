@@ -18,7 +18,7 @@ WiFiUDP udp;
 // IP address registry
 #define MAX_DEST_IPS 4
 byte destIPs[MAX_DEST_IPS];
-byte numActiveIPs = 0, lastAddedIPIndex = 0;
+int numActiveIPs = 0, lastAddedIPIndex = 0;
 
 // broadcast IP (deprecated)
 IPAddress   broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
@@ -162,7 +162,7 @@ void addIPAddress(IPAddress ip) {
   bool ipExists = false;
   for (int i = 0; i < numActiveIPs; i++) {
     // if the last byte matches
-    if (destIPs[i] === ip[3]) {
+    if (destIPs[i] == ip[3]) {
       ipExists = true;
       break;
     }
@@ -170,13 +170,13 @@ void addIPAddress(IPAddress ip) {
   if (ipExists) return;
 
   // if it doesnt exist, we add it
-  numActiveIPs = min(++numActiveIPs, MAX_DEST_IPS);     // cap at max length
+  numActiveIPs = min(numActiveIPs+1, MAX_DEST_IPS); // cap at max length
 
   // if we overflow, we go back to position 1
   // position 0 is reserved for the ML system's IP address
   lastAddedIPIndex = (++lastAddedIPIndex - 1) % MAX_DEST_IPS + 1;    // loop between 1 and MAX_DEST_IPS
 
-  destIPs[lastAddedIndex] = ip[3];
+  destIPs[lastAddedIPIndex] = ip[3];
 
   // log for verification
   if (DEBUG_MODE) {
