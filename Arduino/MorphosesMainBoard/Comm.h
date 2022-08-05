@@ -54,10 +54,10 @@ void sendOscBundle(boolean broadcast=false, int port=destPort, boolean force=fal
 
     if (sendOSC || force) {
       bndl.send(udp); // send the bytes to the SLIP stream
-      bndl.empty(); // empty the bundle to free room for a new one
     }
     udp.endPacket(); // mark the end of the OSC Packet ** keep this line** (see warning above)
   }
+  bndl.empty(); // empty the bundle to free room for a new one
 }
 
 bool receiveMessage(OSCMessage& messIn) {
