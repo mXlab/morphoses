@@ -15,8 +15,13 @@ boolean sendOSC = true; // default
 OSCBundle bndl;
 WiFiUDP udp;
 
-IPAddress destIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, DEST_IP_3); // remote IP
-IPAddress broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
+// IP address registry
+#define MAX_DEST_IPS 4
+byte destIPs[MAX_DEST_IPS];
+int numActiveIPs = 0, lastAddedIPIndex = 0;
+
+// broadcast IP (deprecated)
+IPAddress   broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
 
 // The board ID corresponds to the 4th number of its IP.
 int boardID;
@@ -47,12 +52,23 @@ boolean argIsNumber(OSCMessage& msg, int index);
 // otherwise the program seems to have trouble receiving data and loses some packets. It 
 // is unclear why, but this seems to resolve the issue.
 void sendOscBundle(boolean broadcast=false, int port=destPort, boolean force=false) {
-  udp.beginPacket(broadcast ? broadcastIP : destIP, port); // ** keep this line** (see warning above)
-  if (sendOSC || force) {
-    bndl.send(udp); // send the bytes to the SLIP stream
-    bndl.empty(); // empty the bundle to free room for a new one
+  // loop through registered IP addresses and send same packet to each of them
+  IPAddress* currIP;
+  for (byte i = 0; i < numActiveIPs; i++) {
+    // create temporary IP address
+    currIP = new IPAddress(DEST_IP_0, DEST_IP_1, DEST_IP_2, destIPs[i]);
+    // begin packet
+    udp.beginPacket(*currIP, port);
+
+    if (sendOSC || force) {
+      bndl.send(udp); // send the bytes to the SLIP stream
+    }
+    udp.endPacket(); // mark the end of the OSC Packet ** keep this line** (see warning above)
+
+    // delete temp address
+    delete currIP;
   }
-  udp.endPacket(); // mark the end of the OSC Packet ** keep this line** (see warning above)
+  bndl.empty(); // empty the bundle to free room for a new one
 }
 
 bool receiveMessage(OSCMessage& messIn, IPAddress* returnRemoteIP=0) {
@@ -144,8 +160,42 @@ bool wifiIsConnected() {
   return (WiFi.status() == WL_CONNECTED);
 }
 
+void addDestinationIPAddress(byte ip3) {
+  // Determine if the address we want to add is already registered.
+  bool ipExists = false;
+  for (int i = 0; i < numActiveIPs; i++) {
+    // if the last byte matches
+    if (destIPs[i] == ip3) {
+      ipExists = true;
+      break;
+    }
+  }
+  
+  if (!ipExists) {
+  
+    // if it doesnt exist, we add it
+    numActiveIPs = min(numActiveIPs+1, MAX_DEST_IPS); // cap at max length
+  
+    // if we overflow, we go back to position 1
+    // position 0 is reserved for the ML system's IP address
+    lastAddedIPIndex = (++lastAddedIPIndex - 1) % MAX_DEST_IPS + 1;    // loop between 1 and MAX_DEST_IPS
+  
+    destIPs[lastAddedIPIndex] = ip3;
+  
+    // log for verification
+    if (DEBUG_MODE) {
+      Serial.print("NEW DEST. IP ADDED: ");
+      Serial.println(ip3);
+    }
+  }
+}
+
 void initWifi()
 {
+  // add static IP as test
+  destIPs[0] = DEST_IP_3;
+  numActiveIPs = 1;
+
   // now start the wifi
   WiFi.mode(WIFI_AP_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);

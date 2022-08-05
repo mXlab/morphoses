@@ -121,11 +121,10 @@ void processMessage() {
   // This message assigns destination IP to the remote IP from which the OSC message was sent.
   if (messIn.fullMatch("/bonjour")) {
     if (DEBUG_MODE) Serial.println("Init IP");
-    destIP = remote;
-    if (argIsNumber(messIn, 0)) {
-      destIP[3] = getArgAsInt(messIn, 0);
-    }
-    bndl.add("/bonjour").add(boardName).add(destIP[3]);
+    // Collect last part of IP address and add it to the list of destinations.
+    byte destIP3 = argIsNumber(messIn, 0) ? getArgAsInt(messIn, 0) : remote[3];
+    addDestinationIPAddress(destIP3);
+    bndl.add("/bonjour").add(boardName).add(destIP3);
     sendOscBundle();
   }
 
