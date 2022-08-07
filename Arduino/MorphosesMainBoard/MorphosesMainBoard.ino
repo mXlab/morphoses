@@ -43,9 +43,9 @@
 #include "Utils.h"
 #include "OTA.h"
 #include "Comm.h"
+#include "IMU.h"
 #include "Motors.h"
 #include "Pixels.h"
-#include "IMU.h"
 #include <Chrono.h>
 
 // Variables & Objects //////////////////////////
@@ -58,7 +58,7 @@ void setup()
   initPixels();
 
   // Init motors.
-  initMotors();
+  initEngine();
 
   // Start I2C.
   Wire.begin();
@@ -104,8 +104,10 @@ void sendData() {
 //  if (processImu())
 //    processMotors();
   if (DEBUG_MODE)
-    sendMotorsInfo();
+    sendEngineInfo();
 
+  processEngine();
+  
   // Send OSC bundle.
   sendOscBundle();
 }
@@ -158,7 +160,7 @@ void processMessage() {
       if (DEBUG_MODE) Serial.print("power value ");
       int32_t val = getArgAsInt(messIn, 0);
       if (DEBUG_MODE) Serial.println(val);
-      setMotorsPower( val != 0 );
+      setEnginePower( val != 0 );
     }
   }
 
@@ -168,7 +170,7 @@ void processMessage() {
       if (DEBUG_MODE) Serial.print("speed motor value ");
       float val = getArgAsFloat(messIn, 0);
       if (DEBUG_MODE) Serial.println(val);
-      setMotorsSpeed(val);
+      setEngineSpeed(val);
     }
   }
 
@@ -179,7 +181,7 @@ void processMessage() {
       if (DEBUG_MODE) Serial.print("steer motor value ");
       float val = getArgAsFloat(messIn, 0);
       if (DEBUG_MODE) Serial.println(val);
-      setMotorsSteer(val);
+      setEngineSteer(val);
     }
   }
 

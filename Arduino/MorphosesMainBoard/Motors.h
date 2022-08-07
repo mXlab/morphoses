@@ -28,7 +28,8 @@ uint32_t profile_velocity_steering = 150;
 float currentSpeed;
 float currentSteer;
 
-void initMotors() {
+bool navigationMode;
+void initEngine() {
   // Set Port baudrate to 57600bps for DYNAMIXEL motors.
   dxl.begin(57600);
   // Set Port Protocol Version. This has to match with DYNAMIXEL protocol version.
@@ -51,7 +52,7 @@ void initMotors() {
   currentSpeed = currentSteer = 0;
 }
 
-void setMotorsPower(bool on) {
+void setEnginePower(bool on) {
   if (on) {
     dxl.torqueOn(DXL_ID_SPEED);
     dxl.torqueOn(DXL_ID_STEER);
@@ -61,45 +62,52 @@ void setMotorsPower(bool on) {
   }
 }
 
-void processMotors()
-{
-}
-
 // Remaps normalised value in [-1, 1] to [midPoint-maxRange, midPoint+maxRange].
 int safeRemapNorm(float unitVal, int maxRange, int midPoint=0) {
   float remappedVal = midPoint + constrain(unitVal, -1, 1) * maxRange;
   return round(remappedVal);
 }
 
-void setMotorsSpeed(float speed) {
+void setEngineSpeed(float speed) {
   dxl.setGoalVelocity(DXL_ID_SPEED, safeRemapNorm(speed, MOTORS_SPEED_MAX), UNIT_RAW); // +n=CCW, -n=CW
   currentSpeed = speed;
 }
 
-void setMotorsSteer(float steer) {
+void setEngineSteer(float steer) {
   dxl.setGoalPosition(DXL_ID_STEER, safeRemapNorm(steer, MOTORS_STEER_MAX, MOTORS_STEER_MIDDLE), UNIT_DEGREE);
   currentSteer = steer;
 }
 
-float getSpeed() { return currentSpeed; }
-float getSteer() { return currentSteer; }
+void startEngineHeading(float speed, float relativeHeading=0) {
+  // Get current heading.
+void processEngine()
+{
+  if (navigationMode) {
+    stepEngineHeading();
+  }
+}
+
+
+
+float getEngineSpeed() { return currentSpeed; }
+float getEngineSteer() { return currentSteer; }
 
 float getBatteryVoltage() {
   return dxl.readControlTableItem(PRESENT_INPUT_VOLTAGE, DXL_ID_SPEED) / 10.0f;
 }
 
-int getMotorSpeedTemperature() {
+int getEngineSpeedTemperature() {
   return dxl.readControlTableItem(PRESENT_TEMPERATURE, DXL_ID_SPEED);
 }
 
-int getMotorSteerTemperature() {
+int getEngineSteerTemperature() {
   return dxl.readControlTableItem(PRESENT_TEMPERATURE, DXL_ID_STEER);
 }
 
-void sendMotorsInfo() {
+void sendEngineInfo() {
   bndl.add("/battery").add(getBatteryVoltage());
-  bndl.add("/speed").add(getSpeed());
-  bndl.add("/steer").add(getSteer());
+  bndl.add("/speed").add(getEngineSpeed());
+  bndl.add("/steer").add(getEngineSteer());
 //  bndl.add("/info/battery").add(getBatteryVoltage());
 //  bndl.add("/info/voltage").add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_STEER));
 //  bndl.add("/info/temperature").add(getMotorSpeedTemperature()).add(getMotorSteerTemperature());
