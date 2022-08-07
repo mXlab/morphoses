@@ -1,5 +1,5 @@
 /**
- * MorphosesMainBOard
+ * MorphosesMainBoard
  * 
  * This program is part of the Morphoses project. It contains the code for 
  * the MAIN ESP board which is located in the center of the robot and is in
