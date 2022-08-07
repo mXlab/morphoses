@@ -185,6 +185,21 @@ void processMessage() {
     }
   }
 
+  // Head in a certain direction.
+  else if (messIn.fullMatch("/heading-start")) {
+    if (argIsNumber(messIn, 0)) {
+      if (DEBUG_MODE) Serial.print("start heading ");
+      float speed = getArgAsFloat(messIn, 0);
+      if (DEBUG_MODE) Serial.println(speed);
+      startEngineHeading(speed, argIsNumber(messIn, 1) ? getArgAsFloat(messIn, 1) : 0);
+    }
+  }
+
+  // Head in a certain direction.
+  else if (messIn.fullMatch("/heading-stop")) {
+    stopEngineHeading();
+  }
+
   else if (messIn.fullMatch("/rgb")) {
     if (argIsNumber(messIn, 0)) {
       if (DEBUG_MODE) Serial.print("RGB colors ");

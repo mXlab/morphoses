@@ -29,6 +29,9 @@ float currentSpeed;
 float currentSteer;
 
 bool navigationMode;
+float targetHeading;
+float targetSpeed;
+
 void initEngine() {
   // Set Port baudrate to 57600bps for DYNAMIXEL motors.
   dxl.begin(57600);
@@ -50,6 +53,9 @@ void initEngine() {
   dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_ID_STEER, profile_velocity_steering);
 
   currentSpeed = currentSteer = 0;
+  navigationMode = false;
+  targetHeading = 0;
+  targetSpeed = 0;
 }
 
 void setEnginePower(bool on) {
@@ -80,6 +86,79 @@ void setEngineSteer(float steer) {
 
 void startEngineHeading(float speed, float relativeHeading=0) {
   // Get current heading.
+  float currentHeading = getHeading();
+
+  // Set target heading.
+  targetHeading = wrapAngle180(currentHeading + relativeHeading);
+
+  targetSpeed = speed;
+  
+  // Start navigation mode.
+  navigationMode = true;
+}
+
+#define CONTINUOUS_MODE
+#define MAX_STEER 0.5
+#define ANGLE_DIFF_TOLERANCE 20
+
+void stepEngineHeading() {
+  // Get current heading.
+  float currentHeading = getHeading();
+
+  // Check correction. Positive: too much to the right; negative: too much to the left.
+  float diffHeading = wrapAngle180(currentHeading - targetHeading);
+  float absDiffHeading = abs(diffHeading);
+
+  bndl.add("/debug-heading/target").add(targetHeading);
+  bndl.add("/debug-heading/current").add(currentHeading);
+  bndl.add("/debug-heading/diff").add(diffHeading);
+
+  // Move forward.
+  if (absDiffHeading <= 90) {
+    setEngineSpeed(targetSpeed);
+
+#ifdef CONTINUOUS_MODE
+    diffHeading /= 90.0f;
+    setEngineSteer( diffHeading * (-MAX_STEER) );
+    bndl.add("/debug-heading/cont-diff").add(diffHeading);
+#else
+    if (absDiffHeading < ANGLE_DIFF_TOLERANCE) {
+      setEngineSteer(0);
+    }
+    else {
+      setEngineSteer( diffHeading > 0 ? -MAX_STEER : +MAX_STEER);
+    }
+#endif
+  }
+
+  // Move backwards.
+  else {
+    setEngineSpeed(-targetSpeed);
+
+#ifdef CONTINUOUS_MODE
+    diffHeading =  - wrapAngle180(diffHeading + 180) / 90.0f;
+    setEngineSteer( diffHeading * (-MAX_STEER) );
+    bndl.add("/debug-heading-cont").add(diffHeading);
+#else
+    if (absDiffHeading > 180-ANGLE_DIFF_TOLERANCE) {
+      setEngineSteer(0);
+    }
+    else {
+      setEngineSteer( diffHeading > 0 ? -MAX_STEER : +MAX_STEER);
+    }
+#endif
+  }
+}
+
+void stopEngineHeading() {
+  setEngineSpeed(0);
+  setEngineSteer(0);
+  
+  navigationMode = false;
+  targetHeading = 0;
+  targetSpeed = 0;
+}
+
 void processEngine()
 {
   if (navigationMode) {

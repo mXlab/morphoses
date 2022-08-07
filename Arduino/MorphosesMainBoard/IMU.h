@@ -177,3 +177,7 @@ bool processIMUs() {
   imuSide.process();
   sendOscBundle();
 }
+
+float getHeading() {
+  return -(float)degrees(imuMain.getYaw());
+}
