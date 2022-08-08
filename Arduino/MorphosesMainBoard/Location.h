@@ -12,23 +12,25 @@ WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, MQTT_BROKER, MQTT_BROKER_PORT);
 
 // Setup a feed called 'location' for subscribing to current location.
-Adafruit_MQTT_Subscribe location(&mqtt, "dwm/node/1a1e/uplink/location");
+Adafruit_MQTT_Subscribe* robotLocations[N_ROBOTS];
+//Adafruit_MQTT_Subscribe thingLocations[N_THINGS];
 
-#define POSITION_ALPHA 1.0
+//#define POSITION_ALPHA 1.0
 
 const Vec2f REFERENCE_ORIENTATION(1, 0);
 
+Vec2f robotPositions[N_ROBOTS];
+
 Vec2f currPosition;
 Vec2f prevPosition;
-
 Vec2f currVelocity;
 
 float velocityHeading;
-
 Chrono velocityTimer;
 
-void onMqttLocation(char* data, uint16_t len)
+void onMqttLocation(int robot, char* data)
 {
+  // Parse location.
   JSONVar location = JSON.parse(data);
   JSONVar position = location["position"];
   if ((int)position["quality"] > 50) {
@@ -36,22 +38,32 @@ void onMqttLocation(char* data, uint16_t len)
     // Set current position.
     Vec2f newPosition((float)double(position["x"]), (float)double(position["y"]));
 
+    robotPositions[robot].set(newPosition);
+
     // Damping.
-    currPosition += POSITION_ALPHA * ( newPosition - currPosition );
+    if (robot+1 == robotId) {
+      currPosition.set(newPosition);
+//      bndl.add("/pos").add(currPosition.x).add(currPosition.y);
+//      currPosition += POSITION_ALPHA * ( newPosition - currPosition );
+    }
     
-    bndl.add("/pos").add(currPosition.x).add(currPosition.y);
+    bndl.add("/pos").add(robot+1).add(robotPositions[robot].x).add(robotPositions[robot].y);
+      
     sendOscBundle();
   }
 }
 
 void initMqtt() {
+  // Subscrive to RTLS robot location messages.
+  for (int i=0; i<N_ROBOTS; i++) {
+    // Create subscription.
+    sprintf(ROBOT_RTLS_MQTT_ADDRESS[i], "dwm/node/%s/uplink/location", ROBOT_RTLS_IDS[i]);
+    robotLocations[i] = new Adafruit_MQTT_Subscribe(&mqtt, ROBOT_RTLS_MQTT_ADDRESS[i]);
 
-  // Connect client.
-  location.setCallback(onMqttLocation);
+    // Subscribe.
+    mqtt.subscribe(robotLocations[i]);
+  }
   
-  // Setup MQTT subscription for time feed.
-  mqtt.subscribe(&location);
-
   currPosition.set(0, 0);
   prevPosition.set(0, 0);
   velocityHeading = 0;
@@ -94,11 +106,18 @@ void updateMqtt() {
 
   // this is our 'wait for incoming subscription packets and callback em' busy subloop
   // try to spend your time here:
-  mqtt.processPackets(10);
-  
+  Adafruit_MQTT_Subscribe *subscription;
+  while (subscription = mqtt.readSubscription(100)) {
+    for (int i=0; i<N_ROBOTS; i++) {
+      if (subscription == robotLocations[i]) {
+        onMqttLocation(i, (char *)robotLocations[i]->lastread);
+        break;
+      }
+    }
+  }
+
   // ping the server to keep the mqtt connection alive
   // NOT required if you are publishing once every KEEPALIVE seconds
-  
   if(! mqtt.ping()) {
     mqtt.disconnect();
   }
