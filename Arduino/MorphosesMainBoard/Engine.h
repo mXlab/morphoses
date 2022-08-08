@@ -88,6 +88,9 @@ void startEngineHeading(float speed, float relativeHeading=0) {
   
   // Start navigation mode.
   navigationMode = true;
+
+  prevPosition.set(currPosition);
+  velocityTimer.start();
 }
 
 #define STEER_MAX 0.5f
@@ -119,6 +122,8 @@ void stepEngineHeading() {
 }
 
 void stopEngineHeading() {
+  updateLocation(currentSpeed >= 0);
+
   setEngineSpeed(0);
   setEngineSteer(0);
   
@@ -154,6 +159,9 @@ void sendEngineInfo() {
   bndl.add("/battery").add(getBatteryVoltage());
   bndl.add("/speed").add(getEngineSpeed());
   bndl.add("/steer").add(getEngineSteer());
+
+  bndl.add("/velocity-heading").add(getVelocityHeading());
+  bndl.add("/velocity").add(getVelocity().x).add(getVelocity().y);
 //  bndl.add("/info/battery").add(getBatteryVoltage());
 //  bndl.add("/info/voltage").add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_STEER));
 //  bndl.add("/info/temperature").add(getMotorSpeedTemperature()).add(getMotorSteerTemperature());

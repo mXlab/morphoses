@@ -46,6 +46,7 @@ using namespace pq;
 #include "Utils.h"
 #include "OTA.h"
 #include "Comm.h"
+#include "Location.h"
 #include "IMU.h"
 #include "Engine.h"
 #include "Pixels.h"
@@ -77,6 +78,8 @@ void setup()
  	// Initialize Wifi and UDP.
 	initWifi();
 
+  initMqtt();
+  
   // Initialize OTA.
   initOTA(boardName);
 }

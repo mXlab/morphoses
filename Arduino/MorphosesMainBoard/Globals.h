@@ -27,4 +27,7 @@
 //  /* BOTTOM */ { 24, 25, 26, 27, 28, 29, 30, 31, -1 }
 //};
 
+#define MQTT_BROKER "192.168.0.200"
+#define MQTT_BROKER_PORT 1883
+
 #endif
