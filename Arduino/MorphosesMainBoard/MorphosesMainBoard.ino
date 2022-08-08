@@ -38,6 +38,9 @@
 // Includes /////////////////////////////////////
 
 // Configuration file.
+#include <PlaquetteLib.h>
+using namespace pq;
+
 #include "Config.h"
 #include "Globals.h"
 #include "Utils.h"
@@ -46,14 +49,16 @@
 #include "IMU.h"
 #include "Engine.h"
 #include "Pixels.h"
-#include <Chrono.h>
 
 // Variables & Objects //////////////////////////
 
-Chrono sendDataChrono;
+Metro sendDataMetro(SEND_DATA_INTERVAL / 1000.0f);
+
 
 void setup()
 {
+  Plaquette.begin();
+  
   // Init neopixels.
   initPixels();
 
@@ -78,8 +83,10 @@ void setup()
 
 void loop()
 {
+  Plaquette.step();
+
   // Update OTA.
-  updateOTA();  
+  updateOTA();
    
   // Check connection status: reconnect if connection lost.
   if (!wifiIsConnected())
@@ -88,13 +95,15 @@ void loop()
   // Init IMUs if not already initialized.
   initIMUs();
 
+  // 
+  updateMqtt();
+  
   // Check for incoming messages.
   processMessage();
 
   // Send messages.
-  if (sendDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
+  if (sendDataMetro) {
     sendData();
-    sendDataChrono.restart();
   }
 }
 
