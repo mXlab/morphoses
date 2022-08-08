@@ -90,57 +90,32 @@ void startEngineHeading(float speed, float relativeHeading=0) {
   navigationMode = true;
 }
 
-#define CONTINUOUS_MODE
-#define MAX_STEER 0.5
-#define ANGLE_DIFF_TOLERANCE 20
+#define STEER_MAX 0.5f
+#define HEADING_FRONT_TOLERANCE 30
+const int HEADING_FRONT_MAX = 90 + HEADING_FRONT_TOLERANCE;
+const float STEER_HEADING_FRONT_MAX = sin(radians(HEADING_FRONT_MAX));
 
 void stepEngineHeading() {
-  // Get current heading.
-  float currentHeading = getHeading();
+  // Check correction. Positive: too much to the left; negative: too much to the right.
+  float relativeHeading = wrapAngle180(targetHeading - getHeading());
 
-  // Check correction. Positive: too much to the right; negative: too much to the left.
-  float diffHeading = wrapAngle180(currentHeading - targetHeading);
-  float absDiffHeading = abs(diffHeading);
+  // Compute speed.
+  // We use a tolerance in order to force the robot to favor moving forward when it is at almost 90 degrees to avoid situations
+  // where it just moves forward and backwards forever. It will move forward  at +- (90 + HEADING_FRONT_TOLERANCE).
+  float speed = targetSpeed * (abs(relativeHeading) < HEADING_FRONT_MAX ? +1 : -1);
 
-  bndl.add("/debug-heading/target").add(targetHeading);
-  bndl.add("/debug-heading/current").add(currentHeading);
-  bndl.add("/debug-heading/diff").add(diffHeading);
+  // Base steering in [-1, 1] according to relative heading.
+  float baseSteer = sin(radians(relativeHeading));
 
-  // Move forward.
-  if (absDiffHeading <= 90) {
-    setEngineSpeed(targetSpeed);
+  // Decompose base steer in sign and absolute value.
+  float steerSign = copysignf(1, baseSteer);
+  float steerValue = abs(baseSteer);
 
-#ifdef CONTINUOUS_MODE
-    diffHeading /= 90.0f;
-    setEngineSteer( diffHeading * (-MAX_STEER) );
-    bndl.add("/debug-heading/cont-diff").add(diffHeading);
-#else
-    if (absDiffHeading < ANGLE_DIFF_TOLERANCE) {
-      setEngineSteer(0);
-    }
-    else {
-      setEngineSteer( diffHeading > 0 ? -MAX_STEER : +MAX_STEER);
-    }
-#endif
-  }
+  // Recompute steer in [-1, 1] based on clamped value.
+  float steer = steerSign * STEER_MAX * constrain(steerValue/STEER_HEADING_FRONT_MAX, 0, 1);
 
-  // Move backwards.
-  else {
-    setEngineSpeed(-targetSpeed);
-
-#ifdef CONTINUOUS_MODE
-    diffHeading =  - wrapAngle180(diffHeading + 180) / 90.0f;
-    setEngineSteer( diffHeading * (-MAX_STEER) );
-    bndl.add("/debug-heading-cont").add(diffHeading);
-#else
-    if (absDiffHeading > 180-ANGLE_DIFF_TOLERANCE) {
-      setEngineSteer(0);
-    }
-    else {
-      setEngineSteer( diffHeading > 0 ? -MAX_STEER : +MAX_STEER);
-    }
-#endif
-  }
+  setEngineSpeed(speed);
+  setEngineSteer(steer);
 }
 
 void stopEngineHeading() {
@@ -158,7 +133,6 @@ void processEngine()
     stepEngineHeading();
   }
 }
-
 
 
 float getEngineSpeed() { return currentSpeed; }
