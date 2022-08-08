@@ -23,8 +23,8 @@ int numActiveIPs = 0, lastAddedIPIndex = 0;
 // broadcast IP (deprecated)
 IPAddress   broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
 
-// The board ID corresponds to the 4th number of its IP.
-int boardID;
+// The robot ID corresponds to the 2nd digit of the 4th part of the IP address.
+int robotId;
 
 // The destination port is 8 followed by the boardID.
 int destPort;
@@ -150,9 +150,9 @@ bool receiveMessage(OSCMessage& messIn, IPAddress* returnRemoteIP=0) {
 }
 
 void initBoardInfo(int id) {
-  boardID = id;
-  destPort = 8000 + boardID;
-  sprintf(boardName, "robot%d", (boardID % 100) / 10); // eg. "robot1"
+  robotId = (id % 100) / 10;
+  destPort = 8000 + id;
+  sprintf(boardName, "robot%d", robotId); // eg. "robot1"
 }
 
 bool wifiIsConnected() {
