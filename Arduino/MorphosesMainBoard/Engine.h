@@ -67,13 +67,6 @@ void setEnginePower(bool on) {
     dxl.torqueOff(DXL_ID_STEER);
   }
 }
-
-// Remaps normalised value in [-1, 1] to [midPoint-maxRange, midPoint+maxRange].
-int safeRemapNorm(float unitVal, int maxRange, int midPoint=0) {
-  float remappedVal = midPoint + constrain(unitVal, -1, 1) * maxRange;
-  return round(remappedVal);
-}
-
 void setEngineSpeed(float speed) {
   dxl.setGoalVelocity(DXL_ID_SPEED, safeRemapNorm(speed, MOTORS_SPEED_MAX), UNIT_RAW); // +n=CCW, -n=CW
   currentSpeed = speed;

@@ -38,6 +38,13 @@ float wrapAngle180(float angle) {
   return angle;
 }
 
+
+// Remaps normalised value in [-1, 1] to [midPoint-maxRange, midPoint+maxRange].
+int safeRemapNorm(float unitVal, int maxRange, int midPoint=0) {
+  float remappedVal = midPoint + constrain(unitVal, -1, 1) * maxRange;
+  return round(remappedVal);
+}
+
 float wrapAngle360(float angle) {
   while (angle > 360) angle -= 360;
   while (angle <   0) angle += 360;
