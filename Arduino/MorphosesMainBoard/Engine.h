@@ -82,7 +82,7 @@ void startEngineHeading(float speed, float relativeHeading=0) {
   float currentHeading = getHeading();
 
   // Set target heading.
-  targetHeading = wrapAngle180(currentHeading + relativeHeading);
+  targetHeading = wrapAngle180(currentHeading - relativeHeading);
 
   targetSpeed = speed;
   
