@@ -104,9 +104,12 @@ void loop()
   // Init IMUs if not already initialized.
   initIMUs();
 
-  // 
+  // Update MQTT.
   updateMqtt();
-  
+
+  // Update location system.
+  updateLocation();
+
   // Check for incoming messages.
   processMessage();
 
@@ -124,10 +127,10 @@ void sendData() {
   processIMUs();
 //  if (processImu())
 //    processMotors();
-  if (DEBUG_MODE)
-    sendEngineInfo();
+  
+  sendEngineInfo();
 
-  processEngine();
+  processEngine(); // 
   
   // Send OSC bundle.
   sendOscBundle();
