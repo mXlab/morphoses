@@ -115,6 +115,12 @@ void stepEngineHeading() {
   float steerSign = copysignf(1, baseSteer);
   float steerValue = abs(baseSteer);
 
+  // If we are too much away from our direction, reset.
+  if (steerValue > sin(radians(30))) {
+    prevPosition.set(avgPosition);
+    velocityTimer.start();
+  }
+
   // Recompute steer in [-1, 1] based on clamped value.
   float steer = steerSign * STEER_MAX * constrain(steerValue/STEER_HEADING_FRONT_MAX, 0, 1);
 
