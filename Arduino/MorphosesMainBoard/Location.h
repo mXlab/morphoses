@@ -81,7 +81,7 @@ void initMqtt() {
 
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
-void mqttConnect() {
+void connectMqtt() {
   int8_t ret;
 
   // Stop if already connected.
@@ -110,7 +110,7 @@ void updateMqtt() {
   // Ensure the connection to the MQTT server is alive (this will make the first
   // connection and automatically reconnect when disconnected).  See the MQTT_connect
   // function definition further below.
-  mqttConnect();
+  connectMqtt();
 
   // this is our 'wait for incoming subscription packets and callback em' busy subloop
   // try to spend your time here:
