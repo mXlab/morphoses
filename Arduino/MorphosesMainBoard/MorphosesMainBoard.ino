@@ -268,16 +268,4 @@ void processMessage() {
     calibrateSaveIMUs();
   }
 
-  else if (messIn.fullMatch("/tare-now")) {
-    imuMain.tareNow(true, TARE_GEOMAGNETIC_ROTATION_VECTOR);
-  }
-
-  else if (messIn.fullMatch("/tare-save")) {
-    imuMain.saveTare();
-  }
-
-  else if (messIn.fullMatch("/tare-clear")) {
-    imuMain.clearTare();
-  }
-
 }
