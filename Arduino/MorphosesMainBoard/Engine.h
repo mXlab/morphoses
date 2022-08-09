@@ -82,14 +82,14 @@ void startEngineHeading(float speed, float relativeHeading=0) {
   float currentHeading = getHeading();
 
   // Set target heading.
-  targetHeading = wrapAngle180(currentHeading - relativeHeading);
+  targetHeading = -wrapAngle180(currentHeading + relativeHeading);
 
   targetSpeed = speed;
   
   // Start navigation mode.
   navigationMode = true;
 
-  prevPosition.set(currPosition);
+  prevPosition.set(avgPosition);
   velocityTimer.start();
 }
 
@@ -100,12 +100,13 @@ const float STEER_HEADING_FRONT_MAX = sin(radians(HEADING_FRONT_MAX));
 
 void stepEngineHeading() {
   // Check correction. Positive: too much to the left; negative: too much to the right.
-  float relativeHeading = wrapAngle180(targetHeading - getHeading());
+  float relativeHeading = wrapAngle180(targetHeading + getHeading());
+  float absoluteRelativeHeading = abs(relativeHeading);
 
   // Compute speed.
   // We use a tolerance in order to force the robot to favor moving forward when it is at almost 90 degrees to avoid situations
   // where it just moves forward and backwards forever. It will move forward  at +- (90 + HEADING_FRONT_TOLERANCE).
-  float speed = targetSpeed * (abs(relativeHeading) < HEADING_FRONT_MAX ? +1 : -1);
+  float speed = targetSpeed * (absoluteRelativeHeading < HEADING_FRONT_MAX ? +1 : -1);
 
   // Base steering in [-1, 1] according to relative heading.
   float baseSteer = sin(radians(relativeHeading));
@@ -122,7 +123,10 @@ void stepEngineHeading() {
 }
 
 void stopEngineHeading() {
-  updateLocation(currentSpeed >= 0);
+  updateVelocity(currentSpeed >= 0);
+
+  // Align IMU offset to velocity heading.
+  tare(getVelocityHeading());
 
   setEngineSpeed(0);
   setEngineSteer(0);
@@ -159,9 +163,10 @@ void sendEngineInfo() {
   bndl.add("/battery").add(getBatteryVoltage());
   bndl.add("/speed").add(getEngineSpeed());
   bndl.add("/steer").add(getEngineSteer());
-
-  bndl.add("/velocity-heading").add(getVelocityHeading());
-  bndl.add("/velocity").add(getVelocity().x).add(getVelocity().y);
+  bndl.add("/heading").add(getHeading());
+//
+//  bndl.add("/velocity-heading").add(getVelocityHeading());
+//  bndl.add("/velocity").add(getVelocity().x).add(getVelocity().y);
 //  bndl.add("/info/battery").add(getBatteryVoltage());
 //  bndl.add("/info/voltage").add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_STEER));
 //  bndl.add("/info/temperature").add(getMotorSpeedTemperature()).add(getMotorSteerTemperature());

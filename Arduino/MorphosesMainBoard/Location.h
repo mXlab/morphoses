@@ -28,6 +28,10 @@ Vec2f currVelocity;
 float velocityHeading;
 Chrono velocityTimer;
 
+Smoother avgPositionX(0.2f);
+Smoother avgPositionY(0.2f);
+Vec2f avgPosition;
+
 void onMqttLocation(int robot, char* data)
 {
   // Parse location.
@@ -47,7 +51,7 @@ void onMqttLocation(int robot, char* data)
 //      currPosition += POSITION_ALPHA * ( newPosition - currPosition );
     }
     
-    bndl.add("/pos").add(robot+1).add(robotPositions[robot].x).add(robotPositions[robot].y);
+//    bndl.add("/pos").add(robot+1).add(robotPositions[robot].x).add(robotPositions[robot].y);
       
     sendOscBundle();
   }
@@ -66,7 +70,11 @@ void initMqtt() {
   
   currPosition.set(0, 0);
   prevPosition.set(0, 0);
+  avgPosition.set(0, 0);
   velocityHeading = 0;
+
+  avgPositionX.reset();
+  avgPositionY.reset();
   
   velocityTimer.start();
 }
@@ -123,13 +131,18 @@ void updateMqtt() {
   }
 }
 
-void updateLocation(boolean movingForward) {
-  float t = velocityTimer.elapsed() / 1000.0f;
+void updateLocation() {
+  // Update average positioning.
+  avgPositionX.put( currPosition.x );
+  avgPositionY.put( currPosition.y );
+  avgPosition.set( avgPositionX.get(), avgPositionY.get() );
+}
+
+void updateVelocity(boolean movingForward) {
+  float t = velocityTimer.elapsed();
 
   if (t > 0) {
-//    currVelocity.x = (currPosition.x - prevPosition.x) / t;
-//    currVelocity.y = (currPosition.y - prevPosition.y) / t;
-    currVelocity = currPosition - prevPosition;
+    currVelocity = (avgPosition - prevPosition) / t;
     velocityHeading = REFERENCE_ORIENTATION.angle(currVelocity);
     if (!movingForward) velocityHeading = wrapAngle180(velocityHeading + 180);
   }
@@ -137,9 +150,8 @@ void updateLocation(boolean movingForward) {
     currVelocity.set(0, 0);
   }
 
-  // Reset.
-  bndl.add("/curr-pos").add(currPosition.x).add(currPosition.y);
-  bndl.add("/prev-pos").add(prevPosition.x).add(prevPosition.y);
+  // Reset previous position.
+  prevPosition.set( avgPosition );
 }
 
 Vec2f getPosition() {
