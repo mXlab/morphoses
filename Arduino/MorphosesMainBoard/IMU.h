@@ -7,9 +7,11 @@ class MorphosesIMU : public BNO080 {
     boolean _isMain;
 //    boolean _recalibrationMode;
     boolean _initialized;
+
+    float _headingOffset;
   
   public:
-    MorphosesIMU(boolean isMain) : _isMain(isMain), _initialized(false) {}
+    MorphosesIMU(boolean isMain) : _isMain(isMain), _initialized(false), _headingOffset(0) {}
 
     const char* name() const { return _isMain ? "main" : "side"; }
 
@@ -113,6 +115,18 @@ class MorphosesIMU : public BNO080 {
       oscBundle(isSaved ? "/calibration-save-done" : "/calibration-save-error");
     }
 
+    void tare(float currentHeading) {
+      _headingOffset = currentHeading - getRawHeading();
+    }
+
+    float getHeading() {
+      return wrapAngle180(getRawHeading() + _headingOffset);
+    }
+
+    float getRawHeading() {
+      return (float)degrees(getYaw());
+    }
+
 };
 
 MorphosesIMU imuMain(true);
@@ -166,5 +180,13 @@ bool processIMUs() {
 }
 
 float getHeading() {
-  return -(float)degrees(imuMain.getYaw());
+  return imuMain.getHeading();
+}
+
+float getRawHeading() {
+  return imuMain.getRawHeading();
+}
+
+void tare(float currentHeading) {
+  imuMain.tare(currentHeading);
 }
