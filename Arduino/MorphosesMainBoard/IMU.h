@@ -91,7 +91,8 @@ class MorphosesIMU : public BNO080 {
 
     void calibrateEnd() {
       endCalibration();
-      _enableRotationVector();
+      enableRotationVector(IMU_SAMPLE_RATE);
+      enableMagnetometer(IMU_SAMPLE_RATE);
       oscBundle("/calibration-end");
     }
 
