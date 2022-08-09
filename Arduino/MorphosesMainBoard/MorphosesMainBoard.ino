@@ -82,9 +82,8 @@ void setup()
     ; // wait for serial port to connect. Needed for native USB port only
   }
 
- 	// Initialize Wifi and UDP.
-	initWifi();
 
+  // Initialize MQTT connection.
   initMqtt();
   
   // Initialize OTA.
@@ -92,7 +91,7 @@ void setup()
 }
 
 void loop()
-{
+{  
   Plaquette.step();
 
   // Update OTA.
