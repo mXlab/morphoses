@@ -4,6 +4,12 @@
 // Number of robots.
 #define N_ROBOTS 3
 
+// Battery energy thresholds.
+// The low point for a NiMH (based on a cell at 1.2V) is 1.0V, so in our 10-cell battery pack this means that we have to stop at 10V.
+// However we give ourselves a slightly higher target of 10.5V.
+#define ENERGY_VOLTAGE_LOW      10.5f // Low energy
+#define ENERGY_VOLTAGE_CRITICAL  9.8f // Critical energy
+
 // IP address of destination (PC).
 #define DEST_IP_0 192
 #define DEST_IP_1 168

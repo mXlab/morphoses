@@ -50,6 +50,7 @@ using namespace pq;
 #include "IMU.h"
 #include "Engine.h"
 #include "Pixels.h"
+#include "Energy.h"
 
 // Variables & Objects //////////////////////////
 
@@ -59,12 +60,18 @@ Metro sendDataMetro(SEND_DATA_INTERVAL / 1000.0f);
 void setup()
 {
   Plaquette.begin();
-  
-  // Init neopixels.
-  initPixels();
+
+  // Initialize Wifi and UDP.
+  initWifi();
 
   // Init motors.
   initEngine();
+
+  // Check energy.
+  checkEnergy();
+
+  // Init neopixels.
+  initPixels();
 
   // Start I2C.
   Wire.begin();
@@ -107,6 +114,9 @@ void loop()
   // Send messages.
   if (sendDataMetro) {
     sendData();
+
+    // Energy checkpoint to prevent damage when low 
+    checkEnergy();
   }
 }
 
