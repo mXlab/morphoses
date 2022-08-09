@@ -108,11 +108,9 @@ class MorphosesIMU : public BNO080 {
           break;
         }
       }
-    
-      if (isSaved)
-        oscBundle("/calibration-save-done");
-      else
-        oscBundle("/calibration-save-error");
+
+      // Send feedback.
+      oscBundle(isSaved ? "/calibration-save-done" : "/calibration-save-error");
     }
 
 };
