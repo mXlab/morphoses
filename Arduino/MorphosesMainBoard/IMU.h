@@ -35,12 +35,10 @@ class MorphosesIMU : public BNO080 {
       // Connected: initialize.
       else {
         Wire.setClock(400000); //Increase I2C data rate to 400kHz
-    //    imu.calibrateAll();
     
-        // Enable geomagnetic rotation vector.
-        _enableRotationVector();
-          
-//        enableMagnetometer(IMU_SAMPLE_RATE);
+        // Enable rotation vector.
+        enableRotationVector(IMU_SAMPLE_RATE);
+        enableMagnetometer(IMU_SAMPLE_RATE);
         
         _initialized = true;
       }
@@ -115,16 +113,6 @@ class MorphosesIMU : public BNO080 {
       else
         oscBundle("/calibration-save-error");
     }
-
-private:
-    void _enableRotationVector() {
-      if (_isMain)
-        setFeatureCommand(SENSOR_REPORTID_GEOMAGNETIC_ROTATION_VECTOR, IMU_SAMPLE_RATE);
-      else
-        enableRotationVector(IMU_SAMPLE_RATE);
-      enableMagnetometer(IMU_SAMPLE_RATE);
-    }
-
 
 };
 
