@@ -232,7 +232,7 @@ void processMessage() {
         int b = getArgAsInt(messIn, 2);
         int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
         if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-        setPixels(r, b, g, w);
+        setPixels(r, g, b, w);
       }
     }
   }
@@ -247,7 +247,7 @@ void processMessage() {
         int b = getArgAsInt(messIn, 3);
         int w = argIsNumber(messIn, 4) ? getArgAsInt(messIn, 4) : 0;
         if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-        setPixel(i, r, b, g, w);
+        setPixel(i, r, g, b, w);
       }
     }
   }
@@ -262,7 +262,7 @@ void processMessage() {
         int b = getArgAsInt(messIn, 3);
         int w = argIsNumber(messIn, 4) ? getArgAsInt(messIn, 4) : 0;
         if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-        setPixelsRegion(region, r, b, g, w);
+        setPixelsRegion(region, r, g, b, w);
       }
     }
   }
