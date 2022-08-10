@@ -49,6 +49,7 @@ using namespace pq;
 #include "Location.h"
 #include "IMU.h"
 #include "Engine.h"
+#include "Navigation.h"
 #include "Pixels.h"
 #include "Energy.h"
 
@@ -123,14 +124,12 @@ void loop()
 }
 
 void sendData() {
-  // Process motor ticks only if IMU ready.
   processIMUs();
-//  if (processImu())
-//    processMotors();
-  
-  sendEngineInfo();
+  processNavigation();
+  processEngine();
 
-  processEngine(); // 
+  sendNavigationInfo();
+  sendEngineInfo();
   
   // Send OSC bundle.
   sendOscBundle();
@@ -215,13 +214,13 @@ void processMessage() {
       if (DEBUG_MODE) Serial.print("start heading ");
       float speed = getArgAsFloat(messIn, 0);
       if (DEBUG_MODE) Serial.println(speed);
-      startEngineHeading(speed, argIsNumber(messIn, 1) ? getArgAsFloat(messIn, 1) : 0);
+      startNavigationHeading(speed, argIsNumber(messIn, 1) ? getArgAsFloat(messIn, 1) : 0);
     }
   }
 
   // Head in a certain direction.
   else if (messIn.fullMatch("/heading-stop")) {
-    stopEngineHeading();
+    stopNavigationHeading();
   }
 
   else if (messIn.fullMatch("/rgb")) {

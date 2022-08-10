@@ -28,10 +28,6 @@ uint32_t profile_velocity_steering = 150;
 float currentSpeed;
 float currentSteer;
 
-bool navigationMode;
-float targetHeading;
-float targetSpeed;
-
 void initEngine() {
   // Set Port baudrate to 57600bps for DYNAMIXEL motors.
   dxl.begin(57600);
@@ -53,9 +49,6 @@ void initEngine() {
   dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_ID_STEER, profile_velocity_steering);
 
   currentSpeed = currentSteer = 0;
-  navigationMode = false;
-  targetHeading = 0;
-  targetSpeed = 0;
 }
 
 void setEnginePower(bool on) {
@@ -77,81 +70,10 @@ void setEngineSteer(float steer) {
   currentSteer = steer;
 }
 
-void startEngineHeading(float speed, float relativeHeading=0) {
-  // Get current heading.
-  float currentHeading = getHeading();
-
-  // Set target heading.
-  targetHeading = -wrapAngle180(currentHeading + relativeHeading);
-
-  targetSpeed = speed;
-  
-  // Start navigation mode.
-  navigationMode = true;
-
-  prevPosition.set(avgPosition);
-  velocityTimer.start();
-}
-
-#define STEER_MAX 0.5f
-#define HEADING_FRONT_TOLERANCE 30
-const int HEADING_FRONT_MAX = 90 + HEADING_FRONT_TOLERANCE;
-const float STEER_HEADING_FRONT_MAX = sin(radians(HEADING_FRONT_MAX));
-
-void stepEngineHeading() {
-  // Check correction. Positive: too much to the left; negative: too much to the right.
-  float relativeHeading = wrapAngle180(targetHeading + getHeading());
-  float absoluteRelativeHeading = abs(relativeHeading);
-
-  // Compute speed.
-  // We use a tolerance in order to force the robot to favor moving forward when it is at almost 90 degrees to avoid situations
-  // where it just moves forward and backwards forever. It will move forward  at +- (90 + HEADING_FRONT_TOLERANCE).
-  float speed = targetSpeed * (absoluteRelativeHeading < HEADING_FRONT_MAX ? +1 : -1);
-
-  // Base steering in [-1, 1] according to relative heading.
-  float baseSteer = sin(radians(relativeHeading));
-
-  // Decompose base steer in sign and absolute value.
-  float steerSign = copysignf(1, baseSteer);
-  float steerValue = abs(baseSteer);
-
-  // If we are too much away from our direction, reset.
-  if (steerValue > sin(radians(30))) {
-    prevPosition.set(avgPosition);
-    velocityTimer.start();
-  }
-
-  // Recompute steer in [-1, 1] based on clamped value.
-  float steer = steerSign * STEER_MAX * constrain(steerValue/STEER_HEADING_FRONT_MAX, 0, 1);
-
-  setEngineSpeed(speed);
-  setEngineSteer(steer);
-}
-
-void stopEngineHeading() {
-  updateVelocity(currentSpeed >= 0);
-
-  // Align IMU offset to velocity heading.
-  tare(getVelocityHeading());
-
-  setEngineSpeed(0);
-  setEngineSteer(0);
-  
-  navigationMode = false;
-  targetHeading = 0;
-  targetSpeed = 0;
-}
-
-void processEngine()
-{
-  if (navigationMode) {
-    stepEngineHeading();
-  }
-}
-
-
 float getEngineSpeed() { return currentSpeed; }
 float getEngineSteer() { return currentSteer; }
+
+float engineIsMovingForward() { return (currentSpeed >= 0); }
 
 float getBatteryVoltage() {
   return dxl.readControlTableItem(PRESENT_INPUT_VOLTAGE, DXL_ID_SPEED) / 10.0f;
@@ -165,18 +87,12 @@ int getEngineSteerTemperature() {
   return dxl.readControlTableItem(PRESENT_TEMPERATURE, DXL_ID_STEER);
 }
 
+void processEngine() {
+
+}
+
 void sendEngineInfo() {
   bndl.add("/battery").add(getBatteryVoltage());
   bndl.add("/speed").add(getEngineSpeed());
   bndl.add("/steer").add(getEngineSteer());
-  bndl.add("/heading").add(getHeading());
-//
-//  bndl.add("/velocity-heading").add(getVelocityHeading());
-//  bndl.add("/velocity").add(getVelocity().x).add(getVelocity().y);
-//  bndl.add("/info/battery").add(getBatteryVoltage());
-//  bndl.add("/info/voltage").add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_VOLTAGE, DXL_ID_STEER));
-//  bndl.add("/info/temperature").add(getMotorSpeedTemperature()).add(getMotorSteerTemperature());
-//  bndl.add("/info/current").add(dxl.readControlTableItem(PRESENT_CURRENT, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_CURRENT, DXL_ID_STEER));
-//  bndl.add("/info/load").add(dxl.readControlTableItem(PRESENT_LOAD, DXL_ID_SPEED)).add(dxl.readControlTableItem(PRESENT_LOAD, DXL_ID_STEER));
-  sendOscBundle();
 }

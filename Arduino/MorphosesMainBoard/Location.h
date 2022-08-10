@@ -5,6 +5,8 @@
 
 #include <VectorXf.h>
 
+#define AVG_POSITION_TIME_WINDOW 0.2f
+
 // Create an ESP32 WiFiClient class to connect to the MQTT server.
 WiFiClient client;
 
@@ -15,21 +17,12 @@ Adafruit_MQTT_Client mqtt(&client, MQTT_BROKER, MQTT_BROKER_PORT);
 Adafruit_MQTT_Subscribe* robotLocations[N_ROBOTS];
 //Adafruit_MQTT_Subscribe thingLocations[N_THINGS];
 
-//#define POSITION_ALPHA 1.0
-
-const Vec2f REFERENCE_ORIENTATION(1, 0);
 
 Vec2f robotPositions[N_ROBOTS];
-
 Vec2f currPosition;
-Vec2f prevPosition;
-Vec2f currVelocity;
 
-float velocityHeading;
-Chrono velocityTimer;
-
-Smoother avgPositionX(0.2f);
-Smoother avgPositionY(0.2f);
+Smoother avgPositionX(AVG_POSITION_TIME_WINDOW);
+Smoother avgPositionY(AVG_POSITION_TIME_WINDOW);
 Vec2f avgPosition;
 
 void onMqttLocation(int robot, char* data)
@@ -69,14 +62,10 @@ void initMqtt() {
   }
   
   currPosition.set(0, 0);
-  prevPosition.set(0, 0);
-  avgPosition.set(0, 0);
-  velocityHeading = 0;
 
+  avgPosition.set(0, 0);
   avgPositionX.reset();
   avgPositionY.reset();
-  
-  velocityTimer.start();
 }
 
 // Function to connect and reconnect as necessary to the MQTT server.
@@ -91,18 +80,25 @@ void connectMqtt() {
 
   Serial.print("Connecting to MQTT... ");
 
-  uint8_t retries = 3;
   while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
-       Serial.println(mqtt.connectErrorString(ret));
-       Serial.println("Retrying MQTT connection in 10 seconds...");
-       mqtt.disconnect();
-       delay(10000);  // wait 10 seconds
-       retries--;
-       if (retries == 0) {
-         // basically die and wait for WDT to reset me
-         while (1);
-       }
+    Serial.println(mqtt.connectErrorString(ret));
+    Serial.println("Retrying MQTT connection in 10 seconds...");
+
+    // Send error
+    bndl.add("/error").add("mqtt-connect");
+    sendOscBundle();
+
+    // Wait 10 seconds.
+    mqtt.disconnect();
+    Chrono mqttWait;
+    while (!mqttWait.hasPassed(10.0f)) {
+      updateOTA();
+    }       
   }
+
+  bndl.add("/ready").add("mqtt-connect");
+  sendOscBundle();
+  
   Serial.println("MQTT Connected!");
 }
 
@@ -115,7 +111,7 @@ void updateMqtt() {
   // this is our 'wait for incoming subscription packets and callback em' busy subloop
   // try to spend your time here:
   Adafruit_MQTT_Subscribe *subscription;
-  while (subscription = mqtt.readSubscription(100)) {
+  while (subscription = mqtt.readSubscription(10)) {
     for (int i=0; i<N_ROBOTS; i++) {
       if (subscription == robotLocations[i]) {
         onMqttLocation(i, (char *)robotLocations[i]->lastread);
@@ -138,30 +134,7 @@ void updateLocation() {
   avgPosition.set( avgPositionX.get(), avgPositionY.get() );
 }
 
-void updateVelocity(boolean movingForward) {
-  float t = velocityTimer.elapsed();
-
-  if (t > 0) {
-    currVelocity = (avgPosition - prevPosition) / t;
-    velocityHeading = REFERENCE_ORIENTATION.angle(currVelocity);
-    if (!movingForward) velocityHeading = wrapAngle180(velocityHeading + 180);
-  }
-  else {
-    currVelocity.set(0, 0);
-  }
-
-  // Reset previous position.
-  prevPosition.set( avgPosition );
-}
 
 Vec2f getPosition() {
-  return currPosition;
-}
-
-Vec2f getVelocity() {
-  return currVelocity;
-}
-
-float getVelocityHeading() {
-  return velocityHeading;
+  return avgPosition;
 }
