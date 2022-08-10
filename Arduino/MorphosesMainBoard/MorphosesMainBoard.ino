@@ -209,9 +209,9 @@ void processMessage() {
   }
 
   // Head in a certain direction.
-  else if (messIn.fullMatch("/heading-start")) {
+  else if (messIn.fullMatch("/navigation-start")) {
     if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("start heading ");
+      if (DEBUG_MODE) Serial.print("start navigation ");
       float speed = getArgAsFloat(messIn, 0);
       if (DEBUG_MODE) Serial.println(speed);
       startNavigationHeading(speed, argIsNumber(messIn, 1) ? getArgAsFloat(messIn, 1) : 0);
@@ -219,7 +219,7 @@ void processMessage() {
   }
 
   // Head in a certain direction.
-  else if (messIn.fullMatch("/heading-stop")) {
+  else if (messIn.fullMatch("/navigation-stop")) {
     stopNavigationHeading();
   }
 
