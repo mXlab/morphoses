@@ -323,15 +323,12 @@ class World:
         # Return info as tuple.
         return entity_name, variable, delta
 
-    def do_action(self, agent, action):
+    def do_action(self, agent, action, action_manager):
         # Store action in entity.
         self.entities[agent.get_name()].store_action(action, self.get_time())
-        # Perform actual action.
-        speed = float(np.clip(action[0], -agent.get_max_speed(), agent.get_max_speed()))
-        steer = float(np.clip(action[1], -agent.get_max_steer(), agent.get_max_steer()))
-        self.set_motors(agent, speed, steer)
-
-        # self.send_info('robot1', '/data', [self.get(agent, 'x'), self.get(agent, 'y'), self.get(agent, 'mrz', False)])
+        action_manager.start_action(action)
+        while action_manager.step_action():
+            self.messaging.loop()
 
     def set_speed(self, agent, speed):
         if isinstance(agent, str):
@@ -358,6 +355,22 @@ class World:
     def set_motors(self, agent, speed, steer):
         self.set_speed(agent, speed)
         self.set_steer(agent, steer)
+
+    def start_navigation(self, agent, speed, direction):
+        if isinstance(agent, str):
+            name = agent
+        else:
+            name = agent.get_name()
+        entity = self.entities[name]
+        self.messaging.send(name, "/navigation-start", [speed, map(direction, -1, 1, 90, -90)])
+
+    def end_navigation(self, agent):
+        if isinstance(agent, str):
+            name = agent
+        else:
+            name = agent.get_name()
+        entity = self.entities[name]
+        self.messaging.send(name, "/navigation-end")
 
     def set_color(self, agent, rgb):
         if isinstance(agent, str):

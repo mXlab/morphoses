@@ -1,3 +1,60 @@
+import numpy as np
+class ActionManager:
+    def __init__(self, agent, world, action_profile, time_step=1, time_balance=0, navigation_mode=False):
+        self.agent = agent
+        self.world = world
+        self.action_set = create_action_set(action_profile)
+        self.time_step = time_step
+        self.time_balance = time_balance
+        self.navigation_mode = navigation_mode
+        self.start_time = 0
+        self.state = 0
+
+    def n_actions(self):
+        return self.action_set.n_actions()
+
+    def begin_action(self, i):
+        action = self.action_set.get_action(i)
+
+        speed = float(np.clip(action[0], -self.agent.get_max_speed(), self.agent.get_max_speed()))
+
+        if self.navigation_mode:
+            direction = map(action[1], -1, +1, +90, -90)
+            self.world.start_navigation(self.agent, speed, direction)
+        else:
+            steer = float(np.clip(action[1], -self.agent.get_max_steer(), self.agent.get_max_steer()))
+            self.world.set(self.agent, speed, steer)
+
+        self.start_time = self.get_time()
+        self.state = 0
+
+    def end_action(self):
+        if self.navigation_mode:
+            self.world.end_navigation(self, self.agent)
+        else:
+            self.world.set_speed(self, self.agent, 0)
+
+    def step_action(self):
+        # Check if first phase is finished.
+        if self.state == 0:
+            if self.world.get_time() - self.start_time >= self.time_step:
+                self.end_action()
+
+                if self.time_balance > 0:
+                    self.state = 1
+                else:
+                    self.state = 2
+                self.start_time = self.get_time()
+            return False
+
+        elif self.state == 1:
+            if self.world.get_time() - self.start_time >= self.time_balance:
+                self.state = 2
+            return False
+
+        else:
+            return True
+
 class ActionSet:
     def __init__(self, actions=[]):
         self.actions = actions

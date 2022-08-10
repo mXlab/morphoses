@@ -28,9 +28,6 @@ class Agent:
         self.learning_rate = np.max(kwargs.get('learning_rate', 0.01), 0)
         self.curiosity_weight = np.clip(kwargs.get('curiosity_weight', 0.5), 0, 1)
 
-        self.time_step = np.max(kwargs.get('time_step', 0), 0)
-        self.time_balance = np.max(kwargs.get('time_balance', 0), 0)
-
         self.max_speed = np.max(kwargs.get('max_speed', 1), 0)
         self.max_steer = np.max(kwargs.get('max_steer', 1), 0)
 
@@ -45,8 +42,11 @@ class Agent:
         self.extrinsic_rewards = get_extrinsic_rewards(reward_profile)
 
         action_profile = kwargs.get('action_profile', 'grid')
-        self.action_set = action.create_action_set(action_profile)
-        self.n_actions = self.action_set.n_actions()
+        time_step = np.max(kwargs.get('time_step', 0), 0)
+        time_balance = np.max(kwargs.get('time_balance', 0), 0)
+        navigation_mode = kwargs.get('navigation_mode', False)
+        self.action_manager = action.ActionManager(self, world, action_profile, time_step, time_balance, navigation_mode)
+        self.n_actions = self.action_manager.n_actions()
 
         # Build Q-function model.
         q_model_type = kwargs.get('q_model_type', 'tables')
@@ -237,7 +237,7 @@ class Agent:
             q_table_update(self.model_q, self.tile_coding, self.prev_state, self.prev_action, target, self.learning_rate)
 
         # Perform action in world.
-        self.world.do_action(self, self.action_set.get_action(action))
+        self.world.do_action(self, action, self.action_manager)
 
         # Save action and state for next iteration.
         self.prev_action = action
