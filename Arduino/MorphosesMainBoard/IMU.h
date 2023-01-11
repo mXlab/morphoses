@@ -173,7 +173,7 @@ void wakeIMUs() {
 }
 
 
-bool processIMUs() {
+void processIMUs() {
   imuMain.process();
   imuSide.process();
   sendOscBundle();
