@@ -71,35 +71,34 @@ void initMqtt() {
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
 void connectMqtt() {
-  int8_t ret;
 
   // Stop if already connected.
   if (mqtt.connected()) {
     return;
   }
 
-  Serial.print("Connecting to MQTT... ");
 
-  while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
-    Serial.println(mqtt.connectErrorString(ret));
-    Serial.println("Retrying MQTT connection in 10 seconds...");
+  Serial.print("Connecting to MQTT... ");
+  int8_t error = mqtt.connect();
+  if (error) { // error detected
+    Serial.println(mqtt.connectErrorString(error));
+
+ #define MQTT_ERROR_STRING_SIZE 64
+    char errorStr[MQTT_ERROR_STRING_SIZE];
+    strncpy_P(errorStr, (PGM_P)mqtt.connectErrorString(error), MQTT_ERROR_STRING_SIZE);
 
     // Send error
-    bndl.add("/error").add("mqtt-connect");
+    bndl.add("/error").add("mqtt-connect").add(errorStr);
     sendOscBundle();
 
-    // Wait 10 seconds.
     mqtt.disconnect();
-    Chrono mqttWait;
-    while (!mqttWait.hasPassed(10.0f)) {
-      updateOTA();
-    }       
   }
 
-  bndl.add("/ready").add("mqtt-connect");
-  sendOscBundle();
-  
-  Serial.println("MQTT Connected!");
+  else {
+    bndl.add("/ready").add("mqtt-connect");
+    sendOscBundle();
+    Serial.println("MQTT Connected!");
+  }
 }
 
 void updateMqtt() {
