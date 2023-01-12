@@ -30,8 +30,8 @@ class DataLogger {
     //table.addColumn("roll_rate");
     table.addColumn("motor_speed");
     table.addColumn("tilt_position");
-    table.addColumn("motor_ticks");
-    table.addColumn("tilt_ticks");
+//    table.addColumn("motor_ticks");
+//    table.addColumn("tilt_ticks");
   }
   
   void recordState() {
@@ -41,10 +41,10 @@ class DataLogger {
       row.setFloat("yaw", robot.getYaw());
       row.setFloat("pitch", robot.getPitch());
       row.setFloat("roll", robot.getRoll());
-      row.setInt("motor_speed", robot.getRollerMotorSpeed());
-      row.setInt("tilt_position", robot.getTilterMotorPosition());
-      row.setInt("motor_ticks", robot.getRollerMotorTicks());
-      row.setInt("tilt_ticks", robot.getTilterMotorTicks());
+      row.setFloat("motor_speed", robot.getRollerMotorSpeed());
+      row.setFloat("tilt_position", robot.getTilterMotorPosition());
+//      row.setInt("motor_ticks", robot.getRollerMotorTicks());
+ //     row.setInt("tilt_ticks", robot.getTilterMotorTicks());
     }
   }
   

@@ -1,10 +1,8 @@
 class RoboBall {  
 
   // Main.
-  int rollerMotorTicks;
-  int tilterMotorTicks;
-  int rollerMotorSpeed;
-  int tilterMotorPosition;
+  float rollerMotorSpeed;
+  float tilterMotorPosition;
   
   boolean power;
   
@@ -23,8 +21,6 @@ class RoboBall {
     setYaw(0);
     setPitch(0);
     setRoll(0);
-    rollerMotorTicks = tilterMotorTicks = -1;
-    rollerMotorSpeed = tilterMotorPosition = 0;
     power = false;
   }
   
@@ -56,19 +52,13 @@ class RoboBall {
     }
   }
   
-  int getRollerMotorTicks() { return rollerMotorTicks; }
-  int getTilterMotorTicks() { return tilterMotorTicks; }
+  float getRollerMotorSpeed() { return rollerMotorSpeed; }
+  float getTilterMotorPosition() { return tilterMotorPosition; }
 
-  int getRollerMotorSpeed() { return rollerMotorSpeed; }
-  int getTilterMotorPosition() { return tilterMotorPosition; }
-
-  void setRollerMotorTicks(int t) { rollerMotorTicks = t; }
-  void setTilterMotorTicks(int t) { tilterMotorTicks = t; }
-
-  void setRollerMotorSpeed(int speed) {
+  void setRollerMotorSpeed(float speed) {
     speed = constrain(speed, ROLLER_MIN, ROLLER_MAX);
     if (rollerMotorSpeed != speed) {
-      OscMessage msg = new OscMessage("/motor/1");
+      OscMessage msg = new OscMessage("/speed");
       msg.add(speed);
       mainOscP5.send(msg, mainLocation);
       rollerMotorSpeed = speed;
@@ -76,10 +66,10 @@ class RoboBall {
     }
   }
 
-  void setTilterMotorPosition(int pos) {
+  void setTilterMotorPosition(float pos) {
     pos = constrain(pos, TILTER_MIN, TILTER_MAX);
     if (tilterMotorPosition != pos) {
-      OscMessage msg = new OscMessage("/motor/2");
+      OscMessage msg = new OscMessage("/steer");
       msg.add(pos);
       mainOscP5.send(msg, mainLocation);
       tilterMotorPosition = pos;

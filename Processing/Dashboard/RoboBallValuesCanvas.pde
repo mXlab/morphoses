@@ -41,8 +41,6 @@ class RoboBallValuesCanvas extends Canvas implements CDrawable {
     drawRow(pg, "ROLL",  robot.getRoll());
     drawRow(pg, "ROLLER", robot.getRollerMotorSpeed());
     drawRow(pg, "TILTER", robot.getTilterMotorPosition());
-    drawRow(pg, "ROLLER TICKS", robot.getRollerMotorTicks());
-    drawRow(pg, "TILTER TICKS", robot.getTilterMotorTicks());
 
     pg.endDraw();
   }
