@@ -133,6 +133,12 @@ Documents/
 # Portable Document Format
 *.pdf
 
+# Documents
+*.ods
+*.odt
+*.doc
+*.docx
+
 # X BitMap
 *.xbm
 
@@ -154,3 +160,4 @@ Documents/
 # Custom
 Config.h
 Js
+
