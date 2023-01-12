@@ -4,23 +4,23 @@ import oscP5.*;
 import netP5.*;
 
 // Main board (motor control).
-final int MAIN_OSC_SEND_PORT = 8765;
-final int MAIN_OSC_RECV_PORT = 8766;
+final int MAIN_OSC_SEND_PORT = 8000;
+final int MAIN_OSC_RECV_PORT = 8110;
 
 // IMU board.
-final int POSITION_OSC_SEND_PORT = 8765;
-final int POSITION_OSC_RECV_PORT = 8767;
+final int POSITION_OSC_SEND_PORT = 8000;
+final int POSITION_OSC_RECV_PORT = 8111;
 
 //final String MAIN_OSC_IP     = "192.168.43.28";
-final String MAIN_OSC_IP     = "172.20.10.9";
+final String MAIN_OSC_IP     = "192.168.0.110";
 //final String POSITION_OSC_IP = "192.168.1.108";
-final String POSITION_OSC_IP     = "172.20.10.8";
+final String POSITION_OSC_IP     = "192.168.0.111";
 
-final int ROLLER_MAX = 255;
-final int ROLLER_MIN = -255;
+final int ROLLER_MAX = 1;
+final int ROLLER_MIN = -1;
 final boolean invertTilter = true;
-final int TILTER_MAX = +30;
-final int TILTER_MIN = -30;
+final int TILTER_MAX = +1;
+final int TILTER_MIN = -1;
 
 OscP5 mainOscP5;
 OscP5 positionOscP5;
@@ -51,13 +51,10 @@ void setup() {
   mainOscP5.send(msg, mainLocation);
   positionOscP5.send(msg, positionLocation);
 
-  mainOscP5.plug(this, "rollerMotorTicks", "/motor/1/ticks");
-  mainOscP5.plug(this, "tilterMotorTicks", "/motor/2/ticks");
-
 //  mainOscP5.plug(this, "acceleration", "/accel/g");
 //  mainOscP5.plug(this, "gyro", "/gyro/ds");
 //  positionOscP5.plug(this, "magnetism", "/mag/mG");
-  positionOscP5.plug(this, "quaternion", "/quat");
+  mainOscP5.plug(this, "quaternion", "/quat");
 //  positionOscP5.plug(this, "yawPitchRoll", "/ypr/deg");
   
   robot = new RoboBall();
@@ -97,11 +94,11 @@ void keyPressed() {
   switch (key) {
     case 's': robot.syncOffsets(); break;
     case 'r': robot.reset(); break;
-    case '8': robot.setRollerMotorSpeed(255); break;
-    case '2': robot.setRollerMotorSpeed(-255); break;
+    case '8': robot.setRollerMotorSpeed(1); break;
+    case '2': robot.setRollerMotorSpeed(-1); break;
     case '5': robot.setRollerMotorSpeed(0); robot.setTilterMotorPosition(0); break;
-    case '6': robot.setTilterMotorPosition(40); break;
-    case '4': robot.setTilterMotorPosition(-40); break;
+    case '6': robot.setTilterMotorPosition(1); break;
+    case '4': robot.setTilterMotorPosition(-1); break;
     case 'q': {
       saveOutput();
       exit(); // Stops the program
@@ -184,15 +181,6 @@ void yawPitchRoll(float yaw, float pitch, float roll) {
   recordState();
 }
 
-void rollerMotorTicks(int t) {
-  robot.setRollerMotorTicks(t); 
-  recordState();
-}
-
-void tilterMotorTicks(int t) {
-  robot.setTilterMotorTicks(t); 
-  recordState();
-}
 
 void oscEvent(OscMessage msg) {
   /* print the address pattern and the typetag of the received OscMessage */
