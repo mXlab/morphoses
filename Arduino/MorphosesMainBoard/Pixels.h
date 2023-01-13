@@ -44,21 +44,59 @@ void setPixels(int r, int g, int b, int w=0) {
 //  portENABLE_INTERRUPTS();
 }
 
+void clearPixels() {
+  pixels.clear();
+}
+
+struct PixelIterator {
+  PixelRegion region;
+  int nextPixel;
+  int endPixel;
+
+  PixelIterator(PixelRegion r=ALL) : region(r) {
+    nextPixel = 0;
+    int nPixels = pixels.numPixels();
+    if (region == TOP) {
+      nPixels = nPixels * 3 / 4;
+    }
+    else if (region == BOTTOM) {
+      nextPixel = nPixels * 3 / 4;
+      nPixels /= 4;
+    }
+
+    endPixel = nextPixel + nPixels;
+  }
+
+  bool hasNext() const { return nextPixel < endPixel; }
+  int  next() { return nextPixel++; }
+};
+
+PixelIterator currentRegionIterator;
+void beginPixelWrite(PixelRegion region) {
+  currentRegionIterator = PixelIterator(region);
+}
+
+bool hasNextPixelWrite() { return currentRegionIterator.hasNext(); }
+bool nextPixelWrite(int r, int g, int b, int w=0) {
+  if (currentRegionIterator.hasNext()) {
+    pixels.setPixelColor(currentRegionIterator.next(), pixels.Color(r, g, b, w));
+    return true;
+  }
+  else
+    return false;
+}
+
+void endPixelWrite() {
+  pixels.show();
+}
+
 // Sets pixels in a given region.
 void setPixelsRegion(PixelRegion region, int r, int g, int b, int w=0) {
   // Sets values depending on region (default values are for region == ALL).
-  int firstPixel = 0;
-  int nPixels = pixels.numPixels();
-  if (region == TOP) {
-    nPixels = nPixels * 3 / 4;
+  PixelIterator it(region);
+  while (it.hasNext()) {
+    pixels.setPixelColor(it.next(), pixels.Color(r, g, b, w));
   }
-  else if (region == BOTTOM) {
-    firstPixel = nPixels * 3 / 4;
-    nPixels /= 4;
-  }
-  
-  for (int i=0; i<nPixels; i++)
-    pixels.setPixelColor(firstPixel + i, pixels.Color(r, g, b, w));
 
 //  portDISABLE_INTERRUPTS();  
   // Send the updated pixel colors to the hardware.
