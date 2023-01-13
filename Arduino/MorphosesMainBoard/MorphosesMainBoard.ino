@@ -51,12 +51,18 @@ using namespace pq;
 #include "Engine.h"
 #include "Navigation.h"
 #include "Pixels.h"
+#include "Animation.h"
 #include "Energy.h"
+
+#include <Chrono.h>
 
 // Variables & Objects //////////////////////////
 
-Metro sendDataMetro(SEND_DATA_INTERVAL / 1000.0f);
+Chrono sendDataChrono;
 
+TaskHandle_t taskUpdateLeds;
+
+Animation animation(1.0);
 
 void setup()
 {
@@ -69,7 +75,7 @@ void setup()
   initEngine();
 
   // Check energy.
-  checkEnergy();
+//  checkEnergy();
 
   // Init neopixels.
   initPixels();
@@ -83,24 +89,42 @@ void setup()
     ; // wait for serial port to connect. Needed for native USB port only
   }
 
-
   // Initialize MQTT connection.
   initMqtt();
   
   // Initialize OTA.
   initOTA(boardName);
+
+  animation.begin();
+  
+  xTaskCreatePinnedToCore(
+      updateLEDs, /* Function to implement the task */
+      "UpdateLEDs", /* Name of the task */
+      10000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      0,  /* Priority of the task */
+      &taskUpdateLeds,  /* Task handle. */
+      0); /* Core where the task should run */
+
+  sendDataChrono.start();
+}
+
+
+void updateLEDs(void *parameters) {
+  for (;;) {
+    Plaquette.step();
+  }
 }
 
 void loop()
-{  
-  Plaquette.step();
-
+{
   // Update OTA.
   updateOTA();
-   
+
   // Check connection status: reconnect if connection lost.
-  if (!wifiIsConnected())
+  if (!wifiIsConnected()) {
     initWifi();
+  }
 
   // Init IMUs if not already initialized.
   initIMUs();
@@ -115,11 +139,14 @@ void loop()
   processMessage();
 
   // Send messages.
-  if (sendDataMetro) {
+  if (sendDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
     sendData();
 
     // Energy checkpoint to prevent damage when low 
     checkEnergy();
+
+    // Restart chrono.
+    sendDataChrono.start();
   }
 }
 
@@ -263,6 +290,78 @@ void processMessage() {
         int w = argIsNumber(messIn, 4) ? getArgAsInt(messIn, 4) : 0;
         if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
         setPixelsRegion(region, r, g, b, w);
+      }
+    }
+  }
+
+   else if (messIn.fullMatch("/animation/from")) {
+    if (argIsNumber(messIn, 0)) {
+      if (DEBUG_MODE) Serial.print("Animation colors ");
+      if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
+        int r = getArgAsInt(messIn, 0);
+        int g = getArgAsInt(messIn, 1);
+        int b = getArgAsInt(messIn, 2);
+//        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
+        if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
+        animation.baseColor.setRgb(r, g, b);
+      }
+    }
+  }
+
+   else if (messIn.fullMatch("/animation/to")) {
+    if (argIsNumber(messIn, 0)) {
+      if (DEBUG_MODE) Serial.print("Animation colors ");
+      if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
+        int r = getArgAsInt(messIn, 0);
+        int g = getArgAsInt(messIn, 1);
+        int b = getArgAsInt(messIn, 2);
+//        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
+        if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
+        animation.altColor.setRgb(r, g, b);
+      }
+    }
+  }
+
+  else if (messIn.fullMatch("/animation/period")) {
+    if (argIsNumber(messIn, 0)) {
+      if (DEBUG_MODE) Serial.print("Period");
+      if (argIsNumber(messIn, 0)) { 
+        float p = getArgAsFloat(messIn, 0);
+        if (DEBUG_MODE) { Serial.println(p); }
+        animation.setPeriod(p);
+      }
+    }
+  }
+
+  else if (messIn.fullMatch("/animation/noise")) {
+    if (argIsNumber(messIn, 0)) {
+      if (DEBUG_MODE) Serial.print("Noise");
+      if (argIsNumber(messIn, 0)) { 
+        float noise = getArgAsFloat(messIn, 0);
+        if (DEBUG_MODE) { Serial.println(noise); }
+        animation.setNoise(noise);
+      }
+    }
+  }
+
+  else if (messIn.fullMatch("/animation/noise-global")) {
+    if (argIsNumber(messIn, 0)) {
+      if (DEBUG_MODE) Serial.print("Noise global");
+      if (argIsNumber(messIn, 0)) { 
+        bool g = (bool)getArgAsInt(messIn, 0);
+        if (DEBUG_MODE) { Serial.println(g); }
+        animation.setNoiseIsGlobal(g);
+      }
+    }
+  }
+
+    else if (messIn.fullMatch("/animation/region")) {
+    if (argIsNumber(messIn, 0)) {
+      if (DEBUG_MODE) Serial.print("Region");
+      if (argIsNumber(messIn, 0)) { 
+        PixelRegion region = (PixelRegion) getArgAsInt(messIn, 0);
+        if (DEBUG_MODE) { Serial.println(region); }
+        animation.setRegion(region);
       }
     }
   }
