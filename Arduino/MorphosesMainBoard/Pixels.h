@@ -36,7 +36,6 @@ void setPixels(int r, int g, int b, int w=0) {
 
   // Write all pixels.
   for (int i=0; i<pixels.numPixels(); i++)
-//    if (i != 6 && i != 7)
     pixels.setPixelColor(i, pixels.Color(r, g, b, w));
 
 //  portDISABLE_INTERRUPTS();  
