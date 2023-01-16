@@ -60,7 +60,8 @@ using namespace pq;
 
 Chrono sendDataChrono;
 
-TaskHandle_t taskUpdateLeds;
+TaskHandle_t taskAnimation;
+SemaphoreHandle_t animationMutex = NULL;
 
 Animation animation(1.0);
 
@@ -94,21 +95,29 @@ void setup()
   
   // Initialize OTA.
   initOTA(boardName);
-
-  animation.begin();
   
+  animationMutex = xSemaphoreCreateMutex();  // crete a mutex object
   xTaskCreatePinnedToCore(
-      updateLEDs, /* Function to implement the task */
-      "UpdateLEDs", /* Name of the task */
-      10000,  /* Stack size in words */
+      runAnimation, /* Function to implement the task */
+      "Animation", /* Name of the task */
+      2048,  /* Stack size in words */
       NULL,  /* Task input parameter */
       0,  /* Priority of the task */
-      &taskUpdateLeds,  /* Task handle. */
+      &taskAnimation,  /* Task handle. */
       0); /* Core where the task should run */
 
   sendDataChrono.start();
 }
 
+void runAnimation(void *parameters) {
+  animation.begin();
+  for (;;) {
+    if (xSemaphoreTake (animationMutex, portMAX_DELAY)) {
+      Plaquette.step();
+      xSemaphoreGive (animationMutex);  // release the mutex
+    }
+  }
+}
 
 void updateLEDs(void *parameters) {
   for (;;) {
@@ -136,7 +145,10 @@ void loop()
   updateLocation();
 
   // Check for incoming messages.
-  processMessage();
+  if (xSemaphoreTake (animationMutex, (5 * portTICK_PERIOD_MS))) {
+    processMessage();
+    xSemaphoreGive (animationMutex);  // release the mutex
+  }
 
   // Send messages.
   if (sendDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
