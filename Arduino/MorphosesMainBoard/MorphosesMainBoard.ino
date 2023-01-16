@@ -275,118 +275,101 @@ void processMessage() {
   }
 
   else if (messIn.fullMatch("/rgb")) {
-    if (argIsNumber(messIn, 0)) {
+    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
       if (DEBUG_MODE) Serial.print("RGB colors ");
-      if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
-        int r = getArgAsInt(messIn, 0);
-        int g = getArgAsInt(messIn, 1);
-        int b = getArgAsInt(messIn, 2);
-        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
-        if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-        setPixels(r, g, b, w);
-      }
+      int r = getArgAsInt(messIn, 0);
+      int g = getArgAsInt(messIn, 1);
+      int b = getArgAsInt(messIn, 2);
+      int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
+      if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
+      setPixels(r, g, b, w);
     }
   }
 
   else if (messIn.fullMatch("/rgb-one")) {
-    if (argIsNumber(messIn, 0)) {
+    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2) && argIsNumber(messIn, 3)) { 
       if (DEBUG_MODE) Serial.print("RGB colors ");
-      if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2) && argIsNumber(messIn, 3)) { 
-        int i = getArgAsInt(messIn, 0);
-        int r = getArgAsInt(messIn, 1);
-        int g = getArgAsInt(messIn, 2);
-        int b = getArgAsInt(messIn, 3);
-        int w = argIsNumber(messIn, 4) ? getArgAsInt(messIn, 4) : 0;
-        if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-        setPixel(i, r, g, b, w);
-      }
+      int i = getArgAsInt(messIn, 0);
+      int r = getArgAsInt(messIn, 1);
+      int g = getArgAsInt(messIn, 2);
+      int b = getArgAsInt(messIn, 3);
+      int w = argIsNumber(messIn, 4) ? getArgAsInt(messIn, 4) : 0;
+      if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
+      setPixel(i, r, g, b, w);
     }
   }
 
   else if (messIn.fullMatch("/rgb-region")) {
-    if (argIsNumber(messIn, 0)) {
+    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2) && argIsNumber(messIn, 3)) { 
       if (DEBUG_MODE) Serial.print("RGB colors ");
-      if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2) && argIsNumber(messIn, 3)) { 
-        PixelRegion region = (PixelRegion) getArgAsInt(messIn, 0);
-        int r = getArgAsInt(messIn, 1);
-        int g = getArgAsInt(messIn, 2);
-        int b = getArgAsInt(messIn, 3);
-        int w = argIsNumber(messIn, 4) ? getArgAsInt(messIn, 4) : 0;
-        if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-        setPixelsRegion(region, r, g, b, w);
-      }
+      PixelRegion region = (PixelRegion) getArgAsInt(messIn, 0);
+      int r = getArgAsInt(messIn, 1);
+      int g = getArgAsInt(messIn, 2);
+      int b = getArgAsInt(messIn, 3);
+      int w = argIsNumber(messIn, 4) ? getArgAsInt(messIn, 4) : 0;
+      if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
+      setPixelsRegion(region, r, g, b, w);
     }
   }
 
-   else if (messIn.fullMatch("/animation/from")) {
-    if (argIsNumber(messIn, 0)) {
+   else if (messIn.fullMatch("/base-color")) {
+    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
       if (DEBUG_MODE) Serial.print("Animation colors ");
-      if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
-        int r = getArgAsInt(messIn, 0);
-        int g = getArgAsInt(messIn, 1);
-        int b = getArgAsInt(messIn, 2);
+      int r = getArgAsInt(messIn, 0);
+      int g = getArgAsInt(messIn, 1);
+      int b = getArgAsInt(messIn, 2);
 //        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
-        if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-        animation.baseColor.setRgb(r, g, b);
-      }
+      if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
+      animation.baseColor.setRgb(r, g, b);
     }
   }
 
-   else if (messIn.fullMatch("/animation/to")) {
-    if (argIsNumber(messIn, 0)) {
+   else if (messIn.fullMatch("/alt-color")) {
+    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
       if (DEBUG_MODE) Serial.print("Animation colors ");
-      if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
-        int r = getArgAsInt(messIn, 0);
-        int g = getArgAsInt(messIn, 1);
-        int b = getArgAsInt(messIn, 2);
+      int r = getArgAsInt(messIn, 0);
+      int g = getArgAsInt(messIn, 1);
+      int b = getArgAsInt(messIn, 2);
 //        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
-        if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-        animation.altColor.setRgb(r, g, b);
-      }
+      if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
+      animation.altColor.setRgb(r, g, b);
     }
   }
 
-  else if (messIn.fullMatch("/animation/period")) {
+  else if (messIn.fullMatch("/period")) {
     if (argIsNumber(messIn, 0)) {
       if (DEBUG_MODE) Serial.print("Period");
-      if (argIsNumber(messIn, 0)) { 
-        float p = getArgAsFloat(messIn, 0);
-        if (DEBUG_MODE) { Serial.println(p); }
-        animation.setPeriod(p);
-      }
+      float p = getArgAsFloat(messIn, 0);
+      if (DEBUG_MODE) { Serial.println(p); }
+      animation.setPeriod(p);
     }
   }
 
-  else if (messIn.fullMatch("/animation/noise")) {
+  else if (messIn.fullMatch("/noise")) {
     if (argIsNumber(messIn, 0)) {
       if (DEBUG_MODE) Serial.print("Noise");
-      if (argIsNumber(messIn, 0)) { 
-        float noise = getArgAsFloat(messIn, 0);
-        if (DEBUG_MODE) { Serial.println(noise); }
-        animation.setNoise(noise);
-      }
+      float noise = getArgAsFloat(messIn, 0);
+      int global = argIsNumber(messIn, 1) ? getArgAsBool(messIn, 1) : true;
+      if (DEBUG_MODE) { Serial.println(noise); }
+      animation.setNoise(noise, global);
     }
   }
 
-  else if (messIn.fullMatch("/animation/noise-global")) {
+  else if (messIn.fullMatch("/animation-type")) {
     if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("Noise global");
-      if (argIsNumber(messIn, 0)) { 
-        bool g = (bool)getArgAsInt(messIn, 0);
-        if (DEBUG_MODE) { Serial.println(g); }
-        animation.setNoiseIsGlobal(g);
-      }
+      if (DEBUG_MODE) Serial.print("Type");
+      AnimationType type = (AnimationType) getArgAsInt(messIn, 0);
+      if (DEBUG_MODE) { Serial.println(type); }
+      animation.setType(type);
     }
   }
 
-    else if (messIn.fullMatch("/animation/region")) {
+  else if (messIn.fullMatch("/animation-region")) {
     if (argIsNumber(messIn, 0)) {
       if (DEBUG_MODE) Serial.print("Region");
-      if (argIsNumber(messIn, 0)) { 
-        PixelRegion region = (PixelRegion) getArgAsInt(messIn, 0);
-        if (DEBUG_MODE) { Serial.println(region); }
-        animation.setRegion(region);
-      }
+      PixelRegion region = (PixelRegion) getArgAsInt(messIn, 0);
+      if (DEBUG_MODE) { Serial.println(region); }
+      animation.setRegion(region);
     }
   }
 
