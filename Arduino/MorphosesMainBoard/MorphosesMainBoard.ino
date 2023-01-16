@@ -250,6 +250,18 @@ void processMessage() {
     stopNavigationHeading();
   }
 
+  else if (messIn.fullMatch("/calibrate-begin")) {
+    calibrateBeginIMUs();
+  }
+
+  else if (messIn.fullMatch("/calibrate-end")) {
+    calibrateEndIMUs();
+  }
+
+  else if (messIn.fullMatch("/calibrate-save")) {
+    calibrateSaveIMUs();
+  }
+
   else if (messIn.fullMatch("/rgb")) {
     if (argIsNumber(messIn, 0)) {
       if (DEBUG_MODE) Serial.print("RGB colors ");
@@ -364,18 +376,6 @@ void processMessage() {
         animation.setRegion(region);
       }
     }
-  }
-
-  else if (messIn.fullMatch("/calibrate-begin")) {
-    calibrateBeginIMUs();
-  }
-
-  else if (messIn.fullMatch("/calibrate-end")) {
-    calibrateEndIMUs();
-  }
-
-  else if (messIn.fullMatch("/calibrate-save")) {
-    calibrateSaveIMUs();
   }
 
 }
