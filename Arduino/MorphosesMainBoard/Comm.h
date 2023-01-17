@@ -35,6 +35,9 @@ char boardName[16];
 // Function declarations ////////////////////////
 
 /// Smart-converts argument from message to integer.
+bool getArgAsBool(OSCMessage& msg, int index);
+
+/// Smart-converts argument from message to integer.
 int32_t getArgAsInt(OSCMessage& msg, int index);
 
 /// Smart-converts argument from message to float.
@@ -231,6 +234,10 @@ void initWifi()
   sendOscBundle(true);
 }
 
+
+bool getArgAsBool(OSCMessage& msg, int index) {
+  return (bool)getArgAsInt(msg, index);
+}
 
 /// Smart-converts argument from message to integer.
 int32_t getArgAsInt(OSCMessage& msg, int index) {
