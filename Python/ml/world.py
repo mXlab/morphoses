@@ -598,7 +598,13 @@ class World:
         self.entities[entity_name].store_quaternion_main(quat, self.get_time(), -self.room_heading)
 
     def send_info(self, entity_name, address, args):
-        self.messaging.send_info("{}/{}".format(address, entity_name), args)
+        self.messaging.send_info("/{}{}".format(entity_name, address), args)
 
     def debug(self):
-        print(self.entities)
+        import json
+        self.messaging.send_info("/data", str(self.entities))
+
+    def send_data(self):
+        return
+        # for robot_name in self.robots:
+        #     self.messaging.send_info("/{}/pos".format(robot_name), [self.get(robot_name, 'x'), self.get(robot_name, 'y')])
