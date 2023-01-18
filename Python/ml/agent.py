@@ -291,7 +291,7 @@ class Agent:
 
             # Recompute steer in [-1, 1] based on clamped value.
             steer_max = math.sin(math.radians(heading_front_max))
-            steer = steer_sign * utils.map01( np.clip(steer_value, 0, steer_max), 0, steer_max )
+            steer = steer_sign * np.clip(steer_value, 0, steer_max) / steer_max
 
             # Adjust/moderate speed and steer.
             speed *= 0.5
