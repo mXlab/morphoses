@@ -76,7 +76,7 @@ void setup()
   initEngine();
 
   // Check energy.
-//  checkEnergy();
+  checkEnergy();
 
   // Init neopixels.
   initPixels();
