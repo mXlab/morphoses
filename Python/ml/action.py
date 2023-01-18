@@ -1,4 +1,6 @@
 import numpy as np
+import utils
+
 class ActionManager:
     def __init__(self, agent, world, action_profile, time_step=1, time_balance=0, navigation_mode=False):
         self.agent = agent
@@ -13,28 +15,29 @@ class ActionManager:
     def n_actions(self):
         return self.action_set.n_actions()
 
-    def begin_action(self, i):
+    def start_action(self, i):
         action = self.action_set.get_action(i)
 
         speed = float(np.clip(action[0], -self.agent.get_max_speed(), self.agent.get_max_speed()))
 
         if self.navigation_mode:
-            direction = map(action[1], -1, +1, +90, -90)
+            direction = utils.map(action[1], -1, +1, +90, -90)
             self.world.start_navigation(self.agent, speed, direction)
         else:
             steer = float(np.clip(action[1], -self.agent.get_max_steer(), self.agent.get_max_steer()))
-            self.world.set(self.agent, speed, steer)
+            self.world.set_motors(self.agent, speed, steer)
 
-        self.start_time = self.get_time()
+        self.start_time = self.world.get_time()
         self.state = 0
 
     def end_action(self):
         if self.navigation_mode:
-            self.world.end_navigation(self, self.agent)
+            self.world.end_navigation(self.agent)
         else:
-            self.world.set_speed(self, self.agent, 0)
+            self.world.set_speed(self.agent, 0)
 
     def step_action(self):
+        # print("Step action {} {} {}".format(self.world.get_time(), self.start_time, self.time_step))
         # Check if first phase is finished.
         if self.state == 0:
             if self.world.get_time() - self.start_time >= self.time_step:
@@ -44,16 +47,16 @@ class ActionManager:
                     self.state = 1
                 else:
                     self.state = 2
-                self.start_time = self.get_time()
-            return False
+                self.start_time = self.world.get_time()
+            return True
 
         elif self.state == 1:
             if self.world.get_time() - self.start_time >= self.time_balance:
                 self.state = 2
-            return False
+            return True
 
         else:
-            return True
+            return False
 
 class ActionSet:
     def __init__(self, actions=[]):
