@@ -50,7 +50,7 @@ class Manager:
         self.world.begin()
 
         for a in self.current_agents.values():
-            print("** Begin agent **")
+            print("** Begin agent {} **".format(a.get_name()))
             a.begin()
 
         self.world.sleep(1)
