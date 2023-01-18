@@ -373,6 +373,65 @@ class World:
         entity = self.entities[name]
         self.messaging.send(name, "/nav/stop")
 
+
+    def display(self, agent, state, reward, scaled_reward):
+        # Calculate color representative of reward.
+        # Rouge: 28, 0, 0
+        # Jaune: 28, 14, 0
+        # color = utils.lerp_color(scaled_reward, [28, 0, 0], [28, 14, 0])
+        animation = {}
+        animation['base'] = lerp_color(scaled_reward, [200, 4, 0], [128, 200, 0])
+        animation['alt'] = lerp_color(scaled_reward, [16, 0, 0], [16, 50, 0])
+        animation['period'] = lerp(scaled_reward, 0.5, 4)
+        animation['noise'] = lerp(scaled_reward, 0.2, 0.1)
+        animation['region'] = 2;
+        animation['type'] = 1;
+
+        # color = utils.lerp_color(scaled_reward, [64, 32, 16], [255, 128, 64])
+        if isinstance(agent, str):
+            name = agent
+        else:
+            name = agent.get_name()
+        entity = self.entities[name]
+
+        self.messaging.send_animation(name, animation)
+        # # self.messaging.send(name, "/animation/from", color)
+        # self.messaging.send(name, "/base-color", color)
+        # time.sleep(0.05)
+        # self.messaging.send(name, "/alt-color", alt_color)
+        # time.sleep(0.05)
+        # self.messaging.send(name, "/period", period)
+        # time.sleep(0.05)
+        # self.messaging.send(name, "/noise", noise)
+
+        # Broadcast as OSC.
+        info = state[0].tolist() + [reward]
+        self.send_info(name, "/info", info)
+
+    def set_animation_period(self, agent, period):
+        if isinstance(agent, str):
+            name = agent
+        else:
+            name = agent.get_name()
+        entity = self.entities[name]
+        self.messaging.send(name, "/animation/period", period)
+
+    def set_animation_noise(self, agent, noise):
+        if isinstance(agent, str):
+            name = agent
+        else:
+            name = agent.get_name()
+        entity = self.entities[name]
+        self.messaging.send(name, "/animation/noise", [noise, 0])
+
+    def set_alt_color(self, agent, rgb):
+        if isinstance(agent, str):
+            name = agent
+        else:
+            name = agent.get_name()
+        entity = self.entities[name]
+        self.messaging.send(name, "/animation/to", rgb)
+
     def set_color(self, agent, rgb):
         if isinstance(agent, str):
             name = agent

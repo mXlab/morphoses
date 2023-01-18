@@ -24,6 +24,8 @@
 const char *ROBOT_RTLS_IDS[N_ROBOTS] = { "1a1e", "0f32", "5b26" };
 char ROBOT_RTLS_MQTT_ADDRESS[N_ROBOTS][32]; // Internal use to keep full MQTT addresses.
 
+char ROBOT_CUSTOM_MQTT_ADDRESS[32];
+
 // Neopixel settings.
 #define NUM_PIXELS 32
 #define PIXELS_TYPE (NEO_GRBW + NEO_KHZ800)

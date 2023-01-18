@@ -95,6 +95,21 @@ class MqttHelper:
     def terminate(self):
         self.mqtt_client.loop_stop()
 
+    def round_floats(self, o):
+        if isinstance(o, float):
+            return round(o, 5)
+        if isinstance(o, dict):
+            return {k: self.round_floats(v) for k, v in o.items()}
+        if isinstance(o, (list, tuple)):
+            return [self.round_floats(x) for x in o]
+        return o
+
+    def json_encode(self, data):
+        return json.dumps(self.round_floats(data))
+
+    def publish_animation(self, robot_name, animation):
+        self.mqtt_client.publish("morphoses/{}/animation".format(robot_name), self.json_encode(animation), 1)
+
 class Messaging:
     def __init__(self, world, settings):
         self.manager = None

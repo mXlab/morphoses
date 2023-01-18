@@ -46,13 +46,15 @@ using namespace pq;
 #include "Utils.h"
 #include "OTA.h"
 #include "Comm.h"
+#include "Pixels.h"
+#include "Animation.h"
 #include "Location.h"
 #include "IMU.h"
 #include "Engine.h"
 #include "Navigation.h"
-#include "Pixels.h"
-#include "Animation.h"
 #include "Energy.h"
+
+#include "OSCCallbacks.h"
 
 #include <Chrono.h>
 
@@ -60,10 +62,8 @@ using namespace pq;
 
 Chrono sendDataChrono;
 
-TaskHandle_t taskAnimation;
-SemaphoreHandle_t animationMutex = NULL;
-
-Animation animation(1.0);
+TaskHandle_t taskReceiveMessages;
+SemaphoreHandle_t receiveMessagesMutex = NULL;
 
 void setup()
 {
@@ -90,40 +90,16 @@ void setup()
     ; // wait for serial port to connect. Needed for native USB port only
   }
 
+  // Start animation system.
+  animation.begin();
+
   // Initialize MQTT connection.
   initMqtt();
   
   // Initialize OTA.
-  initOTA(boardName);
-  
-  animationMutex = xSemaphoreCreateMutex();  // crete a mutex object
-  xTaskCreatePinnedToCore(
-      runAnimation, /* Function to implement the task */
-      "Animation", /* Name of the task */
-      2048,  /* Stack size in words */
-      NULL,  /* Task input parameter */
-      0,  /* Priority of the task */
-      &taskAnimation,  /* Task handle. */
-      0); /* Core where the task should run */
-
-  sendDataChrono.start();
+  initOTA(boardName);  
 }
 
-void runAnimation(void *parameters) {
-  animation.begin();
-  for (;;) {
-    if (xSemaphoreTake (animationMutex, portMAX_DELAY)) {
-      Plaquette.step();
-      xSemaphoreGive (animationMutex);  // release the mutex
-    }
-  }
-}
-
-void updateLEDs(void *parameters) {
-  for (;;) {
-    Plaquette.step();
-  }
-}
 
 void loop()
 {
@@ -145,10 +121,7 @@ void loop()
   updateLocation();
 
   // Check for incoming messages.
-  if (xSemaphoreTake (animationMutex, (5 * portTICK_PERIOD_MS))) {
-    processMessage();
-    xSemaphoreGive (animationMutex);  // release the mutex
-  }
+  processMessage();
 
   // Send messages.
   if (sendDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
