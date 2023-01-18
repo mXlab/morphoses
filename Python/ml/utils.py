@@ -61,7 +61,7 @@ def normalize(vec):
 def lerp_color(t, from_color, to_color):
     color = []
     for i in range(3):
-        color.append( (1-t) * from_color[i] + t * to_color[i])
+        color.append( round((1-t) * from_color[i] + t * to_color[i]) )
     return color
 
 # Returns the signed difference between two angles.
