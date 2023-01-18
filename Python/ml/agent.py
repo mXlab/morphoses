@@ -244,15 +244,6 @@ class Agent:
 
         self.iter += 1
 
-        # Wait
-        if self.time_step > 0:
-            self.world.sleep(self.time_step)
-
-        # Structure learning by having the robot take a pause in a stabilised state (zero speed, zero steering).
-        if self.time_balance > 0:
-            self.world.set_speed(self, 0)
-            self.world.sleep(self.time_balance)
-
     def step_recenter(self):
         self.world.set_color(self, [0, 0, 255])
 
@@ -302,18 +293,6 @@ class Agent:
 
         # self.world.set_motors(self, 0, 0)
         # self.world.sleep(2)
-
-    def display(self, state, reward, scaled_reward):
-        # Calculate color representative of reward.
-        # Rouge: 28, 0, 0
-        # Jaune: 28, 14, 0
-        color = utils.lerp_color(scaled_reward, [28, 0, 0], [28, 14, 0])
-        # color = utils.lerp_color(scaled_reward, [64, 32, 16], [255, 128, 64])
-        # Display as RGB color.
-        self.world.set_color(self, color)
-        # Broadcast as OSC.
-        info = state[0].tolist() + [reward]
-        self.world.send_info(self.get_name(), "/info", info)
 
     def state_is_ready(self):
         return self.world.is_valid(self, self.state_profile)
