@@ -447,13 +447,15 @@ class World:
             self.messaging.send(name, "/blue",  rgb[2])
 
     def is_inside_boundaries(self, agent, use_recenter_offset=True):
+        if (not self.is_valid(agent, 'x') or not self.is_valid(agent, 'y')):
+            return True
+        if not self.use_virtual_boundaries:
+            return True
         x = self.get(agent, 'x', standardized=False)
         y = self.get(agent, 'y', standardized=False)
         offset = self.virtual_boundaries['recenter_offset'] if use_recenter_offset else 0
-        return      self.virtual_boundaries['x_min'] + offset <= x and \
-               x <= self.virtual_boundaries['x_max'] - offset and \
-                    self.virtual_boundaries['y_min'] + offset <= y and \
-               y <= self.virtual_boundaries['y_max'] - offset
+        return (self.virtual_boundaries['x_min'] + offset <= x <= self.virtual_boundaries['x_max'] - offset) and \
+                (self.virtual_boundaries['y_min'] + offset <= y <= self.virtual_boundaries['y_max'] - offset)
 
     def begin(self):
         print("Messaging begin")
