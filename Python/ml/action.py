@@ -89,24 +89,54 @@ def create_action_set(action_profile):
                                  [-1, 0]])
     elif action_profile == 'trident':
         return ActionSet(
-                      [[+1, -1], [+1,  0], [+1, +1],
+                      [[+1, -0.2], [+1,  0], [+1, +0.1],
                                  [ 0,  0],
                                  [-1,  0]])
+        # elif action_profile == 'trident':
+        # return ActionSet(
+        #     [[+1, -1], [+1, 0], [+1, +1],
+        #      [0, 0],
+        #      [-1, 0]])
     elif action_profile == 'forward':
         return ActionSet(
                       [[+1, -1], [+1,  0], [+1, +1],
                                  [ 0,  0]])
     elif action_profile == 'x':
         return ActionSet(
-                      [[+1, -0.5],           [+1, +0.5],
+                      [[+1, -0.2],           [+1, +0.2],
                                  [ 0,  0],
+                       [-1, -0.2],           [-1, +0.2]])
+
+    elif action_profile == 'x-':
+        return ActionSet(
+                      [[+1, -0.5],           [+1, +0.5],
+
                        [-1, -0.5],           [-1, +0.5]])
 
     elif action_profile == 'h':
         return ActionSet(
-                      [[+1, -1], [+1,  0], [+1, +1],
-                                 [ 0,  0],
-                       [-1, -1], [-1,  0], [-1, +1]])
+                      [[+1, -0.5], [+1,  0], [+1, +0.5],
+                                   [ 0,  0],
+                       [-1, -0.5], [-1,  0], [-1, +0.5]])
+
+
+    elif action_profile == 'i':
+        return ActionSet(
+                      [            [+1,  0],
+
+                                    [-1,  0]            ] )
+
+    elif action_profile == 'v':
+        return ActionSet(
+                      [          [+1,  0], [+1, +1],
+                                 [ 0,  0]
+                                                   ])
+
+    elif action_profile == 'dance':
+        return ActionSet(
+                      [          [+1,  0],
+                       [ 0, -1], [ 0,  -0.], [ 0, +1],
+                                 [-1, 0]])
 
     elif action_profile == 'still':
         return ActionSet([ [0, 0]] )
