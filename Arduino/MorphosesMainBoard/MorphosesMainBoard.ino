@@ -154,196 +154,72 @@ void processMessage() {
   if (!receiveMessage(messIn, &remote))
     return;
 
-  // This message assigns destination IP to the remote IP from which the OSC message was sent.
-  if (messIn.fullMatch("/bonjour")) {
-    if (DEBUG_MODE) Serial.println("Init IP");
-    // Collect last part of IP address and add it to the list of destinations.
-    byte destIP3 = argIsNumber(messIn, 0) ? getArgAsInt(messIn, 0) : remote[3];
-    addDestinationIPAddress(destIP3);
-    bndl.add("/bonjour").add(boardName).add(destIP3);
-    sendOscBundle();
+  // Print message.
+  if (DEBUG_MODE) {
+    Serial.println(F("OSC message received:"));
+    messIn.send(Serial);
   }
 
-  // Reboot the ESP.
-  else if (messIn.fullMatch("/reboot")) {
-    ESP.restart();
-  }
+  using namespace osc_callback;
 
-  // Stream OSC messages ON/OFF.
-  else if (messIn.fullMatch("/stream")) {
-    if (DEBUG_MODE) Serial.println("STREAM");
-    if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("stream value ");
-      int32_t val = getArgAsInt(messIn, 0);
-      if (DEBUG_MODE) Serial.println(val);
-      boolean stream = (val != 0);
-      // If new value, enable/disable OSC & wake/sleep IMU.
-      if (sendOSC != stream) {
-        sendOSC = stream;
-        if (sendOSC)
-          wakeIMUs();
-        else
-          sleepIMUs();
-      }
-    }
-  }
+  if      (messIn.dispatch("/speed",   speed));
+  else if (messIn.dispatch("/steer",   steer));
+  else if (messIn.route("/nav",  navigation));
 
-  // Power motors ON/OFF.
-  else if (messIn.fullMatch("/power")) {
-    if (DEBUG_MODE) Serial.println("POWER");
-    if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("power value ");
-      int32_t val = getArgAsInt(messIn, 0);
-      if (DEBUG_MODE) Serial.println(val);
-      setEnginePower( val != 0 );
-    }
-  }
+  else if (messIn.dispatch("/reboot",  reboot));
+  else if (messIn.dispatch("/stream",  stream));
+  else if (messIn.dispatch("/power",  power));
 
-  // Drive speed/pitch/forward-backward motor.
-  else if (messIn.fullMatch("/speed")) {
-    if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("speed motor value ");
-      float val = getArgAsFloat(messIn, 0);
-      if (DEBUG_MODE) Serial.println(val);
-      setEngineSpeed(val);
-    }
-  }
+  else if (messIn.route("/calib",  calibration));
+  else if (messIn.route("/rgb", rgb));
 
-
-  // Drive steer/tilt/left-right motor.
-  else if (messIn.fullMatch("/steer")) {
-    if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("steer motor value ");
-      float val = getArgAsFloat(messIn, 0);
-      if (DEBUG_MODE) Serial.println(val);
-      setEngineSteer(val);
-    }
-  }
-
-  // Head in a certain direction.
-  else if (messIn.fullMatch("/navigation-start")) {
-    if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("start navigation ");
-      float speed = getArgAsFloat(messIn, 0);
-      if (DEBUG_MODE) Serial.println(speed);
-      startNavigationHeading(speed, argIsNumber(messIn, 1) ? getArgAsFloat(messIn, 1) : 0);
-    }
-  }
-
-  // Head in a certain direction.
-  else if (messIn.fullMatch("/navigation-stop")) {
-    stopNavigationHeading();
-  }
-
-  else if (messIn.fullMatch("/calibrate-begin")) {
-    calibrateBeginIMUs();
-  }
-
-  else if (messIn.fullMatch("/calibrate-end")) {
-    calibrateEndIMUs();
-  }
-
-  else if (messIn.fullMatch("/calibrate-save")) {
-    calibrateSaveIMUs();
-  }
-
-  else if (messIn.fullMatch("/rgb")) {
-    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
-      if (DEBUG_MODE) Serial.print("RGB colors ");
-      int r = getArgAsInt(messIn, 0);
-      int g = getArgAsInt(messIn, 1);
-      int b = getArgAsInt(messIn, 2);
-      int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
-      if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-      setPixels(r, g, b, w);
-    }
-  }
-
-  else if (messIn.fullMatch("/rgb-one")) {
-    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2) && argIsNumber(messIn, 3)) { 
-      if (DEBUG_MODE) Serial.print("RGB colors ");
-      int i = getArgAsInt(messIn, 0);
-      int r = getArgAsInt(messIn, 1);
-      int g = getArgAsInt(messIn, 2);
-      int b = getArgAsInt(messIn, 3);
-      int w = argIsNumber(messIn, 4) ? getArgAsInt(messIn, 4) : 0;
-      if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-      setPixel(i, r, g, b, w);
-    }
-  }
-
-  else if (messIn.fullMatch("/rgb-region")) {
-    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2) && argIsNumber(messIn, 3)) { 
-      if (DEBUG_MODE) Serial.print("RGB colors ");
-      PixelRegion region = (PixelRegion) getArgAsInt(messIn, 0);
-      int r = getArgAsInt(messIn, 1);
-      int g = getArgAsInt(messIn, 2);
-      int b = getArgAsInt(messIn, 3);
-      int w = argIsNumber(messIn, 4) ? getArgAsInt(messIn, 4) : 0;
-      if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-      setPixelsRegion(region, r, g, b, w);
-    }
-  }
-
-   else if (messIn.fullMatch("/base-color")) {
-    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
-      if (DEBUG_MODE) Serial.print("Animation colors ");
-      int r = getArgAsInt(messIn, 0);
-      int g = getArgAsInt(messIn, 1);
-      int b = getArgAsInt(messIn, 2);
-//        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
-      if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-      animation.baseColor.setRgb(r, g, b);
-    }
-  }
-
-   else if (messIn.fullMatch("/alt-color")) {
-    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
-      if (DEBUG_MODE) Serial.print("Animation colors ");
-      int r = getArgAsInt(messIn, 0);
-      int g = getArgAsInt(messIn, 1);
-      int b = getArgAsInt(messIn, 2);
-//        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
-      if (DEBUG_MODE) { Serial.print(r); Serial.print(" "); Serial.print(g); Serial.print(" "); Serial.println(b); }
-      animation.altColor.setRgb(r, g, b);
-    }
-  }
-
-  else if (messIn.fullMatch("/period")) {
-    if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("Period");
-      float p = getArgAsFloat(messIn, 0);
-      if (DEBUG_MODE) { Serial.println(p); }
-      animation.setPeriod(p);
-    }
-  }
-
-  else if (messIn.fullMatch("/noise")) {
-    if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("Noise");
-      float noise = getArgAsFloat(messIn, 0);
-      int global = argIsNumber(messIn, 1) ? getArgAsBool(messIn, 1) : true;
-      if (DEBUG_MODE) { Serial.println(noise); }
-      animation.setNoise(noise, global);
-    }
-  }
-
-  else if (messIn.fullMatch("/animation-type")) {
-    if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("Type");
-      AnimationType type = (AnimationType) getArgAsInt(messIn, 0);
-      if (DEBUG_MODE) { Serial.println(type); }
-      animation.setType(type);
-    }
-  }
-
-  else if (messIn.fullMatch("/animation-region")) {
-    if (argIsNumber(messIn, 0)) {
-      if (DEBUG_MODE) Serial.print("Region");
-      PixelRegion region = (PixelRegion) getArgAsInt(messIn, 0);
-      if (DEBUG_MODE) { Serial.println(region); }
-      animation.setRegion(region);
-    }
-  }
+//   else if (messIn.fullMatch("/base-color")) {
+//    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
+//      int r = getArgAsInt(messIn, 0);
+//      int g = getArgAsInt(messIn, 1);
+//      int b = getArgAsInt(messIn, 2);
+////        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
+//      animation.baseColor.setRgb(r, g, b);
+//    }
+//  }
+//
+//   else if (messIn.fullMatch("/alt-color")) {
+//    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
+//      int r = getArgAsInt(messIn, 0);
+//      int g = getArgAsInt(messIn, 1);
+//      int b = getArgAsInt(messIn, 2);
+////        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
+//      animation.altColor.setRgb(r, g, b);
+//    }
+//  }
+//
+//  else if (messIn.fullMatch("/period")) {
+//    if (argIsNumber(messIn, 0)) {
+//      float p = getArgAsFloat(messIn, 0);
+//      animation.setPeriod(p);
+//    }
+//  }
+//
+//  else if (messIn.fullMatch("/noise")) {
+//    if (argIsNumber(messIn, 0)) {
+//      float noise = getArgAsFloat(messIn, 0);
+//      int global = argIsNumber(messIn, 1) ? getArgAsBool(messIn, 1) : true;
+//      animation.setNoise(noise, global);
+//    }
+//  }
+//
+//  else if (messIn.fullMatch("/animation-type")) {
+//    if (argIsNumber(messIn, 0)) {
+//      AnimationType type = (AnimationType) getArgAsInt(messIn, 0);
+//      animation.setType(type);
+//    }
+//  }
+//
+//  else if (messIn.fullMatch("/animation-region")) {
+//    if (argIsNumber(messIn, 0)) {
+//      PixelRegion region = (PixelRegion) getArgAsInt(messIn, 0);
+//      animation.setRegion(region);
+//    }
+//  }
 
 }
