@@ -90,6 +90,18 @@ void endPixelWrite() {
   pixels.show();
 }
 
+int pixelIsInsideRegion(int i, PixelRegion region) {
+  if (i < 0 || i >= pixels.numPixels())
+    return false;
+  
+  if (region == ALL)
+    return true;
+  else if (region == TOP)
+    return (i < pixels.numPixels() * 3 / 4);
+  else
+    return (i >= pixels.numPixels() * 3 / 4);
+}
+
 // Sets pixels in a given region.
 void setPixelsRegion(PixelRegion region, int r, int g, int b, int w=0) {
   // Sets values depending on region (default values are for region == ALL).

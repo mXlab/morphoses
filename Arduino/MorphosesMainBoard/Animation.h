@@ -4,66 +4,28 @@
 SineOsc osc(1.0);
 
 
-void runAnimation(void *parameters);
-
 enum AnimationType {
   FULL,
   SIDE,
   CENTER
 };
 
-class Animation : public pq::Unit {
+class Animation {
   
 public:
-  Animation(float period_, bool isRgb_=true) : period(period_), isRgb(isRgb_), noiseIsGlobal(false), noise(0), type(FULL) {}
+  Animation(float period_, bool isRgb_=true) : period(period_), isRgb(isRgb_), noise(0), type(FULL) {}
 
-  float oscillator(float offset=0) {
-    return osc.shiftBy(offset);//mapTo01( cos( (seconds()+offset) / period * TWO_PI), -1, 1);
-  }
+  Color getColor(int i) {
+    if (!pixelIsInsideRegion(i, region))
+      return Color(); // black
 
-  virtual void begin() {
-    animationMutex = xSemaphoreCreateMutex();  // crete a mutex object
-    
-    xTaskCreatePinnedToCore(
-      runAnimation, /* Function to implement the task */
-      "Animation", /* Name of the task */
-      2048,  /* Stack size in words */
-      NULL,  /* Task input parameter */
-      0,  /* Priority of the task */
-      &taskAnimation,  /* Task handle. */
-      0); /* Core where the task should run */
-  }
-
-  virtual void step() {
-    // Clear all pixels.
-    clearPixels();
-
-    float globalNoise = randomFloat(-noise, +noise);
-
-    beginPixelWrite(region);
-    
     float offset = 0;
-    while (hasNextPixelWrite()) {
-      if (type == SIDE)
-        offset += period / 8;
+    if (type == SIDE)
+      offset = i / (float)NUM_PIXELS_PER_BLOCK;
 
-      float pixelNoise = (noiseIsGlobal ? globalNoise : randomFloat(-noise, +noise));
-      
-      Color color = Color::lerp(baseColor, altColor, oscillator(offset) + pixelNoise);
-      nextPixelWrite(color.r(), color.g(), color.b());
-    }
-    
-    endPixelWrite();  
+    return Color::lerp(baseColor, altColor, (osc.shiftBy(offset) + randomFloat(-noise, +noise)));
   }
-
-  bool lock() {
-    return (xSemaphoreTake (animationMutex, portMAX_DELAY));
-  }
-
-  void unlock() {
-    xSemaphoreGive (animationMutex);  // release the mutex
-  }
-
+  
   void setBaseColor(int r, int g, int b) {
     baseColor.setRgb(r, g, b);
   }
@@ -72,9 +34,8 @@ public:
     altColor.setRgb(r, g, b);
   }
 
-  void setNoise(float noise_, bool noiseIsGlobal_=true) {
+  void setNoise(float noise_) {
     noise = constrain(noise_, 0, 1);
-    noiseIsGlobal = noiseIsGlobal_;
   }
 
   void setType(AnimationType type_) {
@@ -82,8 +43,7 @@ public:
   }
 
   void setPeriod(float period_) {
-      period = period_;
-//    osc.period(period_);
+    osc.period(period_);
   }
 
   void setRegion(PixelRegion region_) {
@@ -91,29 +51,72 @@ public:
   }
  
 public:
-  PixelRegion region;
+  PixelRegion   region;
   AnimationType type;
-  float period;
+
+  float   period;
   bool    isRgb;
 
-  bool    noiseIsGlobal;
+//  bool    noiseIsGlobal;
   float   noise;
   
   Color   baseColor;
   Color   altColor;
-
-  TaskHandle_t taskAnimation;
-  SemaphoreHandle_t animationMutex = NULL;
 };
 
 Animation animation(1.0);
 
+void runAnimation(void *parameters);
+
+TaskHandle_t taskAnimation;
+SemaphoreHandle_t animationMutex = NULL;
+
+bool lockAnimationMutex() {
+  return (xSemaphoreTake (animationMutex, portMAX_DELAY));
+}
+
+void unlockAnimationMutex() {
+  xSemaphoreGive (animationMutex);  // release the mutex
+}
+
+void initAnimation() {
+  // Create mutex.
+  animationMutex = xSemaphoreCreateMutex();
+
+  // Create task.
+  xTaskCreatePinnedToCore(
+    runAnimation, /* Function to implement the task */
+    "Animation", /* Name of the task */
+    2048,  /* Stack size in words */
+    NULL,  /* Task input parameter */
+    0,  /* Priority of the task */
+    &taskAnimation,  /* Task handle. */
+    0); /* Core where the task should run */  
+}
+
+void updateAnimation() {
+  //
+  pixels.clear();
+  for (int i=0; i<pixels.numPixels(); i++) {
+    Color color = animation.getColor(i);
+    pixels.setPixelColor(i, color.r(), color.g(), color.b());
+  }
+}
+
+void displayAnimation() {
+  pixels.show();
+}
+
 void runAnimation(void *parameters) {
-//  animation.begin();
   for (;;) {
-    if (animation.lock()) {
+    if (lockAnimationMutex()) {
+      
       Plaquette.step();
-      animation.unlock();
+      updateAnimation();
+      
+      unlockAnimationMutex();
+      
+      displayAnimation();
     }
   }
 }

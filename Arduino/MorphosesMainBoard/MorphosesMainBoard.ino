@@ -90,8 +90,8 @@ void setup()
     ; // wait for serial port to connect. Needed for native USB port only
   }
 
-  // Start animation system.
-  animation.begin();
+  // Initialize animation system.
+  initAnimation();
 
   // Initialize MQTT connection.
   initMqtt();
