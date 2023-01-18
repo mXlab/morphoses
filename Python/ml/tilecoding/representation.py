@@ -397,7 +397,7 @@ class Tiling(object):
             state = state[:,:,None]
 
         nstate = (state[:, self.input_index, :] - self.state_range[0])/(self.state_range[1]-self.state_range[0])
-        indicies =((self.offset[None,:,:] + nstate)*self.ntiles).astype(np.int)
+        indicies =((self.offset[None,:,:] + nstate)*self.ntiles).astype(int)
         return self.hashing(indicies) + self.index_offset[None,:]
 
     @property
@@ -545,9 +545,9 @@ class UNH(Hashing):
         rnd_seq = self.rndseq
         a = self.increment*np.arange(indices.shape[1])
         index = indices + a[None,:,None]
-        index = index - (index.astype(np.int)/rnd_seq.size)*rnd_seq.size
-        hashed_index = (np.sum(rnd_seq[index], axis=1)).astype(np.int)
-        return (hashed_index - (hashed_index/self.memory).astype(np.int)*self.memory).astype('int')
+        index = index - (index.astype(int)/rnd_seq.size)*rnd_seq.size
+        hashed_index = (np.sum(rnd_seq[index], axis=1)).astype(int)
+        return (hashed_index - (hashed_index/self.memory).astype(int)*self.memory).astype('int')
 
 class IdentityHash(Hashing):
     def __init__(self, dims, wrap = False):
