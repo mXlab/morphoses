@@ -47,14 +47,12 @@ class OscHelper:
 
 # Re-route action to robot.
 def receive_action(unused_addr, speed, steer):
-    global main_osc, current_speed, current_steer, max_speed, max_steer
+    global main_osc, current_speed, current_steer
     current_speed = speed
     current_steer = steer
-    print("Receive action: {} speed={} steer={}".format(max_speed, speed, steer))
-    speed = speed * max_speed
     print("--> Result: speed={} steer={}".format(speed, steer))
-    main_osc.send_message("/motor/1", round(speed))
-    main_osc.send_message("/motor/2", round(steer))
+    main_osc.send_message("/speed", speed)
+    main_osc.send_message("/steer", steer)
 
 # Receive peak sound level from external microphone.
 def receive_peak_sound_level(unused_addr, current_sound_level):
@@ -87,15 +85,13 @@ def receive_end(unused_addr):
     print("Requested next data")
     main_osc.send_message("/power", 0)
     # Switch motors off
-    main_osc.send_message("/motor/1", 0)
-    main_osc.send_message("/motor/2", 0)
+    main_osc.send_message("/speed", 0)
+    main_osc.send_message("/steer", 0)
 
 def receive_rgb(unused_addr, r, g, b):
     global next_data_requested
     print("RGB: {} {} {}".format(r, g, b))
-    main_osc.send_message("/red", int(r))
-    main_osc.send_message("/green", int(g))
-    main_osc.send_message("/blue", int(b))
+    main_osc.send_message("/rgb", r, g, b)
 
 def send_data():
     global current_tag_position, current_position, current_quaternion, current_n_revolutions, current_timestamp, start_time, next_data_requested, accumulated_sound_level
@@ -145,26 +141,26 @@ def mqtt_on_message(client, userdata, msg):
 # Create parser
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-parser.add_argument("--bridge-receive-port", default="7765",
+parser.add_argument("--bridge-receive-port", default="8000",
                         help="Specify the port number where data is received from the main application.")
-parser.add_argument("--bridge-send-port", default="7767",
+parser.add_argument("--bridge-send-port", default="8100",
                         help="Specify the port number to send to the main application.")
 
-parser.add_argument("--main-board-ip", default="192.168.0.100",
+parser.add_argument("--main-board-ip", default="192.168.0.110",
                         help="Specify the ip address of the main board.")
-parser.add_argument("--main-board-send-port", default="8765",
+parser.add_argument("--main-board-send-port", default="8000",
                         help="Specify the port number to send to main board.")
-parser.add_argument("--main-board-receive-port", default="8766",
+parser.add_argument("--main-board-receive-port", default="8110",
                         help="Specify the port number where data is received from the main board.")
 
-parser.add_argument("--imu-board-ip", default="192.168.0.101",
+parser.add_argument("--imu-board-ip", default="192.168.0.111",
                         help="Specify the ip address of the IMU board.")
-parser.add_argument("--imu-board-send-port", default="8765",
+parser.add_argument("--imu-board-send-port", default="8000",
                         help="Specify the port number to send to IMU board.")
-parser.add_argument("--imu-board-receive-port", default="8767",
+parser.add_argument("--imu-board-receive-port", default="8111",
                         help="Specify the port number where data is received from the IMU board.")
 
-parser.add_argument("--rtls-gateway-ip", default="192.168.0.120",
+parser.add_argument("--rtls-gateway-ip", default="192.168.0.200",
                         help="Specify the ip address of the RTLS Rasbperry Pi gateway.")
 parser.add_argument("--rtls-gateway-port", default=1883,
                         help="Specify the port number of the RLTS Raspberry Pi gateway MQTT.")
@@ -173,11 +169,6 @@ parser.add_argument("--rtls-robot-node-id", default="1a1e",
 parser.add_argument("--rtls-thing-node-id", default="5a8e",
                         help="The Node ID of the thing tag in the RTLS network.")
 
-parser.add_argument("--max-speed", default=128, type=float,
-                        help="Max value of speed.")
-parser.add_argument("--max-steer", default=75, type=float,
-                        help="Max value of steering.")
-
 args = parser.parse_args()
 
 osc_startup()
@@ -185,9 +176,6 @@ osc_startup()
 main_osc = OscHelper("main", args.main_board_ip, args.main_board_send_port, args.main_board_receive_port)
 imu_osc = OscHelper("imu", args.imu_board_ip, args.imu_board_send_port, args.imu_board_receive_port)
 bridge_osc = OscHelper("bridge", "127.0.0.1", args.bridge_send_port, args.bridge_receive_port)
-
-max_speed = args.max_speed
-max_steer = args.max_steer
 
 imu_osc.map("/quat", receive_quaternion)
 #main_osc.map("/motor/1/ticks", receive_speed_ticks)

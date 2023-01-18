@@ -11,10 +11,6 @@ import matplotlib.pyplot as plt
 from keras.models import load_model
 from sklearn.preprocessing import MinMaxScaler
 
-from keras.models import Sequential
-from keras.layers import Dense, InputLayer
-from keras.utils.np_utils import to_categorical
-from keras import optimizers
 
 from pythonosc import dispatcher
 from pythonosc import osc_server
@@ -157,301 +153,9 @@ def q_table_update(q_table, state, tc, target, action, lr):
     x = 0
     for c in code:
         # print("Update Q({},{}): {} to target {} with lr {}".format(c, action, q_table[c][action], target / n_bins, lr))
-        q_table[c,action] -= lr * (q_table[c][action] - target / n_bins)
+        q_table[c, action] -= lr * (q_table[c][action] - target / n_bins)
         # print("==> {}".format(q_table[c][action]))
 
-# Extrinsic reward function helpers.
-def reward_sum(complete_data, columns, absolute=True, invert=False):
-    complete_data = complete_data[ columns ]
-    if absolute:
-        complete_data = abs(complete_data)
-    r = sum(complete_data) / len(complete_data)
-    if invert:
-        r = -r
-    return r
-
-def reward_position_center(complete_data):
-    return reward_sum(complete_data-0.5, [0, 1], absolute=True, invert=True)
-
-def reward_inv_position_border(complete_data):
-    complete_data = (complete_data - 0.5) * 2 # remap to [-1, +1]
-    x = complete_data[0]
-    y = complete_data[1]
-    dist = np.sqrt(x*x + y*y) # get the distance from center
-    if dist > 0.5:
-        return -10
-    else:
-        return 0
-
-def reward_delta_roll(complete_data):
-    return reward_sum(complete_data, [16], absolute=True, invert=False)
-
-def reward_inv_delta_roll(complete_data):
-    return reward_sum(complete_data, [16], absolute=True, invert=True)
-
-def reward_delta_pitch(complete_data):
-    return reward_sum(complete_data, [17], absolute=True, invert=False)
-
-def reward_inv_delta_pitch(complete_data):
-    return reward_sum(complete_data, [17], absolute=True, invert=True)
-
-def reward_delta_yaw(complete_data):
-    return reward_sum(complete_data, [18], absolute=True, invert=False)
-
-def reward_inv_delta_yaw(complete_data):
-    return reward_sum(complete_data, [18], absolute=True, invert=True)
-
-def reward_delta_euler(complete_data):
-    return reward_sum(complete_data, [16, 17, 18], absolute=True, invert=False)
-
-def reward_inv_delta_euler(complete_data):
-    return reward_sum(complete_data, [16, 17, 18], absolute=True, invert=True)
-
-
-def reward_euler_state_1(complete_data):
-    target_euler_state = [0.25, 0.5, 0.75] # do not care about third Euler angle
-
-    dist = abs(complete_data[6] - target_euler_state[0])**2
-    dist += abs(complete_data[7] - target_euler_state[1])**2
-    dist = -dist
-    return dist
-
-def reward_euler_state_2(complete_data):
-    target_euler_state = [0.25, 0.5, 0.75] # do not care about second Euler angle
-
-    dist = abs(complete_data[6] - target_euler_state[0])**2
-    dist += abs(complete_data[8] - target_euler_state[2])**2
-    dist = np.sqrt(dist)
-    if dist > 0.1:
-        return -10.
-    else:
-        return 0.
-
-def reward_euler_state_3(complete_data):
-    target_euler_state = [0.25, 0.5, 0.75] # do not care about second Euler angle
-
-    dist_1 = abs(complete_data[6] - target_euler_state[0])
-    dist_3 = abs(complete_data[8] - target_euler_state[2])
-    if dist_3 > 0.025:
-        return -100.
-    else:
-        return -10. * dist_1
-
-# Calculate distance between two angles normalized in [0, 1]
-def normalized_angle_dist(x1, x2):
-    return min( abs(x2-x1), abs(x2-x1+1))
-
-def reward_euler_state_robot_1(complete_data):
-    target_euler_state = [ 0.7138384425182009, 0.8537683086573894, 0.14679902767144734 ]
-    # target_euler_state = [ 0.07599221,  0.11881516,  0.4418379 ]
-
-    dist = normalized_angle_dist(complete_data[6], target_euler_state[0])**2
-    dist += normalized_angle_dist(complete_data[7], target_euler_state[1])**2
-    dist += normalized_angle_dist(complete_data[8], target_euler_state[2])**2
-    dist = 1 / (dist + 1)
-    return dist
-
-def reward_position_state(complete_data):
-    global target_position_state
-
-    dist = abs(complete_data[0] - target_position_state[0])**2
-    dist += abs(complete_data[1] - target_position_state[1])**2
-    dist = np.sqrt(dist)
-    print('dist', dist)
-    if dist >= 0.25:
-        return -100. * dist
-    else:
-        return -10. * dist
-
-# Reward difference between current and previous distance to target.
-def reward_delta_dist_1(complete_data):
-    global prev_dist
-
-    target_pos = [complete_data[22], complete_data[23]]
-
-    # Compute current distance from target position state.
-    dist = np.sqrt(abs(complete_data[0] - target_pos[0])**2 + abs(complete_data[1] - target_pos[1])**2)
-
-    # Compute difference between current and previous distance to target.
-    delta_dist = dist - prev_dist
-
-    # Give lowest reward if robot moves away from target
-    if dist - prev_dist >= 0.:
-        reward = -100
-
-    # Give medium-high reward if robot gets closer to target
-    else:
-        reward = 10
-
-    # Store current distance
-    prev_dist = dist
-
-    return reward
-
-# Reward difference between current and previous distance to target (with target radius).
-def reward_delta_dist_2(complete_data):
-    global prev_dist, target_radius
-
-    target_pos = [complete_data[22], complete_data[23]]
-
-    # Compute current distance from target position state.
-    dist = np.sqrt(abs(complete_data[0] - target_pos[0])**2 + abs(complete_data[1] - target_pos[1])**2)
-
-    # Compute difference between current and previous distance to target.
-    delta_dist = dist - prev_dist
-
-    # If robot close to target position state: Higher reward
-    if dist <= target_radius:
-        if delta_dist > 0.:
-            reward = -100
-        else:
-            reward = 100
-
-    # If robot far away from target position: Lower reward
-    else:
-        if delta_dist > 0.:
-            reward = -100
-        else:
-            reward = -10
-        
-    # Store current distance
-    prev_dist = dist
-
-    return reward
-
-# Reward difference between current and previous distance to target (with target radius, and specific values for stabilised positions).
-def reward_delta_dist_3(complete_data):
-    global prev_dist
-
-    target_pos = [complete_data[22], complete_data[23]]
-
-    # Define delta distance threshold (i.e., upon which the robot would be considered as stable, or not).
-    delta_dist_threshold = 0.05
-
-    # Compute current distance from target position state.
-    dist = np.sqrt(abs(complete_data[0] - target_pos[0])**2 + abs(complete_data[1] - target_pos[1])**2)
-
-    # Compute difference between current and previous distance to target.
-    delta_dist = dist - prev_dist
-
-    # If robot close to target state:
-    if complete_data[24] == 1.:
-
-        # Give lowest reward if robot moves away from target
-        if delta_dist > delta_dist_threshold:
-            reward = -100
-
-        # Give highest reward if robot stands still close to target
-        elif -delta_dist_threshold < delta_dist <= delta_dist_threshold:
-            reward = 100
-
-        # Give medium-high reward if robot gets closer to target
-        elif delta_dist <= - delta_dist_threshold:
-            reward = 10
-
-    # If robot far away from target position:
-    else:
-
-        # Give lowest reward if robot moves away from target
-        if delta_dist > delta_dist_threshold:
-            reward = -100
-
-        # Give lowest reward if robot stands still far away from target
-        elif -delta_dist_threshold < delta_dist <= delta_dist_threshold:
-            reward = -100
-
-        # Give medium-low reward if robot gets closer to target
-        elif delta_dist <= - delta_dist_threshold:
-            reward = -10
-    
-    # Store current distance
-    prev_dist = dist
-
-    return reward
-
-
-# Reward inverse of: difference between current and previous distance to target (with target radius, and specific values for stabilised positions).
-def reward_inv_delta_dist_3(complete_data):
-    global prev_dist
-
-    target_pos = [complete_data[22], complete_data[23]]
-
-    # Define delta distance threshold (i.e., upon which the robot would be considered as stable, or not).
-    delta_dist_threshold = 0.05
-
-    # Compute current distance from target position state.
-    dist = np.sqrt(abs(complete_data[0] - target_pos[0]) ** 2 + abs(complete_data[1] - target_pos[1]) ** 2)
-
-    # Compute difference between current and previous distance to target.
-    delta_dist = dist - prev_dist
-
-    # If robot close to target state:
-    if complete_data[24] == 1.:
-
-        # Give medium-low reward if robot moves away from target
-        if delta_dist > delta_dist_threshold:
-            reward = -10
-
-        # Give medium-low reward if robot stands still close to target
-        elif -delta_dist_threshold < delta_dist <= delta_dist_threshold:
-            reward = -10
-
-        # Give lowest reward if robot gets closer to target
-        elif delta_dist <= - delta_dist_threshold:
-            reward = -100
-
-    # If robot far away from target position:
-    else:
-
-        # Give medium-low reward if robot moves away from target
-        if delta_dist > delta_dist_threshold:
-            reward = 10
-
-        # Give highest reward if robot stands still far away from target
-        elif -delta_dist_threshold < delta_dist <= delta_dist_threshold:
-            reward = 100
-
-        # Give lowest reward if robot gets closer to target
-        elif delta_dist <= - delta_dist_threshold:
-            reward = -100
-
-    # Store current distance
-    prev_dist = dist
-
-    return reward
-
-# Reward silence.
-def reward_sound_level(complete_data):
-    accumulated_sound_level = complete_data[25]
-
-    # Define sound level threshold.
-    sound_level_threshold = 10.
-
-    # Give lowest reward if sound level accumulated during one time step
-    if accumulated_sound_level > sound_level_threshold:
-        reward = - 100
-
-    # Give highest reward if silence during one time step
-    else:
-        reward = 100
-
-    return reward
-
-def reward_inv_revolutions(complete_data):
-    print("n.revolutions: {} ({})".format(complete_data[9], complete_data))
-    return -abs(complete_data[9])
-#    return 1.0/(1+abs(complete_data[9]))
-
-def reward(complete_data, reward_functions):
-    n_functions = len(reward_functions)
-    if n_functions == 0:
-        return 0
-    else:
-        r = 0
-        for f in reward_functions:
-            r += f(complete_data)
-        r /= n_functions
-        return r
 
 def choose_action_argmax(prediction):
     allmax = np.argwhere(prediction == np.amax(prediction)).flatten()
@@ -517,7 +221,6 @@ if __name__ == "__main__":
 
     # Arguments for tile coding.
     parser.add_argument("-m", "--model", type=str, default="ann", choices=["ann", "ann-tiles", "tables"], help="Model type")
-    parser.add_argument("--use-tile-coding", default=False, action='store_true', help="Use tile coding for Q function")
     parser.add_argument("--n-state-tiles", type=int, default=10, help="Number of tiles to use for each state dimension")
     parser.add_argument("--n-state-tilings", type=int, default=1, help="Number of tilings to use for each state dimension")
 
@@ -578,9 +281,9 @@ if __name__ == "__main__":
 
     parser.add_argument("-i", "--ip", default="127.0.0.1",
                         help="Specify the ip address to send data to.")
-    parser.add_argument("-s", "--send-port", default="8765",
+    parser.add_argument("-s", "--send-port", default="8000",
                         type=int, help="Specify the port number to send data to.")
-    parser.add_argument("-r", "--receive-port", default="8767",
+    parser.add_argument("-r", "--receive-port", default="8100",
                         type=int, help="Specify the port number to listen on.")
 
     # Parse arguments.
@@ -602,91 +305,6 @@ if __name__ == "__main__":
 
     target_radius = args.target_radius
 
-    policy = args.policy
-
-    epsilon = np.clip(args.epsilon, 0, 1)
-    temperature = np.max(args.temperature, 0)
-
-    gamma = np.clip(args.gamma, 0, 1)
-    curiosity_weight = np.clip(args.curiosity_weight, 0, 1)
-    print('curiosity_weight ', curiosity_weight)
-
-    # Build filtering columns and n_inputs.
-    state_columns = []
-    if args.use_position:
-        state_columns += [0, 1]
-    if args.use_quaternion:
-        state_columns += [2, 3, 4, 5]
-    if args.use_euler:
-        state_columns += [6, 7, 8]
-    if args.use_n_revolutions:
-        state_columns += [9]
-    if args.use_euler_firsts:
-        state_columns += [6, 7]
-    if args.use_euler_extremes:
-        state_columns += [6, 8]
-    if args.use_delta_position:
-        state_columns += [10, 11]
-    if args.use_delta_quaternion:
-        state_columns += [12, 13, 14, 15]
-    if args.use_delta_euler:
-        state_columns += [16, 17, 18]
-    if args.use_orientation:
-        state_columns += [20]
-    if args.use_direction_to_target:
-        state_columns += [21]
-    if args.use_polar_coordinates_to_target:
-        state_columns += [24, 21]
-    if args.use_constant_state:
-        state_columns += [26]
-    n_inputs = len(state_columns)
-    if n_inputs <= 0:
-        exit("You have no inputs! Make sure to specify some inputs using the --use-* options.")
-
-    # Build array of extrinsic rewards.
-    extrinsic_reward_functions = []
-    if args.reward_position_center:
-        extrinsic_reward_functions += [reward_position_center]
-    if args.reward_inv_position_border:
-        extrinsic_reward_functions += [reward_inv_position_border]
-    if args.reward_delta_euler:
-        extrinsic_reward_functions += [reward_delta_euler]
-    if args.reward_inv_delta_euler:
-        extrinsic_reward_functions += [reward_inv_delta_euler]
-    if args.reward_delta_roll:
-        extrinsic_reward_functions += [reward_delta_roll]
-    if args.reward_inv_delta_roll:
-        extrinsic_reward_functions += [reward_inv_delta_roll]
-    if args.reward_delta_pitch:
-        extrinsic_reward_functions += [reward_delta_pitch]
-    if args.reward_inv_delta_pitch:
-        extrinsic_reward_functions += [reward_inv_delta_pitch]
-    if args.reward_delta_yaw:
-        extrinsic_reward_functions += [reward_delta_yaw]
-    if args.reward_inv_delta_yaw:
-        extrinsic_reward_functions += [reward_inv_delta_yaw]
-    if args.reward_euler_state_1:
-        extrinsic_reward_functions += [reward_euler_state_1]
-    if args.reward_euler_state_2:
-        extrinsic_reward_functions += [reward_euler_state_2]
-    if args.reward_euler_state_3:
-        extrinsic_reward_functions += [reward_euler_state_3]
-    if args.reward_euler_state_robot_1:
-        extrinsic_reward_functions += [reward_euler_state_robot_1]
-    if args.reward_position_state:
-        extrinsic_reward_functions += [reward_position_state]
-    if args.reward_inv_revolutions:
-        extrinsic_reward_functions += [reward_inv_revolutions]
-    if args.reward_delta_dist_1:
-        extrinsic_reward_functions += [reward_delta_dist_1]
-    if args.reward_delta_dist_2:
-        extrinsic_reward_functions += [reward_delta_dist_2]
-    if args.reward_delta_dist_3:
-        extrinsic_reward_functions += [reward_delta_dist_3]
-    if args.reward_inv_delta_dist_3:
-        extrinsic_reward_functions += [reward_inv_delta_dist_3]
-    if args.reward_sound_level:
-        extrinsic_reward_functions += [reward_sound_level]
 
     # Configure virtual fence.
     x_min = args.x_min
@@ -694,54 +312,10 @@ if __name__ == "__main__":
     y_min = args.y_min
     y_max = args.y_max
 
-    use_ann = not args.model == "tables"
-    use_tile_coding = not args.model == "ann"
 
-    # Tile coding.
-    if use_tile_coding:
-        tile_coding = rep.TileCoding(input_indices = [np.arange(n_inputs)],
-						             ntiles = [args.n_state_tiles],
-						             ntilings = [args.n_state_tilings],
-						             hashing = None,
-                                     bias_term = False,
-						             state_range = [np.full(n_inputs, 0), np.full(n_inputs, 1)],
-						             rnd_stream = np.random.RandomState())
-        n_inputs_q = tile_coding.size
-    else:
-        tile_coding = None
-        n_inputs_q = n_inputs
 
     # Initialize stuff.
-    n_inputs_forward = n_inputs + n_actions
 
-    n_hidden_q = args.n_hidden_q
-    n_hidden_forward = args.n_hidden_forward
-
-    learning_rate = args.learning_rate
-
-    # Compile model Q(state_t, action_t)
-    if use_ann:
-        model_q = Sequential()
-        model_q.add(InputLayer(batch_input_shape=(1, n_inputs_q)))
-        if (n_hidden_q > 0):
-            model_q.add(Dense(n_hidden_q, activation='relu'))
-        model_q.add(Dense(n_actions, activation='linear'))
-        # model_q.add(Dense(n_actions, activation='softmax'))
-        model_q.compile(loss='categorical_crossentropy', optimizer=optimizers.SGD(lr=learning_rate), metrics=['accuracy'])
-        print(model_q.summary())
-    else:
-        model_q = np.zeros((n_inputs_q, n_actions))
-
-    # Predicts state_{t+1} = f(state_t, action_t)
-    model_forward = Sequential()
-    model_forward.add(InputLayer(batch_input_shape=(1, n_inputs_forward)))
-    if (n_hidden_forward > 0):
-        model_forward.add(Dense(n_hidden_forward, activation='relu'))
-    model_forward.add(Dense(n_inputs, activation='linear'))
-    model_forward.compile(loss='mse', optimizer='adam', metrics=['mae'])
-    print(model_forward.summary())
-
-    # Initialize stuff.
     prev_data = None
     prev_time = -1
     prev_state = None
