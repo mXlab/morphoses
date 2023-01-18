@@ -307,6 +307,7 @@ class World:
         x_center = 0.5 * (vb['x_min'] + vb['x_max'])
         y_center = 0.5 * (vb['y_min'] + vb['y_max'])
         self.entities['center'].store_position([ x_center, y_center ], 0)
+        self.use_virtual_boundaries = vb['use']
 
         # Create messaging system.
         self.messaging = messaging.Messaging(self, settings)
