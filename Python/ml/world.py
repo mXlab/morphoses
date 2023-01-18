@@ -368,6 +368,8 @@ class World:
             if entity_name == 'this':
                 entity_name = agent.get_name()
             variable = var
+        elif isinstance(agent, str):
+            entity_name = agent
         else:
             entity_name = agent.get_name()
         # Check delta variables.
