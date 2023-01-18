@@ -362,7 +362,7 @@ class World:
         else:
             name = agent.get_name()
         entity = self.entities[name]
-        self.messaging.send(name, "/navigation-start", [speed, map(direction, -1, 1, 90, -90)])
+        self.messaging.send(name, "/nav/start", [speed, map(direction, -1, 1, 90, -90)])
 
     def end_navigation(self, agent):
         if isinstance(agent, str):
@@ -370,7 +370,7 @@ class World:
         else:
             name = agent.get_name()
         entity = self.entities[name]
-        self.messaging.send(name, "/navigation-end")
+        self.messaging.send(name, "/nav/stop")
 
     def set_color(self, agent, rgb):
         if isinstance(agent, str):
