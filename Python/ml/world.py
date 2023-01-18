@@ -66,19 +66,20 @@ class Data:
     # Get value.
     def get(self, standardized=True):
         if standardized:
-            return map01(self.value, self.min_value, self.max_value)
+            return inv_lerp(self.value, self.min_value, self.max_value)
         else:
             return self.value
 
     # Get delta value.
     def get_delta(self, standardized=True):
         if standardized:
-            return map01(self.delta_value, -self.max_change_per_second, self.max_change_per_second)
+            return inv_lerp(self.delta_value, -self.max_change_per_second, self.max_change_per_second)
         else:
             return self.delta_value
 
     # Internal use: updates everything.
     def _update(self, value, interval):
+        # Swap prev and current values.
         self.prev_value = self.value
         self.value = value
         if interval > 0:

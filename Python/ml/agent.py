@@ -173,11 +173,10 @@ class Agent:
         r = self.curiosity_weight * r_int + (1 - self.curiosity_weight) * r_ext
         self.min_r = min(self.min_r, r)
         self.max_r = max(self.max_r, r)
-        scaled_r = utils.map01(r, self.min_r, self.max_r)
-        self.display(state, r, scaled_r)
+        scaled_r = utils.inv_lerp(r, self.min_r, self.max_r)
+        self.world.display(self, state, r, scaled_r)
 
-#            print(r)
-
+        #
         r_array = np.array([ r_int, r_ext, r ])
 
         if self.avg_r is None:

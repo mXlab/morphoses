@@ -8,7 +8,10 @@ def map(value, fromMin, fromMax, toMin, toMax):
         return (toMin + toMax) * 0.5 # dummy value
     return (value - fromMin) * (toMax - toMin) / (fromMax - fromMin) + toMin
 
-def map01(x, in_min, in_max):
+def lerp(t, out_min, out_max):
+    return out_min + t * (out_max-out_min)
+
+def inv_lerp(x, in_min, in_max):
     if in_min == in_max:
         return 0.5
     return (x - in_min) / (in_max - in_min)
