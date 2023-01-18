@@ -94,19 +94,25 @@ class Data:
             self.max_change_per_second = max(self.max_change_per_second, abs(self.delta_value))
 
     def __repr__(self):
-        return str(self.stored_value)
-#        return str( "s:{} v:{} d:{}".format(self.stored_value, self.value, self.delta_value))
+        if self.stored_value != None:
+            return str(self.stored_value)
+        else:
+            return "null"
+
 
 class EntityData:
     def __init__(self):
         self.data = {}
+        self.groups = {}
 
     def add_data(self, label, **kwargs):
         self.data[label] = Data(**kwargs)
 
-    def is_valid(self, labels):
+    def is_valid(self, labels=None):
+        if labels is None:  # default = everything should be valid
+            labels = list(self.data.keys())
         if not isinstance(labels, list):
-            labels = [ labels ]
+            labels = [labels]
         for var in labels:
             if not self.data[var].is_valid():
                 return False
@@ -134,15 +140,27 @@ class EntityData:
         else:
             return data.get(standardized)
 
+    def get_values(self, labels, delta=False, standardized=True):
+        return [self.get_value(l, delta, standardized) for l in labels]
+
+    def add_group(self, group, labels):
+        self.groups[group] = labels
+
+    def get_group_values(self, group, delta=False, standardized=True):
+        return self.get_values(self.groups[group], delta, standardized)
+
+    def group_is_valid(self, group):
+        return self.is_valid(self.groups[group])
+
     def store_polar(self, target_name, target, close_dist, t):
         # Compute distance to target.
-        if self.is_valid(['x', 'y']) and target.is_valid(['x', 'y']):
+        if self.group_is_valid('position') and target.group_is_valid('position'):
             x = self.get_value('x', standardized=False)
             y = self.get_value('y', standardized=False)
             tx = target.get_value('x', standardized=False)
             ty = target.get_value('y', standardized=False)
-            distance = math.dist( (self.get_value('x', standardized=False), self.get_value('y', standardized=False)),
-                                  (target.get_value('x', standardized=False), target.get_value('y', standardized=False)) )
+            distance = math.dist((self.get_value('x', standardized=False), self.get_value('y', standardized=False)),
+                                 (target.get_value('x', standardized=False), target.get_value('y', standardized=False)))
             self.store('dist_{}'.format(target_name), distance, t)
 
             # Compute the "is close" state.
@@ -154,46 +172,63 @@ class EntityData:
                 heading = self.get_value('mrz', standardized=False)
                 angle = target_heading(self.get_value('x', standardized=False), self.get_value('y', standardized=False),
                                        heading,
-                                       target.get_value('x', standardized=False), target.get_value('y', standardized=False))
-                #print("** target: {} drt: {} dp: {} angle: {}".format(target_name, delta_robot_to_target, delta_pos, angle))
+                                       target.get_value('x', standardized=False),
+                                       target.get_value('y', standardized=False))
+                # print("** target: {} drt: {} dp: {} angle: {}".format(target_name, delta_robot_to_target, delta_pos, angle))
                 self.store('angle_{}'.format(target_name), angle, t)
                 self.store("quadrant_{}".format(target_name), quadrant(angle), t)
 
     def __repr__(self):
         return str(self.data)
 
+
 class RobotData(EntityData):
     def __init__(self, boundaries, entities, version):
         super().__init__()
-        self.add_data('x', auto_scale=False, max_change_per_second=0.01, min_value=boundaries['x_min'], max_value=boundaries['x_max'], smoothing=0.1)
-        self.add_data('y', auto_scale=False, max_change_per_second=0.01, min_value=boundaries['y_min'], max_value=boundaries['y_max'], smoothing=0.1)
+        self.add_group('position', ['x', 'y'])
+        self.add_data('x', auto_scale=False, max_change_per_second=0.01, min_value=boundaries['x_min'],
+                      max_value=boundaries['x_max'], smoothing=0.1)
+        self.add_data('y', auto_scale=False, max_change_per_second=0.01, min_value=boundaries['y_min'],
+                      max_value=boundaries['y_max'], smoothing=0.1)
+
+        self.add_group('quaternion_side', ['qx', 'qy', 'qz', 'qw'])
         self.add_data('qx')
         self.add_data('qy')
         self.add_data('qz')
         self.add_data('qw')
+
+        self.add_group('rotation_side', ['rx', 'ry', 'rz'])
         self.add_data('rx', is_angle=True)
         self.add_data('ry', is_angle=True)
         self.add_data('rz', is_angle=True)
 
+        self.add_group('quaternion_main', ['mqx', 'mqy', 'mqz', 'mqw'])
         self.add_data('mqx')
         self.add_data('mqy')
         self.add_data('mqz')
         self.add_data('mqw')
+
+        self.add_group('rotation_main', ['mrx', 'mry', 'mrz'])
         self.add_data('mrx', is_angle=True)
         self.add_data('mry', is_angle=True)
         self.add_data('mrz', is_angle=True)
 
-        self.add_data('speed', min_value=-1, max_value=1, max_change_per_second=2, auto_scale=False, auto_scale_delta=False)
-        self.add_data('steer', min_value=-1, max_value=1, max_change_per_second=2, auto_scale=False, auto_scale_delta=False)
+        self.add_group('motors', ['speed', 'steer'])
+        self.add_data('speed', min_value=-1, max_value=1, max_change_per_second=2, auto_scale=False,
+                      auto_scale_delta=False)
+        self.add_data('steer', min_value=-1, max_value=1, max_change_per_second=2, auto_scale=False,
+                      auto_scale_delta=False)
         # self.add_data('rx', is_angle=True, auto_scale=False, max_change_per_second=90)
         # self.add_data('ry', is_angle=True, auto_scale=False, max_change_per_second=90)
         # self.add_data('rz', is_angle=True, auto_scale=False, max_change_per_second=90)
 
-        max_dist = math.dist( (boundaries['x_min'], boundaries['y_min']), (boundaries['x_max'], boundaries['y_max']) )
-        max_dist *= 0.5 # let's be realistic
+        max_dist = math.dist((boundaries['x_min'], boundaries['y_min']), (boundaries['x_max'], boundaries['y_max']))
+        max_dist *= 0.5  # let's be realistic
+
         for name in entities:
             self.add_data('dist_{}'.format(name), auto_scale=False, min_value=0, max_value=max_dist)
-            self.add_data('close_{}'.format(name), auto_scale=False, auto_scale_delta=False, min_value=0, max_value=1, max_change_per_second=1)
+            self.add_data('close_{}'.format(name), auto_scale=False, auto_scale_delta=False, min_value=0, max_value=1,
+                          max_change_per_second=1)
             self.add_data('angle_{}'.format(name), is_angle=True, auto_scale=False, min_value=-180, max_value=180)
             self.add_data('quadrant_{}'.format(name), auto_scale=False, min_value=0, max_value=3)
         self.version = version
@@ -201,10 +236,25 @@ class RobotData(EntityData):
     def get_version(self):
         return self.version
 
+    def get_position(self, delta=False, standardized=True):
+        return self.get_values(['x', 'y'], delta, standardized)
+
+    def get_quaternion_side(self, delta=False, standardized=True):
+        return self.get_values(['qx', 'qy', 'qz', 'qw'], delta, standardized)
+
+    def get_quaternion_main(self, delta=False, standardized=True):
+        return self.get_values(['mqx', 'mqy', 'mqz', 'mqw'], delta, standardized)
+
+    def get_rotation_side(self, delta=False, standardized=True):
+        return self.get_values(['rx', 'ry', 'rz'], delta, standardized)
+
+    def get_rotation_main(self, delta=False, standardized=True):
+        return self.get_values(['mrx', 'mry', 'mrz'], delta, standardized)
+
     def store_position(self, position, t):
         self.store(['x', 'y'], position, t)
 
-    def store_quaternion(self, quat, t):
+    def store_quaternion_side(self, quat, t):
         self.store(['qx', 'qy', 'qz', 'qw'], quat, t)
         rx, ry, rz = quaternion_to_euler(quat[0], quat[1], quat[2], quat[3])
         self.store(['rx', 'ry', 'rz'], [rx, ry, rz], t)
@@ -220,11 +270,15 @@ class RobotData(EntityData):
 class ThingData(EntityData):
     def __init__(self, boundaries):
         super().__init__()
-        self.add_data('x', auto_scale=False, min_value=boundaries['x_min'], max_value=boundaries['x_max'], smoothing=0.1)
-        self.add_data('y', auto_scale=False, min_value=boundaries['y_min'], max_value=boundaries['y_max'], smoothing=0.1)
+        self.add_group('position', ['x', 'y'])
+        self.add_data('x', auto_scale=False, min_value=boundaries['x_min'], max_value=boundaries['x_max'],
+                      smoothing=0.1)
+        self.add_data('y', auto_scale=False, min_value=boundaries['y_min'], max_value=boundaries['y_max'],
+                      smoothing=0.1)
 
     def store_position(self, position, t):
         self.store(['x', 'y'], position, t)
+
 
 class World:
     def __init__(self, settings):
@@ -491,11 +545,29 @@ class World:
             # self.messaging.send(robot, "/power", 0)
             # self.messaging.send(robot, "/stream", 0)
             # self.messaging.send(robot, "/stream", 0, board_name='imu')
+
         self.messaging.terminate()
 
     def update(self):
         for entity in self.entities.values():
             entity.update()
+
+        for robot_name in self.robots:
+            robot = self.entities[robot_name]
+            if robot.group_is_valid('position'):
+                self.send_info(robot_name, "/pos", robot.get_position())
+            if robot.group_is_valid('quaternion_side'):
+                self.send_info(robot_name, "/side/quat", robot.get_quaternion_side(standardized=False))
+            if robot.group_is_valid('rotation_side'):
+                self.send_info(robot_name, "/side/rot", robot.get_rotation_side(standardized=False))
+            if robot.group_is_valid('quaternion_main'):
+                self.send_info(robot_name, "/main/quat", robot.get_quaternion_main(standardized=False))
+            if robot.group_is_valid('rotation_main'):
+                self.send_info(robot_name, "/main/rot", robot.get_rotation_main(standardized=False))
+            if robot.is_valid('speed'):
+                self.send_info(robot_name, "/speed", robot.get_value('speed', standardized=False))
+            if robot.is_valid('steer'):
+                self.send_info(robot_name, "/steer", robot.get_value('steer', standardized=False))
 
     def get_time(self):
         return time.time() - self.start_time
