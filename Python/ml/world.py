@@ -590,8 +590,8 @@ class World:
             for name in self.entities:
                 entity.store_polar(name, self.entities[name], self.close_dist, t)
 
-    def store_quaternion(self, entity_name, quat):
-        self.entities[entity_name].store_quaternion(quat, self.get_time())
+    def store_quaternion_side(self, entity_name, quat):
+        self.entities[entity_name].store_quaternion_side(quat, self.get_time())
 
     def store_quaternion_main(self, entity_name, quat):
         # Correct euler yaw with room heading offset.
