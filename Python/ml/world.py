@@ -306,7 +306,8 @@ class World:
         vb = settings['virtual_boundaries']
         x_center = 0.5 * (vb['x_min'] + vb['x_max'])
         y_center = 0.5 * (vb['y_min'] + vb['y_max'])
-        self.entities['center'].store_position([ x_center, y_center ], 0)
+        self.entities['center'].store_position([x_center, y_center], 0)
+
         self.use_virtual_boundaries = vb['use']
 
         # Create messaging system.
@@ -334,7 +335,7 @@ class World:
             valid = True
             for v in variable:
                 if not self.is_valid(agent, v):
-                    print("Invalid variable for agent {}: {}".format(agent, v))
+                    print("Invalid variable for agent {}: {}".format(agent.get_name(), v))
                     valid = False
             return valid
 
@@ -383,7 +384,7 @@ class World:
 
     def do_action(self, agent, action, action_manager):
         # Store action in entity.
-        self.entities[agent.get_name()].store_action(action, self.get_time())
+        # self.entities[agent.get_name()].store_action(action, self.get_time())
         action_manager.start_action(action)
         while action_manager.step_action():
             self.messaging.loop()
@@ -397,7 +398,7 @@ class World:
         if entity.get_version() >= 3:
             self.messaging.send(name, "/speed", speed)
         else:
-            self.messaging.send(name, "/motor/1", round(speed*128))
+            self.messaging.send(name, "/motor/1", round(speed * 128))
 
     def set_steer(self, agent, steer):
         if isinstance(agent, str):
@@ -408,7 +409,7 @@ class World:
         if entity.get_version() >= 3:
             self.messaging.send(name, "/steer", steer)
         else:
-            self.messaging.send(name, "/motor/2", round(steer*90))
+            self.messaging.send(name, "/motor/2", round(steer * 90))
 
     def set_motors(self, agent, speed, steer):
         self.set_speed(agent, speed)
