@@ -48,7 +48,7 @@ using namespace pq;
 #include "Comm.h"
 #include "Pixels.h"
 #include "Animation.h"
-#include "Location.h"
+#include "MQTT.h"
 #include "IMU.h"
 #include "Engine.h"
 #include "Navigation.h"
