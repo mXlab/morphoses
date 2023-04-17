@@ -422,32 +422,24 @@ class World:
         entity = self.entities[name]
         self.messaging.send(name, "/nav/stop")
 
-
-    def display(self, agent, state, reward, scaled_reward):
+    def display_reward(self, agent, scaled_reward):
         # Calculate color representative of reward.
-        # Rouge: 28, 0, 0
-        # Jaune: 28, 14, 0
-        # color = utils.lerp_color(scaled_reward, [28, 0, 0], [28, 14, 0])
-        animation = {}
-        animation['base'] = lerp_color(scaled_reward, [200, 4, 0], [128, 200, 0])
-        animation['alt'] = lerp_color(scaled_reward, [16, 0, 0], [16, 50, 0])
-        animation['period'] = lerp(scaled_reward, 0.5, 4)
-        animation['noise'] = lerp(scaled_reward, 0.2, 0.1)
-        animation['region'] = 2;
-        animation['type'] = 1;
+        animation = {
+            'base': lerp_color(scaled_reward, [255, 8, 0], [96, 255, 48]),
+            'alt': lerp_color(scaled_reward, [16, 0, 0], [4, 32, 0]),
+            'period': lerp(scaled_reward, 0.5, 3),
+            'noise': lerp(scaled_reward, 0.4, 0.2),
+            'region': 2 if scaled_reward < 0.5 else 0,
+            'type': 1
+        }
 
         # Send animation parameters.
         name = self.agent_as_name(agent)
-
         self.messaging.send_animation(name, animation)
-        # # self.messaging.send(name, "/animation/from", color)
-        # self.messaging.send(name, "/base-color", color)
-        # time.sleep(0.05)
-        # self.messaging.send(name, "/alt-color", alt_color)
-        # time.sleep(0.05)
-        # self.messaging.send(name, "/period", period)
-        # time.sleep(0.05)
-        # self.messaging.send(name, "/noise", noise)
+
+    def display(self, agent, state, reward, scaled_reward):
+        # Display scaled reward.
+        self.display_reward(agent, scaled_reward)
 
         # Broadcast as OSC.
         name = self.agent_as_name(agent)
