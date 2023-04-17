@@ -1,5 +1,6 @@
 import numpy as np
 import utils
+from chrono import Chrono
 
 class ActionManager:
     def __init__(self, agent, world, action_profile, time_step=1, time_balance=0, navigation_mode=False):
@@ -9,7 +10,7 @@ class ActionManager:
         self.time_step = time_step
         self.time_balance = time_balance
         self.navigation_mode = navigation_mode
-        self.start_time = 0
+        self.chrono = Chrono(world)
         self.state = 0
 
     def n_actions(self):
@@ -27,7 +28,8 @@ class ActionManager:
             steer = float(np.clip(action[1], -self.agent.get_max_steer(), self.agent.get_max_steer()))
             self.world.set_motors(self.agent, speed, steer)
 
-        self.start_time = self.world.get_time()
+        self.chrono.start()
+
         self.state = 0
 
     def end_action(self):
@@ -40,18 +42,19 @@ class ActionManager:
         # print("Step action {} {} {}".format(self.world.get_time(), self.start_time, self.time_step))
         # Check if first phase is finished.
         if self.state == 0:
-            if self.world.get_time() - self.start_time >= self.time_step:
+            if self.chrono.has_passed(self.time_step):
                 self.end_action()
 
                 if self.time_balance > 0:
                     self.state = 1
                 else:
                     self.state = 2
-                self.start_time = self.world.get_time()
+                # Restart chronometer.
+                self.chrono.start()
             return True
 
         elif self.state == 1:
-            if self.world.get_time() - self.start_time >= self.time_balance:
+            if self.chrono.has_passed(self.time_balance):
                 self.state = 2
             return True
 

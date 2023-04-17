@@ -14,6 +14,7 @@ from keras.layers import Dense, InputLayer
 from keras.utils.np_utils import to_categorical
 from keras import optimizers
 
+from chrono import Chrono
 
 # Agent class.
 class Agent:
@@ -47,6 +48,11 @@ class Agent:
         navigation_mode = kwargs.get('navigation_mode', False)
         self.action_manager = action.ActionManager(self, world, action_profile, time_step, time_balance, navigation_mode)
         self.n_actions = self.action_manager.n_actions()
+
+        stop_profile = kwargs.get('stop_profile', {})
+        self.stop_profile = get_stop_profile(stop_profile)
+        self.behavior_chrono = Chrono(world)
+        self.high_reward_chrono = Chrono(world)
 
         # Build Q-function model.
         q_model_type = kwargs.get('q_model_type', 'tables')
@@ -89,6 +95,7 @@ class Agent:
             print(self.model_q.summary())
         else:
             # Table.
+
             self.model_q = np.zeros((self.n_inputs_q, self.n_actions))
 
         # Create forward model (for curiosity): predicts state_{t+1} = f(state_t, action_t)
@@ -132,20 +139,38 @@ class Agent:
 
         self.has_begin = True
 
+        self.success = None
+        self.behavior_chrono.start()
+
     def step(self):
         if not self.has_begin:
             self.begin()
 
-        # If the robot is within virtual fence: Perform standard RL loop.
-        if self.is_inside_boundaries():
-            self.recentering = False
-            self.step_rl()
+        self.world.send_info(self.get_name(), "/chrono", [ self.behavior_chrono.elapsed(), self.high_reward_chrono.elapsed() ])
+
+        if self.is_stopped():
+            self.world.send_info(self.get_name(), "/stopped", self.success)
+            if self.success:
+                self.world.display_reward(self, 1.0)
+            else:
+                self.world.display_reward(self, 0.0)
+            self.world.sleep(5.0)
+
         else:
-            self.recentering = True
-            self.step_recenter()
+            # If the robot is within virtual fence: Perform standard RL loop.
+            if self.is_inside_boundaries():
+                self.recentering = False
+                self.step_rl()
+            else:
+                self.recentering = True
+                self.step_recenter()
+                self.high_reward_chrono.stop()
 
     def is_inside_boundaries(self):
         return self.world.is_inside_boundaries(self, self.recentering)
+
+    def is_stopped(self):
+        return self.success is not None
 
     # Performs one step of Q-learning loop.
     def step_rl(self):
@@ -176,15 +201,41 @@ class Agent:
         scaled_r = utils.inv_lerp(r, self.min_r, self.max_r)
         self.world.display(self, state, r, scaled_r)
 
-        #
+        # Compute average reward.
         r_array = np.array([ r_int, r_ext, r ])
-
         if self.avg_r is None:
             self.avg_r = r_array
         else:
             self.avg_r -= (1-self.gamma) * (self.avg_r - r_array)
 
-        print("({}, {}) => {}".format(self.prev_state, self.action_set.get_action(self.prev_action), r))
+        # Send reward information for data visualization.
+        self.world.send_info(self.get_name(), "/reward", [r, self.avg_r[2]])
+
+        # Verify stopping criteria.
+        if self.behavior_chrono.has_passed(self.stop_profile['min_duration']):
+            print("Passed min duration")
+            if not self.high_reward_chrono.is_started():
+                self.high_reward_chrono.start()
+
+            # Check stop condition: high rewards.
+            if r >= self.stop_profile['high_reward_threshold']:
+                print("High thresh")
+                if self.high_reward_chrono.has_passed(self.stop_profile['high_reward_duration']):
+                    print("Chrono passed")
+                    self.success = True
+            # Low reward.
+            else:
+                # Restart chronometer.
+                self.high_reward_chrono.start()
+                if self.behavior_chrono.has_passed(self.stop_profile['max_duration']):
+                    self.success = False
+
+        if self.is_stopped():
+            self.behavior_chrono.stop()
+            self.high_reward_chrono.stop()
+            return
+
+        # print("({}, {}) => {}".format(self.prev_state, self.action_manager.get_action(self.prev_action), r))
         n_iter_log = 10
         if self.iter % n_iter_log == 0:
             print("t={} average reward = (int: {} ext: {} total: {})".format(iter, self.avg_r[0], self.avg_r[1], self.avg_r[2]))
@@ -194,7 +245,7 @@ class Agent:
             print("MODEL: ")
             print(self.model_q)
 
-
+        # Gather predictions.
         if self.use_ann:
             prediction = self.model_q.predict(state_to_tile_coding(state, self.tile_coding), verbose=0).squeeze()
         else:
@@ -316,6 +367,14 @@ def get_extrinsic_rewards(reward_profile):
         profile['args'] = profile.get('args', {})
         extrinsic_rewards += [ profile ]
     return extrinsic_rewards
+
+def get_stop_profile(profile):
+    stop_profile = {}
+    stop_profile['min_duration'] = profile.get('min_duration', 0)
+    stop_profile['max_duration'] = profile.get('max_duration', 99999)
+    stop_profile['high_reward_threshold'] = profile.get('high_reward_threshold', 0.5)
+    stop_profile['high_reward_duration'] = profile.get('high_reward_duration', 0)
+    return stop_profile
 
 # State to tile coding - one hot encoding
 def state_to_tile_coding(state, tc):
