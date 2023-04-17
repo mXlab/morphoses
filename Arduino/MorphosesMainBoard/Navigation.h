@@ -3,10 +3,10 @@
 const int HEADING_FRONT_MAX = 90 + HEADING_FRONT_TOLERANCE;
 const float STEER_HEADING_FRONT_MAX = sin(radians(HEADING_FRONT_MAX));
 
-#define NAVIGATION_ERROR_THRESHOLD 0.5f // threshold above which measurement is considered valid
-#define MAX_NAVIGATION_ERROR 30
-#define MIN_RELIABLE_NAVIGATION_DISTANCE 0.2
-#define MAX_RELIABLE_NAVIGATION_DISTANCE 0.5
+#define NAVIGATION_ERROR_THRESHOLD 0.2f // threshold above which measurement is considered valid
+#define MAX_NAVIGATION_ERROR 45
+#define MIN_RELIABLE_NAVIGATION_DISTANCE 0.15
+#define MAX_RELIABLE_NAVIGATION_DISTANCE 0.4
 
 const Vec2f REFERENCE_ORIENTATION(1, 0);
 
