@@ -369,10 +369,9 @@ class World:
             if entity_name == 'this':
                 entity_name = agent.get_name()
             variable = var
-        elif isinstance(agent, str):
-            entity_name = agent
         else:
-            entity_name = agent.get_name()
+            entity_name = self.agent_as_name(agent)
+
         # Check delta variables.
         if variable.startswith('d_'):
             variable = variable[2:]  # remove the 'd_' part
@@ -382,6 +381,9 @@ class World:
         # Return info as tuple.
         return entity_name, variable, delta
 
+    def agent_as_name(self, agent):
+        return agent if isinstance(agent, str) else agent.get_name()
+
     def do_action(self, agent, action, action_manager):
         # Store action in entity.
         # self.entities[agent.get_name()].store_action(action, self.get_time())
@@ -390,21 +392,16 @@ class World:
             self.messaging.loop()
 
     def set_speed(self, agent, speed):
-        if isinstance(agent, str):
-            name = agent
-        else:
-            name = agent.get_name()
+        name = self.agent_as_name(agent)
         entity = self.entities[name]
         if entity.get_version() >= 3:
+            print("set speed: {}".format(speed))
             self.messaging.send(name, "/speed", speed)
         else:
             self.messaging.send(name, "/motor/1", round(speed * 128))
 
     def set_steer(self, agent, steer):
-        if isinstance(agent, str):
-            name = agent
-        else:
-            name = agent.get_name()
+        name = self.agent_as_name(agent)
         entity = self.entities[name]
         if entity.get_version() >= 3:
             self.messaging.send(name, "/steer", steer)
@@ -416,18 +413,12 @@ class World:
         self.set_steer(agent, steer)
 
     def start_navigation(self, agent, speed, direction):
-        if isinstance(agent, str):
-            name = agent
-        else:
-            name = agent.get_name()
+        name = self.agent_as_name(agent)
         entity = self.entities[name]
         self.messaging.send(name, "/nav/start", [speed, map(direction, -1, 1, 90, -90)])
 
     def end_navigation(self, agent):
-        if isinstance(agent, str):
-            name = agent
-        else:
-            name = agent.get_name()
+        name = self.agent_as_name(agent)
         entity = self.entities[name]
         self.messaging.send(name, "/nav/stop")
 
@@ -445,12 +436,8 @@ class World:
         animation['region'] = 2;
         animation['type'] = 1;
 
-        # color = utils.lerp_color(scaled_reward, [64, 32, 16], [255, 128, 64])
-        if isinstance(agent, str):
-            name = agent
-        else:
-            name = agent.get_name()
-        entity = self.entities[name]
+        # Send animation parameters.
+        name = self.agent_as_name(agent)
 
         self.messaging.send_animation(name, animation)
         # # self.messaging.send(name, "/animation/from", color)
@@ -463,38 +450,24 @@ class World:
         # self.messaging.send(name, "/noise", noise)
 
         # Broadcast as OSC.
+        name = self.agent_as_name(agent)
         info = state[0].tolist() + [reward]
         self.send_info(name, "/info", info)
 
     def set_animation_period(self, agent, period):
-        if isinstance(agent, str):
-            name = agent
-        else:
-            name = agent.get_name()
-        entity = self.entities[name]
+        name = self.agent_as_name(agent)
         self.messaging.send(name, "/animation/period", period)
 
     def set_animation_noise(self, agent, noise):
-        if isinstance(agent, str):
-            name = agent
-        else:
-            name = agent.get_name()
-        entity = self.entities[name]
+        name = self.agent_as_name(agent)
         self.messaging.send(name, "/animation/noise", [noise, 0])
 
     def set_alt_color(self, agent, rgb):
-        if isinstance(agent, str):
-            name = agent
-        else:
-            name = agent.get_name()
-        entity = self.entities[name]
+        name = self.agent_as_name(agent)
         self.messaging.send(name, "/animation/to", rgb)
 
     def set_color(self, agent, rgb):
-        if isinstance(agent, str):
-            name = agent
-        else:
-            name = agent.get_name()
+        name = self.agent_as_name(agent)
         entity = self.entities[name]
         if entity.get_version() >= 3:
             self.messaging.send(name, "/rgb-region", [2] + rgb)
