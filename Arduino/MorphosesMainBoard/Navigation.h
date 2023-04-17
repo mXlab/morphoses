@@ -34,6 +34,7 @@ void startNavigation() {
   // Reset errors.
   cumulativeNavigationError = 0;
   nNavigationSteps = 0;
+  velocity.set(0, 0);
 }
 
 void startNavigationHeading(float speed, float relativeHeading=0) {
