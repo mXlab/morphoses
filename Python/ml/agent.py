@@ -281,7 +281,7 @@ class Agent:
         if self.use_ann:
             target_vec = self.model_q.predict(state_to_tile_coding(self.prev_state, self.tile_coding))[0] # Q(s_t, a_t)
             target_vec[self.prev_action] = target
-            self.model_q.fit(state_to_tile_coding(self.prev_state, self.tile_coding), target_vec.reshape(-1, n_actions), epochs=1, verbose=0)
+            self.model_q.fit(state_to_tile_coding(self.prev_state, self.tile_coding), target_vec.reshape(-1, self.action_manager.n_actions()), epochs=1, verbose=0)
         else:
             target_vec = q_table_predict(self.model_q, self.prev_state, self.tile_coding)
             q_table_update(self.model_q, self.tile_coding, self.prev_state, self.prev_action, target, self.learning_rate)
