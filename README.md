@@ -5,34 +5,31 @@ This repository features scripts and resources for the ongoing Morphosis project
 ## Local Network Configuration
 
 ```
- [[ MAIN ]]    [[ IMU ]]
-  |     ^       |    ^
-  |     |       |    |
-(81x0)  |    (81x1)  |  
-  |   (8000)    |  (8000)
-  |     |       |    |
-  v     |       v    |
-{{ -- morphoses.py -- }}
-           ^
-           |
-      (mqtt:1883)
-           |
-           v
-{{ -- RTLS gateway -- }}
+[[ robot1 ]]  [[ robot2 ]]   [[ robot3 ]]
+  |     ^       |     ^        |    ^
+  |     |       |     |        |    |
+(81x0)  |     (81x1)  |      (81x1) |  
+  |   (8000)    |  (8000)      |  (8000)
+  |     |       |     |        |     |
+  v     |       v     |        v     |
+{{ -- morphoses.py  +  visualizer -- }}
+                    ^
+                    |
+               (mqtt:1883)
+                    |
+                    v
+         {{ -- RTLS gateway -- }}
 ```
 
 Default IP addresses (need to be setup on the router):
 
 | Device           | IP            | Recv port | Send port |
 | ---- | --- | :---: | :---: |
-| Robot 1 MAIN Esp | 192.168.0.110 | 8000      | 8110      |
-| Robot 1 IMU Esp  | 192.168.0.111 | 8000      | 8111      |
-| Robot 2 MAIN Esp | 192.168.0.120 | 8000      | 8120      |
-| Robot 2 IMU Esp  | 192.168.0.121 | 8000      | 8121      |
-| Robot 3 MAIN Esp | 192.168.0.130 | 8000      | 8130      |
-| Robot 3 IMU Esp  | 192.168.0.131 | 8000      | 8131      |
-| Computer         | 192.168.0.100 | 81xx      | 8000      |
-| RTLS Gateway     | 192.168.0.200 | 1883 (MQTT) | 1883 (MQTT) |
+| Robot 1 Esp32 | 192.168.0.110 | 8000        | 8110      |
+| Robot 2 Esp32 | 192.168.0.120 | 8000        | 8120      |
+| Robot 3 Esp32 | 192.168.0.130 | 8000        | 8130      |
+| Computer      | 192.168.0.100 | 81x0        | 8000      |
+| RTLS Gateway  | 192.168.0.200 | 1883 (MQTT) | 1883 (MQTT) |
 
 ## Robot Calibration and TARE
 
