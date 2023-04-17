@@ -62,8 +62,10 @@ using namespace pq;
 
 Chrono sendDataChrono;
 
-TaskHandle_t taskReceiveMessages;
-SemaphoreHandle_t receiveMessagesMutex = NULL;
+//TaskHandle_t taskReceiveMessages;
+//TaskHandle_t taskSendData;
+//
+//SemaphoreHandle_t receiveMessagesMutex = NULL;
 
 void setup()
 {

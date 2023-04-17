@@ -1,20 +1,31 @@
 #include "Color.h"
 #include "pq_trig8.h"
 
-SineOsc osc(1.0);
-
-
 enum AnimationType {
   FULL,
   SIDE,
   CENTER
 };
 
+Timer transitionTimer(1.0f);
+
 class Animation {
   
 public:
-  Animation(float period_, bool isRgb_=true) : period(period_), isRgb(isRgb_), noise(0), type(FULL) {}
+  Animation() : region(ALL), type(FULL), period(1), isRgb(true), noise(0), osc(1.0f) {}
+  
+  void copyFrom(const Animation& o) {
+    region = o.region;
+    type = o.type;
+    period = o.period;
+    isRgb = o.isRgb;
+    noise = o.noise;
+    baseColor = o.baseColor;
+    altColor = o.altColor;
 
+    osc.period(period);
+  }
+  
   Color getColor(int i) {
     if (!pixelIsInsideRegion(i, region))
       return Color(); // black
@@ -62,9 +73,12 @@ public:
   
   Color   baseColor;
   Color   altColor;
+
+  SineOsc osc;
 };
 
-Animation animation(1.0);
+Animation animation;
+Animation prevAnimation;
 
 void runAnimation(void *parameters);
 
@@ -97,8 +111,18 @@ void initAnimation() {
 void updateAnimation() {
   //
   pixels.clear();
+
   for (int i=0; i<pixels.numPixels(); i++) {
+
+    // Get animation color.
     Color color = animation.getColor(i);
+
+    // If in transition: Mix with previous color.
+    if (transitionTimer.isStarted() && !transitionTimer.isFinished()) {
+      color = Color::lerp( prevAnimation.getColor(i), color, transitionTimer );
+    }
+
+    // Set pixel.
     pixels.setPixelColor(i, color.r(), color.g(), color.b());
   }
 }

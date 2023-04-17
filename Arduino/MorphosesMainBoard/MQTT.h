@@ -58,13 +58,17 @@ void onMqttAnimation(char* data) {
   JSONVar altColor  = animationData["alt"];
   
   if (lockAnimationMutex()) {
+    prevAnimation.copyFrom(animation); // save animation
+    
     animation.setBaseColor(int(baseColor[0]), int(baseColor[1]), int(baseColor[2]));
     animation.setAltColor (int(altColor[0]),  int(altColor[1]),  int(altColor[2]));
     animation.setNoise(( float)  double(animationData["noise"]));
     animation.setPeriod((float) double(animationData["period"]));
     animation.setType( (AnimationType)int(animationData["type"]) );
     animation.setRegion( (PixelRegion)int(animationData["region"]) );
-    
+//    transitionTimer.duration(double(animationData["transition"]));
+
+    transitionTimer.start(); // start transition
     unlockAnimationMutex();
   }
 }
