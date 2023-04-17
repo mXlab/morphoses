@@ -462,12 +462,14 @@ class World:
         name = self.agent_as_name(agent)
         entity = self.entities[name]
         if entity.get_version() >= 3:
-            self.messaging.send(name, "/rgb-region", [2] + rgb)
+            self.messaging.send(name, "/animation/region", 2)
+            self.messaging.send(name, "/animation/from", rgb)
+            # self.messaging.send(name, "/rgb-region", [2] + rgb)
             # self.messaging.send(name, "/rgb", rgb)
         else:
-            self.messaging.send(name, "/red",   rgb[0])
+            self.messaging.send(name, "/red", rgb[0])
             self.messaging.send(name, "/green", rgb[1])
-            self.messaging.send(name, "/blue",  rgb[2])
+            self.messaging.send(name, "/blue", rgb[2])
 
     def is_inside_boundaries(self, agent, use_recenter_offset=True):
         if (not self.is_valid(agent, 'x') or not self.is_valid(agent, 'y')):
