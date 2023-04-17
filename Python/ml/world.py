@@ -503,6 +503,7 @@ class World:
         self.messaging.loop()
         self.update()
         self.debug()
+        self.send_data()
 
     def sleep(self, t):
         start_time = time.time()
