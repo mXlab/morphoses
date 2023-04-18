@@ -421,6 +421,58 @@ class World:
         entity = self.entities[name]
         self.messaging.send(name, "/nav/stop")
 
+    # Stop mode: depending on success.
+    def display_stop(self, agent, success):
+        if success:
+            alt_color = [4, 16, 0]
+        else:
+            alt_color = [20, 4, 0]
+        # Calculate color representative of reward.
+        animation = {
+            "base": [32, 32, 16],
+            "alt": alt_color,
+            "period": 4,
+            "noise": 0.1,
+            "region": 0,
+            "type": 0
+        }
+
+        # Send animation parameters.
+        name = self.agent_as_name(agent)
+        self.messaging.send_animation(name, animation)
+
+    # Idle mode (between behaviors).
+    def display_idle(self, agent):
+        animation = {
+            "base": [8, 4, 0],
+            "alt": [0, 0, 0],
+            "period": 8,
+            "noise": 0.1,
+            "region": 0,
+            "type": 0
+        }
+
+        # Send animation parameters.
+        name = self.agent_as_name(agent)
+        self.messaging.send_animation(name, animation)
+
+    # Recenter mode.
+    def display_recenter(self, agent):
+        # Calculate color representative of reward.
+        animation = {
+            "base": [64, 48, 32],
+            "alt": [48, 32, 16],
+            "period": 2,
+            "noise": 0.4,
+            "region": 2,
+            "type": 1
+        }
+
+        # Send animation parameters.
+        name = self.agent_as_name(agent)
+        self.messaging.send_animation(name, animation)
+
+    # Reward.
     def display_reward(self, agent, scaled_reward):
         # Calculate color representative of reward.
         animation = {
