@@ -15,15 +15,30 @@ class Manager:
         self.behaviors = settings['behaviors']
         self.robots = settings['robots']
 
+        self.sequence = settings['sequence']
+        self.sequence_current = 0
+
         self.agents = {}
         self.current_agents = {}
 
+        # Create all agents.
         for robot in self.robots:
+            print(robot)
             self.agents[robot] = {}
-            self.current_agents[robot] = self.create_agent(robot, self.robots[robot])
+            for behavior in self.sequence:
+                print(behavior)
+                self.create_agent(robot, behavior)
+
+        self.sequence_set_current(0, begin=False)
 
     def agent_exists(self, robot_name, behavior_name):
         return (robot_name in self.agents) and (behavior_name in self.agents[robot_name])
+
+    def sequence_set_current(self, index, begin=True, reset=False):
+        self.sequence_current = index % len(self.sequence)
+        behavior = self.sequence[self.sequence_current]
+        for robot in self.robots:
+            self.set_current_agent(robot, behavior, begin, reset)
 
     def get_agent(self, robot_name, behavior_name):
         if self.agent_exists(robot_name, behavior_name):
@@ -39,8 +54,13 @@ class Manager:
     def get_current_agent(self, robot_name):
         return self.current_agents(robot_name)
 
-    def set_current_agent(self, robot_name, behavior_name):
-        self.current_agents[robot_name] = self.get_agent(robot_name, behavior_name)
+    def set_current_agent(self, robot_name, behavior_name, begin=True, reset=False):
+        agent = self.get_agent(robot_name, behavior_name)
+        if begin:
+            agent.begin()
+        if reset:
+            agent.reset()
+        self.current_agents[robot_name] = agent
 
     def get_current_agents(self):
         return self.current_agents
@@ -73,6 +93,23 @@ class Manager:
             logging.info("Main    : before joining thread %d.", index)
             thread.join()
             logging.info("Main    : thread %d done", index)
+
+        all_stopped = True
+        for a in self.current_agents.values(): # Verify if stopped.
+            if not a.is_stopped():
+                all_stopped = False
+                break
+
+        if all_stopped:
+            print("*** ALL AGENTS STOPPED ***")
+            self.world.sleep(10) # Wait
+            print("*** Done waiting move to next behavior ***")
+            # Fade out.
+            for a in self.current_agents.values():  # Verify if stopped.
+                self.world.display_idle(a)
+            self.world.sleep(5) # Wait
+            self.sequence_set_current(self.sequence_current + 1)
+            self.world.sleep(1) # Wait
 
     # Callback for threads.
     def run_step_agent(self, agent):
