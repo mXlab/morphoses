@@ -95,7 +95,6 @@ class Agent:
             print(self.model_q.summary())
         else:
             # Table.
-
             self.model_q = np.zeros((self.n_inputs_q, self.n_actions))
 
         # Create forward model (for curiosity): predicts state_{t+1} = f(state_t, action_t)
@@ -121,13 +120,30 @@ class Agent:
     def get_max_steer(self):
         return self.max_steer
 
+    def reset_weights(model):
+        import keras.backend as K
+        session = K.get_session()
+        for layer in model.layers:
+            if hasattr(layer, 'kernel_initializer'):
+                layer.kernel.initializer.run(session=session)
+            if hasattr(layer, 'bias_initializer'):
+                layer.bias.initializer.run(session=session)
+
+    def reset(self):
+        if self.use_ann:
+            self.reset_weights(self.model_q)
+        else:
+            self.model_q.fill(0)
+
+        self.reset_weights(self.model_forward)
+
     def begin(self):
         while not self.state_is_ready():
             self.world.update()
             self.world.sleep(0.1)
 
         self.prev_state = self.get_state()
-        self.prev_action = 0 # dummy
+        self.prev_action = None
         self.r = 0
         self.avg_r = None
         self.max_r = -9999
@@ -141,20 +157,21 @@ class Agent:
 
         self.success = None
         self.behavior_chrono.start()
-
+        
     def step(self):
         if not self.has_begin:
             self.begin()
 
         self.world.send_info(self.get_name(), "/chrono", [ self.behavior_chrono.elapsed(), self.high_reward_chrono.elapsed() ])
 
+        # if self.behavior_chrono.has_passed(self.stop_profile['max_duration']):
+        #     self.success = False
+
         if self.is_stopped():
             self.world.send_info(self.get_name(), "/stopped", self.success)
-            if self.success:
-                self.world.display_reward(self, 1.0)
-            else:
-                self.world.display_reward(self, 0.0)
-            self.world.sleep(5.0)
+            if np.random.random() < 0.2:
+                self.world.set_motors(self, 0, utils.lerp(np.random.random(), -1, 1))
+            self.world.sleep(1.0)
 
         else:
             # If the robot is within virtual fence: Perform standard RL loop.
@@ -162,7 +179,10 @@ class Agent:
                 self.recentering = False
                 self.step_rl()
             else:
-                self.recentering = True
+                if not self.recentering:
+                    self.world.display_recenter(self)
+                    self.recentering = True
+                    self.prev_action = None
                 self.step_recenter()
                 self.high_reward_chrono.stop()
 
@@ -178,72 +198,78 @@ class Agent:
         # Get current state.
         state = self.get_state()
 
-        # Adjust state model.
-        state_model_input = np.concatenate((self.prev_state[0], to_categorical(self.prev_action, self.n_actions)))
-        state_model_input = np.reshape(state_model_input, (1, self.n_inputs_forward))
+        r = 0
 
-        self.model_forward.fit(state_model_input, state, epochs=1, verbose=0)
+        if self.prev_action is None:
+            self.world.display_reward(self, 0.5)
 
-        # Calculate intrinsic reward (curiosity).
-        predicted_state = self.model_forward.predict(state_model_input)
-        prediction_error = np.linalg.norm(state - predicted_state)
-
-        # Intrinsic reward ie. curiosity.
-        r_int = prediction_error
-
-        # Extrinsic reward.
-        r_ext = reward.reward(self.world, self, self.extrinsic_rewards)
-
-        # Compute total reward (intrinsic and extrinsic).
-        r = self.curiosity_weight * r_int + (1 - self.curiosity_weight) * r_ext
-        self.min_r = min(self.min_r, r)
-        self.max_r = max(self.max_r, r)
-        scaled_r = utils.inv_lerp(r, self.min_r, self.max_r)
-        self.world.display(self, state, r, scaled_r)
-
-        # Compute average reward.
-        r_array = np.array([ r_int, r_ext, r ])
-        if self.avg_r is None:
-            self.avg_r = r_array
         else:
-            self.avg_r -= (1-self.gamma) * (self.avg_r - r_array)
+            # Calculate reward of previous step.
+            state_model_input = np.concatenate((self.prev_state[0], to_categorical(self.prev_action, self.n_actions)))
+            state_model_input = np.reshape(state_model_input, (1, self.n_inputs_forward))
 
-        # Send reward information for data visualization.
-        self.world.send_info(self.get_name(), "/reward", [r, self.avg_r[2]])
+            self.model_forward.fit(state_model_input, state, epochs=1, verbose=0)
 
-        # Verify stopping criteria.
-        if self.behavior_chrono.has_passed(self.stop_profile['min_duration']):
-            print("Passed min duration")
-            if not self.high_reward_chrono.is_started():
-                self.high_reward_chrono.start()
+            # Calculate intrinsic reward (curiosity).
+            predicted_state = self.model_forward.predict(state_model_input)
+            prediction_error = np.linalg.norm(state - predicted_state)
 
-            # Check stop condition: high rewards.
-            if r >= self.stop_profile['high_reward_threshold']:
-                print("High thresh")
-                if self.high_reward_chrono.has_passed(self.stop_profile['high_reward_duration']):
-                    print("Chrono passed")
-                    self.success = True
-            # Low reward.
+            # Intrinsic reward ie. curiosity.
+            r_int = prediction_error
+
+            # Extrinsic reward.
+            r_ext = reward.reward(self.world, self, self.extrinsic_rewards)
+
+            # Compute total reward (intrinsic and extrinsic).
+            r = self.curiosity_weight * r_int + (1 - self.curiosity_weight) * r_ext
+            self.min_r = min(self.min_r, r)
+            self.max_r = max(self.max_r, r)
+            scaled_r = utils.inv_lerp(r, self.min_r, self.max_r)
+            self.world.display(self, state, r, scaled_r)
+
+            # Compute average reward.
+            r_array = np.array([ r_int, r_ext, r ])
+            if self.avg_r is None:
+                self.avg_r = r_array
             else:
-                # Restart chronometer.
-                self.high_reward_chrono.start()
-                if self.behavior_chrono.has_passed(self.stop_profile['max_duration']):
-                    self.success = False
+                self.avg_r -= (1-self.gamma) * (self.avg_r - r_array)
 
-        if self.is_stopped():
-            self.behavior_chrono.stop()
-            self.high_reward_chrono.stop()
-            return
+            # Send reward information for data visualization.
+            self.world.send_info(self.get_name(), "/reward", [r, self.avg_r[2]])
 
-        # print("({}, {}) => {}".format(self.prev_state, self.action_manager.get_action(self.prev_action), r))
-        n_iter_log = 10
-        if self.iter % n_iter_log == 0:
-            print("t={} average reward = (int: {} ext: {} total: {})".format(iter, self.avg_r[0], self.avg_r[1], self.avg_r[2]))
-            print("state = ", state)
-#            print("counts = ", count_action / sum(count_action))
-            self.avg_r = r_array # reset
-            print("MODEL: ")
-            print(self.model_q)
+            # Verify stopping criteria.
+            if self.behavior_chrono.has_passed(self.stop_profile['min_duration']):
+                print("Passed min duration")
+                if not self.high_reward_chrono.is_started():
+                    self.high_reward_chrono.start()
+
+                # Check stop condition: high rewards.
+                if r >= self.stop_profile['high_reward_threshold']:
+                    print("High thresh")
+                    if self.high_reward_chrono.has_passed(self.stop_profile['high_reward_duration']):
+                        print("Chrono passed")
+                        self.success = True
+                # Low reward.
+                else:
+                    # Restart chronometer.
+                    self.high_reward_chrono.start()
+                    if self.behavior_chrono.has_passed(self.stop_profile['max_duration']):
+                        self.success = False
+
+            if self.is_stopped():
+                self.behavior_chrono.stop()
+                self.high_reward_chrono.stop()
+                self.world.display_stop(self, self.success)
+                return
+
+            # print("({}, {}) => {}".format(self.prev_state, self.action_manager.get_action(self.prev_action), r))
+            n_iter_log = 10
+            if self.iter % n_iter_log == 0:
+                print("t={} average reward = (int: {} ext: {} total: {})".format(iter, self.avg_r[0], self.avg_r[1], self.avg_r[2]))
+                print("state = ", state)
+                self.avg_r = r_array # reset
+                print("MODEL: ")
+                print(self.model_q)
 
         # Gather predictions.
         if self.use_ann:
@@ -267,7 +293,12 @@ class Agent:
             else:
                 action = choose_action_softmax(prediction, self.temperature)
 
-        #count_action[action] += 1
+        else: # dummy
+            action = 0
+
+        # Perform action in world.
+        print("Chosen action: {}".format(action))
+        self.world.do_action(self, action, self.action_manager)
 
         # Perform one step.
         if self.use_sarsa:
@@ -275,19 +306,17 @@ class Agent:
         else:
             target = r + self.gamma * np.max(prediction)
 
-        # Perform one step.
-        # Source: https://keon.io/deep-q-learning/
-        # learned value = r + gamma * max_a Q(s_{t+1}, a)
-        if self.use_ann:
-            target_vec = self.model_q.predict(state_to_tile_coding(self.prev_state, self.tile_coding))[0] # Q(s_t, a_t)
-            target_vec[self.prev_action] = target
-            self.model_q.fit(state_to_tile_coding(self.prev_state, self.tile_coding), target_vec.reshape(-1, self.action_manager.n_actions()), epochs=1, verbose=0)
-        else:
-            target_vec = q_table_predict(self.model_q, self.prev_state, self.tile_coding)
-            q_table_update(self.model_q, self.tile_coding, self.prev_state, self.prev_action, target, self.learning_rate)
-
-        # Perform action in world.
-        self.world.do_action(self, action, self.action_manager)
+        if self.prev_action != None:
+            # Perform one step.
+            # Source: https://keon.io/deep-q-learning/
+            # learned value = r + gamma * max_a Q(s_{t+1}, a)
+            if self.use_ann:
+                target_vec = self.model_q.predict(state_to_tile_coding(self.prev_state, self.tile_coding))[0] # Q(s_t, a_t)
+                target_vec[self.prev_action] = target
+                self.model_q.fit(state_to_tile_coding(self.prev_state, self.tile_coding), target_vec.reshape(-1, self.action_manager.n_actions()), epochs=1, verbose=0)
+            else:
+                target_vec = q_table_predict(self.model_q, self.prev_state, self.tile_coding)
+                q_table_update(self.model_q, self.tile_coding, self.prev_state, self.prev_action, target, self.learning_rate)
 
         # Save action and state for next iteration.
         self.prev_action = action
