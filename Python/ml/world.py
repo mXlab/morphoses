@@ -331,7 +331,6 @@ class World:
     def is_valid(self, agent, variable):
         # Process variables as list.
         if isinstance(variable, list):
-            values = []
             valid = True
             for v in variable:
                 if not self.is_valid(agent, v):
