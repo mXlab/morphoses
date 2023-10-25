@@ -1,0 +1,12 @@
+// Network configuration.
+#define WIFI_SSID "the_ssid"
+#define WIFI_PASSWORD "the_password"
+
+// Change according to robot ID.
+#define ROBOT_ID 1
+
+// Interval between each sending of data (in milliseconds).
+#define SEND_DATA_INTERVAL 100
+
+// Set to true to enable debugging outputs on the serial (consumes power).
+#define DEBUG_MODE true
