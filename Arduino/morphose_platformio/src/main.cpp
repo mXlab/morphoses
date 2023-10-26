@@ -36,6 +36,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ *  /communications
+ *   | osc
+ *   | network
+ *   | mqtt
+ *   | ota
+ *  
+ *  /hardware 
+ *   |imu
+ *   |motor
+ *   |pixel
+ *   |energy (rename motor)
+ * 
+ *  /led
+ *   |colors
+ *   |animations
+ */
+
+
+
+
 // Includes /////////////////////////////////////
 
 // Configuration file.
@@ -43,20 +64,28 @@
 #include <PlaquetteLib.h>
 using namespace pq;
 
+#include <ArduinoLog.h>
+//TODO : Merge config and global or move to Morphose.h
 #include "Config.h"
 #include "Globals.h"
-#include "Utils.h"
-#include "OTA.h"
-#include "Comm.h"
-#include "Pixels.h"
-#include "Animation.h"
-#include "MQTT.h"
-#include "IMU.h"
-#include "Engine.h"
-#include "Navigation.h"
-#include "Energy.h"
+#include "Morphose.h"
 
-#include "OSCCallbacks.h"
+#include "Utils.h"
+#include "communications/OTA.h"
+#include "Comm.h"
+#include "communications/Network.h"
+#include "communications/osc.h"
+#include "communications/MQTT.h"
+
+
+// #include "Pixels.h"
+// #include "Animation.h"
+// #include "IMU.h"
+// #include "Engine.h"
+// #include "Navigation.h"
+// #include "Energy.h"
+
+//#include "OSCCallbacks.h"
 
 #include <Chrono.h>
 
@@ -72,43 +101,44 @@ Chrono sendDataChrono;
 
 // --------------- HELPERS ----------------
 
-void sendData() {
-  processIMUs();
-  processNavigation();
-  processEngine();
+// void sendData() {
+//   processIMUs();
+//   processNavigation();
+//   processEngine();
 
-  sendNavigationInfo();
-  sendEngineInfo();
+//   sendNavigationInfo();
+//   sendEngineInfo();
   
-  // Send OSC bundle.
-  sendOscBundle();
-}
+//   // Send OSC bundle.
+//   sendOscBundle();
+// }
 
 void processMessage() {
   
-  OSCMessage messIn;
-  IPAddress remote;
-  if (!receiveMessage(messIn, &remote))
-    return;
+  // OSCMessage messIn;
+  // IPAddress remote;
+  // if (!receiveMessage(messIn, &remote))
+  //   return;
 
-  // Print message.
-  if (DEBUG_MODE) {
-    Serial.println(F("OSC message received:"));
-    messIn.send(Serial);
-  }
+  // // Print message.
+  // if (DEBUG_MODE) {
+  //   Serial.println(F("OSC message received:"));
+  //   messIn.send(Serial);
+  // }
 
-  using namespace osc_callback;
+  // using namespace osc_callback;
+  // if (messIn.dispatch("/bonjour",bonjour));
+  // if      (messIn.dispatch("/speed",   speed));
+  // else if (messIn.dispatch("/steer",   steer));
+  // else if (messIn.route("/nav",  navigation));
 
-  if      (messIn.dispatch("/speed",   speed));
-  else if (messIn.dispatch("/steer",   steer));
-  else if (messIn.route("/nav",  navigation));
+  // else if (messIn.dispatch("/reboot",  reboot));
+  // else if (messIn.dispatch("/stream",  stream));
+  // else if (messIn.dispatch("/power",  power));
 
-  else if (messIn.dispatch("/reboot",  reboot));
-  else if (messIn.dispatch("/stream",  stream));
-  else if (messIn.dispatch("/power",  power));
+  // else if (messIn.route("/calib",  calibration));
+  // else if (messIn.route("/rgb", rgb));
 
-  else if (messIn.route("/calib",  calibration));
-  else if (messIn.route("/rgb", rgb));
 
 //   else if (messIn.fullMatch("/base-color")) {
 //    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
@@ -166,72 +196,104 @@ void processMessage() {
 
 void setup()
 {
+  delay(2000);
   Plaquette.begin();
 
-  // Initialize Wifi and UDP.
-  initWifi();
 
-  // Init motors.
-  initEngine();
-
-  // Check energy.
-  checkEnergy();
-
-  // Init neopixels.
-  initPixels();
-
-  // Start I2C.
-  Wire.begin();
+//TODO : MOVE TO IMU
+// // Start I2C.
+//   Wire.begin();
+//   Wire.setClock(400000); //Increase I2C data rate to 400kHz
 
   // Start serial.
   Serial.begin(115200);
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
+  Log.begin(LOG_LEVEL_VERBOSE,&Serial);
 
-  // Initialize animation system.
-  initAnimation();
+  Log.infoln(" Morphose - 2023");
+
+
+
+  // Initialize Wifi and UDP.
+
+  //initWifi();
+  network::initialize();
+
+  morphose::initialize(network::getMcuIP());
+
+  utils::debug(" OTA initialization");
+  // Initialize OTA.
+  initOTA(morphose::name); 
 
   // Initialize MQTT connection.
-  initMqtt();
-  
-  // Initialize OTA.
-  initOTA(boardName);  
+  utils::debug(" MQTT initialization");
+  mqtt::initialize();
+
+
+
+  // // Init motors.
+  // debug(" Motors initialization");
+  // initEngine();
+
+  // // Check energy.
+  // debug(" Energy initialization");
+  // checkEnergy();
+
+  // // Init neopixels.
+  // debug(" LEDS initialization");
+  // initPixels();
+
+  // // Initialize animation system.
+  // debug(" Animation initialization");
+  // initAnimation();
+
+  // debug(" IMU initialization");
+  // initIMUs(); // maybe move to setup
+
+  morphose::sayHello();
+  utils::debug("---------------- End of setup ----------------");
+
+ 
 }
 
 
 void loop()
 {
-  // Update OTA.
+
+  // Check for incoming messages.
+  // processMessage();
+
+  // // Update OTA.
   updateOTA();
 
   // Check connection status: reconnect if connection lost.
-  if (!wifiIsConnected()) {
+  if (!network::isConnected()) {
     Serial.println("Lost wifi connection");
-    initWifi();
+    network::initialize();
   }
+  osc::update();
 
   // Init IMUs if not already initialized.
-  initIMUs();
+  // initIMUs(); // maybe move to setup
 
   // Update MQTT.
-  updateMqtt();
+     mqtt::update();
 
-  // Update location system.
-  updateLocation();
+    morphose::update();
 
-  // Check for incoming messages.
-  processMessage();
 
-  // Send messages.
-  if (sendDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
-    sendData();
 
-    // Energy checkpoint to prevent damage when low 
-    checkEnergy();
+  // // Send messages.
+  // if (sendDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
+  //   //sendData();
 
-    // Restart chrono.
-    sendDataChrono.start();
-  }
+  //   // Energy checkpoint to prevent damage when low 
+  //   checkEnergy();
+
+  //   // Restart chrono.
+  //   sendDataChrono.start();
+  // }
 }
 

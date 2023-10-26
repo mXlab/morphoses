@@ -30,13 +30,13 @@ class MorphosesIMU : public BNO080 {
       // Try to connect.
       boolean isOk = begin( i2cAddress() );
       if (!isOk) {
-        Serial.println("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
+        debug("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
         blinkIndicatorLed(1000, 0.1);
       }
 
       // Connected: initialize.
       else {
-        Wire.setClock(400000); //Increase I2C data rate to 400kHz
+        //Wire.setClock(400000); //Increase I2C data rate to 400kHz
     
         // Enable rotation vector.
         enableRotationVector(IMU_SAMPLE_RATE);
@@ -137,11 +137,14 @@ MorphosesIMU imuSide(false);
 
 void initIMUs() {
   if (!imuMain.isInitialized())
+    debug("Main imu not initialized");
     imuMain.init();
   if (!imuSide.isInitialized())
+    debug("Side imu not initialized");
     imuSide.init();
 
-  sendOscBundle();
+  debug("Successfully initialized both imus");
+  //sendOscBundle(); //Why are we sending a bundle at initialization? 
 }
 
 void calibrateBeginIMUs() {
