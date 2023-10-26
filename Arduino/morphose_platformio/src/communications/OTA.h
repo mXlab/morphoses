@@ -1,3 +1,6 @@
+#ifndef MORPHOSE_OTA_H
+#define MORPHOSE_OTA_H
+
 #include <ArduinoOTA.h>
 
 void updateOTA() {
@@ -47,3 +50,5 @@ void initOTA(const char* hostname=0) {
 
   ArduinoOTA.begin();
 }
+
+#endif

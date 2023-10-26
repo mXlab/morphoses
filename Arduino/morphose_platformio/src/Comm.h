@@ -1,7 +1,11 @@
+#ifndef MORPHOSE_COMM_H
+#define MORPHOSE_COMM_H
+
 // WiFi & OSC.
 #include <Arduino.h>
 #include "Config.h"
 #include <OSCBundle.h>
+#include <OSCMessage.h>
 #include <WiFiUdp.h>
 #ifdef ARDUINO_ARCH_ESP32
 #include <WiFi.h>
@@ -10,7 +14,7 @@
 #endif
 
 // Constants ////////////////////////////////////
-#define WIFI_CONNECTION_TIMEOUT 5000
+//#define WIFI_CONNECTION_TIMEOUT 5000
 
 boolean sendOSC = true; // default
 
@@ -23,12 +27,12 @@ byte destIPs[MAX_DEST_IPS];
 int numActiveIPs = 0, lastAddedIPIndex = 0;
 
 // broadcast IP (deprecated)
-IPAddress   broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
+//IPAddress   broadcastIP(DEST_IP_0, DEST_IP_1, DEST_IP_2, 255); // broadcast
 
 // The robot ID corresponds to the 2nd digit of the 4th part of the IP address.
 int robotId;
 
-// The destination port is 8 followed by the boardID.
+// The destination port is 81 followed by the boardID.
 int destPort;
 
 // A human readable name for the board.
@@ -48,35 +52,53 @@ float getArgAsFloat(OSCMessage& msg, int index);
 /// Returns true iff argument from message is convertible to a number.
 boolean argIsNumber(OSCMessage& msg, int index);
 
-void sendOscBundleToIP(const IPAddress& ip, boolean force, int port) {
-  udp.beginPacket(ip, port);
-  if (sendOSC || force) {
-    bndl.send(udp); // send the bytes to the SLIP stream
-  }
-  udp.endPacket(); // mark the end of the OSC Packet ** keep this line** (see warning above)
-}
 
+// TODO : Move to osc
+// void send(OSCMessage &msg) {
+//   udp.beginPacket(IPAddress(192,168,0,255), LOCAL_PORT );
+//   msg.send(udp);
+//   udp.endPacket();
+//   msg.empty();
+// }
+
+
+
+//TODO : MOVE TO OSC
+// void sendOscBundleToIP(const IPAddress& ip, boolean force, int port) {
+
+//   udp.beginPacket(ip, port);
+//   if (sendOSC || force) {
+//     bndl.send(udp); // send the bytes to the SLIP stream
+//   }
+//   udp.endPacket(); // mark the end of the OSC Packet ** keep this line** (see warning above)
+// }
+
+
+
+
+//TODO MOVE TO OSC
 // Sends currently built bundle (with optional broadcasting option).
 // ** WARNING **: The beginPacket() & sendPacket() functions need to be called regularly
 // otherwise the program seems to have trouble receiving data and loses some packets. It 
 // is unclear why, but this seems to resolve the issue.
-void sendOscBundle(boolean broadcast=false, boolean force=false, int port=destPort) {
-  if (broadcast) {
-    sendOscBundleToIP(broadcastIP, force, port);
-  } 
+// void sendOscBundle(boolean broadcast=false, boolean force=false, int port=destPort) {
+//   if (broadcast) {
+//     sendOscBundleToIP(broadcastIP, force, port);
+//   } 
   
-  else {
-    // loop through registered IP addresses and send same packet to each of them
-    for (byte i = 0; i < numActiveIPs; i++) {
-      // create temporary IP address
-      IPAddress ip(DEST_IP_0, DEST_IP_1, DEST_IP_2, destIPs[i]);
+//   else {
+//     // loop through registered IP addresses and send same packet to each of them
+//     for (byte i = 0; i < numActiveIPs; i++) {
+    
+//       // create temporary IP address
+//       IPAddress ip(DEST_IP_0, DEST_IP_1, DEST_IP_2, destIPs[i]);
 
-      // begin packet
-      sendOscBundleToIP(ip, force, port);
-    }
-  }
-  bndl.empty(); // empty the bundle to free room for a new one
-}
+//       // begin packet
+//       sendOscBundleToIP(ip, force, port);
+//     }
+//   }
+//   bndl.empty(); // empty the bundle to free room for a new one
+// }
 
 
 bool receiveMessage(OSCMessage& messIn, IPAddress* returnRemoteIP=0) {
@@ -128,8 +150,11 @@ bool receiveMessage(OSCMessage& messIn, IPAddress* returnRemoteIP=0) {
         messageReceived = true;
 
         Serial.println("Message received");
-        bndl.add("/received").add(boardName).add(remote[3]);
-        sendOscBundle(false, true); // force send so as to always respond
+        
+        //commented because it prevented to add another ip adress to ip list. Sending a message before processing 
+        //received messaged replace the remoteIP for the default ip .100
+        //bndl.add("/received").add(boardName).add(remote[3]);
+        //sendOscBundle(false, true); // force send so as to always respond
 
         break;
       case BUFFER_FULL:
@@ -154,18 +179,23 @@ bool receiveMessage(OSCMessage& messIn, IPAddress* returnRemoteIP=0) {
   return messageReceived;
 }
 
+
+//TODO : Move to morphose.h
 void initBoardInfo(int id) {
   robotId = (id % 100) / 10;
   destPort = 8000 + id;
   sprintf(boardName, "robot%d", robotId); // eg. "robot1"
 }
 
-bool wifiIsConnected() {
-  return (WiFi.status() == WL_CONNECTED);
-}
+// bool wifiIsConnected() {
+//   return (WiFi.status() == WL_CONNECTED);
+// }
 
 void addDestinationIPAddress(byte ip3) {
   // Determine if the address we want to add is already registered.
+  char buff[32];
+  sprintf(buff,"ip3: %d",ip3);
+  utils::debug(buff);
   bool ipExists = false;
   for (int i = 0; i < numActiveIPs; i++) {
     // if the last byte matches
@@ -196,58 +226,68 @@ void addDestinationIPAddress(byte ip3) {
 
 
 
-void initWifi()
-{
-  // add static IP as test
-  destIPs[0] = DEST_IP_3;
-  numActiveIPs = 1;
 
-  // now start the wifi
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  // Wait for connection to complete.
+
+
+// void initWifi()
+// {
   
-  unsigned long startMillis = millis();
-  while (WiFi.status() != WL_CONNECTED && 
-         millis() - startMillis < WIFI_CONNECTION_TIMEOUT) {
-    Serial.print(".");
-    blinkIndicatorLed(500);
-  }
+//   // add static IP as test
+//   destIPs[0] = DEST_IP_3;
+//   numActiveIPs = 1;
 
-  // If still not connected, restart the board.
-  if (WiFi.status() != WL_CONNECTED) {
-    blinkIndicatorLed(100, 0.7, 20);
-    ESP.restart();
-  }
+//   // now start the wifi
+//   WiFi.mode(WIFI_STA); 
+//   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  IPAddress myIP = WiFi.localIP();
-
-  Serial.println("IP: ");
-  Serial.println(myIP);
-
-  initBoardInfo(myIP[3]);
-
-  if (!udp.begin(LOCAL_PORT)) {
-    while(1); // Loop forever if setup didn't work
-  }
-  Serial.println("Done");
-
-  //temp wifi debug
-  char buff[64];
-  Serial.printf(buff,"Wifi rssi : %d", WiFi.RSSI());
+//   // Wait for connection to complete.
   
-  // on disconnect wifi event
-  WiFiEventId_t eventID = WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info){
-        Serial.print("WiFi lost connection. Reason: ");
-        Serial.println(info.wifi_sta_disconnected.reason);
-    }, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+//   unsigned long startMillis = millis();
+//   while (WiFi.status() != WL_CONNECTED && 
+//          millis() - startMillis < WIFI_CONNECTION_TIMEOUT) {
+//     Serial.print(".");
+//     utils::blinkIndicatorLed(500);
+//   }
+
+//   // If still not connected, restart the board.
+//   if (WiFi.status() != WL_CONNECTED) {
+//     utils::blinkIndicatorLed(100, 0.7, 20);
+//     ESP.restart();
+//   }
+
+//   IPAddress myIP = WiFi.localIP();
+
+//   Serial.println("IP: ");
+//   Serial.println(myIP);
 
 
-  // Broadcast myself.
-  bndl.add("/bonjour").add(boardName);
-  sendOscBundle(true);
-}
+//   //TODO : Move to morphose
+//   initBoardInfo(myIP[3]);
+
+//   if (!udp.begin(LOCAL_PORT)) {
+//     while(1); // Loop forever if setup didn't work
+//   }
+//   Serial.println("Done");
+
+//   //temp wifi debug
+//   char buff[64];
+//   sprintf(buff,"Wifi rssi : %d" ,WiFi.RSSI() );
+//   utils::debug(buff);
+
+//   // on disconnect wifi event
+//   WiFiEventId_t eventID = WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info){
+//         Serial.print("WiFi lost connection. Reason: ");
+//         Serial.println(info.wifi_sta_disconnected.reason);
+//     }, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+
+
+
+//   //TODO : move to morphose maybe
+//   // Broadcast myself.
+//   bndl.add("/bonjour").add(boardName);
+//   sendOscBundle(true);
+// }
 
 
 bool getArgAsBool(OSCMessage& msg, int index) {
@@ -285,3 +325,6 @@ float getArgAsFloat(OSCMessage& msg, int index) {
 boolean argIsNumber(OSCMessage& msg, int index) {
   return (msg.isInt(index) || msg.isFloat(index) || msg.isDouble(index) || msg.isBoolean(index));
 }
+
+
+#endif
