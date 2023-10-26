@@ -3,21 +3,54 @@ import utils
 from chrono import Chrono
 
 class ActionManager:
-    def __init__(self, agent, world, action_profile, time_step=1, time_balance=0, navigation_mode=False):
+    
+    def __init__(self, agent, world, action_profile, time_step=1, time_balance=0, navigation_mode=False, flash_mode=False):
         self.agent = agent
         self.world = world
         self.action_set = create_action_set(action_profile)
         self.time_step = time_step
         self.time_balance = time_balance
+
         self.navigation_mode = navigation_mode
+        self.flash_mode = flash_mode
+
         self.chrono = Chrono(world)
         self.state = 0
 
-    def n_actions(self):
-        return self.action_set.n_actions()
+        self.last_action_index = None
 
-    def start_action(self, i):
-        action = self.action_set.get_action(i)
+    def n_actions(self):
+        if self.flash_mode:
+            return 2
+        else:
+            return self.action_set.n_actions()
+
+    def start_action(self, action_index):
+
+        # Flash mode admits only two actions: flash (1) or no flash (0).
+        if self.flash_mode:
+            print("Flash mode =================")
+            print("Last action = {}".format(self.last_action_index))
+            # Flash: change action.
+            if action_index == 1:
+                print("Flashing!")
+                # Pick a random action in set.
+                real_action_index = self.action_set.random_action_index(exclude=self.last_action_index)
+            
+            # No flash: just keep doing previous action.
+            else:
+                print("Not flashing!")
+                if self.last_action_index is None: # First action.
+                    real_action_index = self.action_set.random_action_index()
+                else:
+                    real_action_index = self.last_action_index
+
+            # Set action_index to new value for the rest of the processing.
+            action_index = real_action_index
+            print("New action = {}".format(action_index))
+        
+        # Get actual action from its index.
+        action = self.action_set.get_action(action_index)
 
         speed = float(np.clip(action[0], -self.agent.get_max_speed(), self.agent.get_max_speed()))
 
@@ -31,6 +64,8 @@ class ActionManager:
         self.chrono.start()
 
         self.state = 0
+
+        self.last_action_index = action_index
 
     def end_action(self):
         if self.navigation_mode:
@@ -73,6 +108,20 @@ class ActionSet:
 
     def get_action(self, i):
         return self.actions[i]
+
+    def random_action_index(self, exclude=[]):
+        if exclude is None:
+            exclude = []
+        elif isinstance(exclude, int):
+            exclude = [exclude]
+        i = np.random.randint(0, self.n_actions())
+        while i in exclude:
+            i = np.random.randint(0, self.n_actions())
+        return i
+    
+    def random_action(self, exclude=[]):
+        return self.get_action(self.random_action_index(exclude))
+    
 
 def create_action_set(action_profile):
     if action_profile == 'grid':
@@ -140,6 +189,18 @@ def create_action_set(action_profile):
                       [          [+1,  0],
                        [ 0, -1], [ 0,  -0.], [ 0, +1],
                                  [-1, 0]])
+
+    elif action_profile == 'tilt':
+        return ActionSet(
+                      [         
+                       [ 0, -1],             [ 0, +1]
+                                        ])
+
+    elif action_profile == 'line':
+        return ActionSet(
+                      [         
+                       [ 0, -1],  [0, 0],    [ 0, +1]
+                                        ])
 
     elif action_profile == 'still':
         return ActionSet([ [0, 0]] )

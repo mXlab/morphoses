@@ -152,3 +152,69 @@ def reward_get_away(world, agent, target):
             reward = -100
 
     return reward / 100.0
+
+# Synchronize with other agents.
+def reward_simple_sync(world, agent):
+    # Get flash information.
+    flash = world.get(agent, 'action', standardized=False)
+    steps_since_flash = world.get(agent, 'steps_since_flash')
+    steps_since_flash_absolute = world.get(agent, 'steps_since_flash', standardized=False)
+    last_action = world.get(agent, 'last_action', standardized=False)
+    action = world.get(agent, 'action', standardized=False)
+    timer = world.get(agent, 'timer')
+
+    flash_tolerance = 0.1
+    flash_timeout = 0.5
+
+    # Initialize reward.
+    reward = 0
+
+    # If you are flashing.
+    if flash:
+        if timer <= flash_tolerance:
+            reward += 100
+        # elif timer <= 2*flash_tolerance:
+        #     reward += 10
+        else:
+            reward -= 10
+    
+    print("** flash *** agent={} f={} steps={}({}) last={} curr={} timer={} ==> reward={}".format(agent.get_name(), flash, steps_since_flash_absolute, steps_since_flash, last_action, action, timer, reward))
+
+    return reward / 100.0
+
+
+# Synchronize with other agents.
+def reward_simple_sync2(world, agent):
+    # Get flash information.
+    flash = world.get(agent, 'flash')
+    steps_since_flash = world.get(agent, 'steps_since_flash')
+    steps_since_flash_absolute = world.get(agent, 'steps_since_flash', standardized=False)
+    last_action = world.get(agent, 'last_action', standardized=False)
+    action = world.get(agent, 'action', standardized=False)
+    timer = world.get(agent, 'timer')
+
+    flash_tolerance = 0.1
+    flash_timeout = 0.5
+
+    # Initialize reward.
+    reward = 0
+
+    # If you are flashing.
+    if flash:
+        if last_action == 1: # was already flashing
+            reward -= 10
+        else:
+            if timer <= flash_tolerance:
+                reward += 100
+            elif timer <= 2*flash_tolerance:
+                reward += 10
+            else:
+                reward -= 10
+    
+    print("** flash *** agent={} f={} steps={}({}) last={} curr={} timer={} ==> reward={}".format(agent.get_name(), flash, steps_since_flash_absolute, steps_since_flash, last_action, action, timer, reward))
+
+    return reward / 100.0
+
+
+
+

@@ -46,7 +46,8 @@ class Agent:
         time_step = np.max(kwargs.get('time_step', 0), 0)
         time_balance = np.max(kwargs.get('time_balance', 0), 0)
         navigation_mode = kwargs.get('navigation_mode', False)
-        self.action_manager = action.ActionManager(self, world, action_profile, time_step, time_balance, navigation_mode)
+        flash_mode = kwargs.get('flash_mode', False)
+        self.action_manager = action.ActionManager(self, world, action_profile, time_step, time_balance, navigation_mode, flash_mode)
         self.n_actions = self.action_manager.n_actions()
 
         stop_profile = kwargs.get('stop_profile', {})
