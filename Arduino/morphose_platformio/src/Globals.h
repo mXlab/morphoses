@@ -27,6 +27,7 @@ static char ROBOT_RTLS_MQTT_ADDRESS[N_ROBOTS][32]; // Internal use to keep full 
 
 static char ROBOT_CUSTOM_MQTT_ADDRESS[32];
 
+
 // Neopixel settings.
 #define NUM_PIXELS 32
 #define NUM_PIXELS_PER_BLOCK 8

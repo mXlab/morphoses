@@ -78,14 +78,19 @@ using namespace pq;
 #include "communications/MQTT.h"
 
 
-// #include "Pixels.h"
-// #include "Animation.h"
+#include "Leds/Pixels.h"
+#include "Leds/Animation.h"
+
+
+// hardware
 // #include "IMU.h"
 // #include "Engine.h"
 // #include "Navigation.h"
 // #include "Energy.h"
 
+//TODO : MAYBE REMOVE THIS INCLUDE
 //#include "OSCCallbacks.h"
+
 
 #include <Chrono.h>
 
@@ -245,9 +250,9 @@ void setup()
   // debug(" LEDS initialization");
   // initPixels();
 
-  // // Initialize animation system.
-  // debug(" Animation initialization");
-  // initAnimation();
+  // Initialize animation system.
+  utils::debug(" Animation initialization");
+  animations::initialize();
 
   // debug(" IMU initialization");
   // initIMUs(); // maybe move to setup

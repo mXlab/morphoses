@@ -2,6 +2,8 @@
 #include "Morphose.h"
 #include <ArduinoLog.h>
 #include "osc.h"
+#include "Leds/Animation.h"
+#include "Leds/Pixels.h"
 
 namespace mqtt {
 
@@ -21,6 +23,9 @@ Adafruit_MQTT_Subscribe* mqttAnimationData;
 
 Vec2f robotPositions[N_ROBOTS];
 Vec2f newPosition;
+
+int baseColor[3];
+int altColor[3];
 
 void initialize() {
 
@@ -136,6 +141,34 @@ bool onMqttLocation(int robot, char* data)
     return true;
   }
   return false;
+}
+
+void onMqttAnimation(char* data)
+{
+  // Parse location.
+  JSONVar animationData = JSON.parse(data);
+  JSONVar _baseColor = animationData["base"];
+  JSONVar _altColor  = animationData["alt"];
+  
+
+//TODO : Works for now. Find a way to wrap all in function and pass data without to much redundency. Maybe pass pointer to json data
+  if (animations::lockMutex()) {
+    animations::prevAnimation.copyFrom(animations::animation); // save animation
+    
+    animations::animation.setBaseColor(int(baseColor[0]), int(baseColor[1]), int(baseColor[2]));
+    animations::animation.setAltColor (int(altColor[0]),  int(altColor[1]),  int(altColor[2]));
+    animations::animation.setNoise(( float)  double(animationData["noise"]));
+    animations::animation.setPeriod((float) double(animationData["period"]));
+    animations::animation.setType( (AnimationType)int(animationData["type"]) );
+    animations::animation.setRegion( (pixels::PixelRegion)int(animationData["region"]) );
+
+  //TODO: Decide if keep in code
+//    transitionTimer.duration(double(animationData["transition"]));
+
+    animations::transitionTimer.start(); // start transition
+    animations::unlockMutex();
+  }
+
 }
 
 
