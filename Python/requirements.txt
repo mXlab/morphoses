@@ -15,7 +15,7 @@ Markdown==3.0.1
 mccabe==0.6.1
 mock==2.0.0
 mpmath==1.1.0
-numpy==1.16.0
+numpy==1.22.0
 osc4py3==1.0.8
 paho-mqtt==1.5.0
 pandas==0.24.1
