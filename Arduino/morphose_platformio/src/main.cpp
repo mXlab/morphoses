@@ -78,8 +78,8 @@ using namespace pq;
 #include "communications/MQTT.h"
 
 
-#include "Leds/Pixels.h"
-#include "Leds/Animation.h"
+#include "lights/Pixels.h"
+#include "lights/Animation.h"
 
 
 // hardware

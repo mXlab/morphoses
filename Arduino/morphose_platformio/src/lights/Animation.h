@@ -1,8 +1,8 @@
 #ifndef ANIMATION_H
 #define ANIMATION_H
 
-#include "Leds/Color.h"
-#include "Leds/Pixels.h"
+#include "lights/Color.h"
+#include "lights/Pixels.h"
 #include "pq_trig8.h"
 
 namespace animations {

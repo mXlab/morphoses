@@ -2,8 +2,8 @@
 #include "Morphose.h"
 #include <ArduinoLog.h>
 #include "osc.h"
-#include "Leds/Animation.h"
-#include "Leds/Pixels.h"
+#include "lights/Animation.h"
+#include "lights/Pixels.h"
 
 namespace mqtt {
 
