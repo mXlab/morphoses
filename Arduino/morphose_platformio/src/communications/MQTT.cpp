@@ -153,19 +153,19 @@ void onMqttAnimation(char* data)
 
 //TODO : Works for now. Find a way to wrap all in function and pass data without to much redundency. Maybe pass pointer to json data
   if (animations::lockMutex()) {
-    animations::prevAnimation.copyFrom(animations::animation); // save animation
+    animations::previousAnimation().copyFrom(animations::currentAnimation()); // save animation
     
-    animations::animation.setBaseColor(int(baseColor[0]), int(baseColor[1]), int(baseColor[2]));
-    animations::animation.setAltColor (int(altColor[0]),  int(altColor[1]),  int(altColor[2]));
-    animations::animation.setNoise(( float)  double(animationData["noise"]));
-    animations::animation.setPeriod((float) double(animationData["period"]));
-    animations::animation.setType( (AnimationType)int(animationData["type"]) );
-    animations::animation.setRegion( (pixels::PixelRegion)int(animationData["region"]) );
+    animations::currentAnimation().setBaseColor(int(baseColor[0]), int(baseColor[1]), int(baseColor[2]));
+    animations::currentAnimation().setAltColor (int(altColor[0]),  int(altColor[1]),  int(altColor[2]));
+    animations::currentAnimation().setNoise(( float)  double(animationData["noise"]));
+    animations::currentAnimation().setPeriod((float) double(animationData["period"]));
+    animations::currentAnimation().setType( (animations::AnimationType)int(animationData["type"]) );
+    animations::currentAnimation().setRegion( (pixels::Region)int(animationData["region"]) );
 
   //TODO: Decide if keep in code
 //    transitionTimer.duration(double(animationData["transition"]));
 
-    animations::transitionTimer.start(); // start transition
+    animations::beginTransition(); // start transition
     animations::unlockMutex();
   }
 

@@ -1,80 +1,41 @@
-#ifndef MORPHOSE_PIXEL_H
-#define MORPHOSE_PIXEL_H
+#ifndef MORPHOSES_PIXELS_H
+#define MORPHOSES_PIXELS_H
 
-#include <Adafruit_NeoPixel.h>
 #include <Globals.h>
 
-// NEOPIXELs parameters ************************************
+namespace pixels {
 
-// Which pin on the Arduino is connected to the NeoPixels?
-#define PIXELS_PIN 13
-
-namespace pixels{
-
-
-extern Adafruit_NeoPixel pixels;
-//**************************************************************
-
-enum PixelRegion {
+enum Region {
   ALL = 0,
   TOP = 1,
   BOTTOM = 2
 };
 
-struct PixelIterator {
-  PixelRegion region;
-  int nextPixel;
-  int endPixel;
+// Function declarations
+void init();
 
-  PixelIterator(PixelRegion r=ALL) : region(r) {
-    nextPixel = 0;
-    int nPixels = pixels.numPixels();
-    if (region == TOP) {
-      nPixels = nPixels * 3 / 4;
-    }
-    else if (region == BOTTOM) {
-      nextPixel = nPixels * 3 / 4;
-      nPixels /= 4;
-    }
+// Set one pixel.
+void set(int i, int r, int g, int b, int w=0);
 
- 
-    endPixel = nextPixel + nPixels;
-  }
+// Set all pixels.
+void setAll(int r, int g, int b, int w=0);
 
-  bool hasNext() const { return nextPixel < endPixel; }
-  int  next() { return nextPixel++; }
-};
+// Clear all pixels.
+void clear();
 
-extern PixelIterator currentRegionIterator;
-void initPixels() ;
+// Get number of pixels.
+int numPixels();
 
-// Sets one pixel.
-void setPixel(int i, int r, int g, int b, int w=0);
+// Display all pixels.
+void display();
 
+// Returns true iff LED i is inside given region.
+bool insideRegion(int i, Region region);
 
-// Sets all pixels.
-void setPixels(int r, int g, int b, int w=0);
+// Set the color of a region.
+void setRegion(Region region, int r, int g, int b, int w=0);
 
-
-void clearPixels() ;
-
-
-
-
-void beginPixelWrite(PixelRegion region);
-bool hasNextPixelWrite();
-bool nextPixelWrite(int r, int g, int b, int w=0) ;
-
-void endPixelWrite();
-
-int pixelIsInsideRegion(int i, PixelRegion region);
-
-// Sets pixels in a given region.
-void setPixelsRegion(PixelRegion region, int r, int g, int b, int w=0) ;
-
-
-
-}//namespace pixels
+} //namespace pixels
 
 
 #endif

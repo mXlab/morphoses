@@ -1,14 +1,88 @@
-#include "Leds/Animation.h"
-using namespace pq;
+#include "Animation.h"
 
-namespace animations{
-
-Timer transitionTimer(1.0f);
-Animation animation;
-Animation prevAnimation;
+namespace animations {
 
 TaskHandle_t taskAnimation;
 SemaphoreHandle_t animationMutex = NULL;
+
+// Current and previous animations.
+Animation current;
+Animation previous;
+
+
+pq::Timer transitionTimer(1.0f);
+
+// Constructor to initialize properties
+Animation::Animation() : region(pixels::ALL), type(FULL), period(1), isRgb(true), noise(0), osc(1.0f) {}
+
+// Copy properties from another Animation object
+void Animation::copyFrom(const Animation& o) {
+    region = o.region;
+    type = o.type;
+    period = o.period;
+    isRgb = o.isRgb;
+    noise = o.noise;
+    baseColor = o.baseColor;
+    altColor = o.altColor;
+    osc.period(period);
+}
+
+// Get color for a specific pixel based on current animation settings
+Color Animation::getColor(int i) {
+    // Return black if pixel is not in the specified region
+    if (!pixels::insideRegion(i, region))
+        return Color();
+
+    float offset = 0;
+    // Calculate offset for SIDE type animation
+    if (type == SIDE)
+        offset = i / (float)NUM_PIXELS_PER_BLOCK;
+
+    // Interpolate color based on base and alternative colors
+    return Color::lerp(baseColor, altColor, (osc.shiftBy(offset) + pq::randomFloat(-noise, +noise)));
+}
+
+// Set the base color
+void Animation::setBaseColor(int r, int g, int b) {
+    baseColor.setRgb(r, g, b);
+}
+
+// Set the alternative color
+void Animation::setAltColor(int r, int g, int b) {
+    altColor.setRgb(r, g, b);
+}
+
+// Set the noise level
+void Animation::setNoise(float noise_) {
+    noise = constrain(noise_, 0, 1);
+}
+
+// Set the type of animation (FULL, SIDE, CENTER)
+void Animation::setType(AnimationType type_) {
+    type = type_;
+}
+
+// Set the period for the oscillation
+void Animation::setPeriod(float period_) {
+    osc.period(period_);
+}
+
+// Set the region of pixels to be affected by the animation
+void Animation::setRegion(pixels::Region region_) {
+    region = region_;
+}
+
+Animation& currentAnimation() {
+  return current;
+}
+
+Animation& previousAnimation() {
+  return previous;
+}
+
+void beginTransition() {
+  transitionTimer.start();
+}
 
 bool lockMutex() {
   return (xSemaphoreTake (animationMutex, portMAX_DELAY));
@@ -24,54 +98,58 @@ void initialize() {
 
   // Create task.
   xTaskCreatePinnedToCore(
-    runAnimation, /* Function to implement the task */
-    "Animation", /* Name of the task */
-    2048,  /* Stack size in words */
-    NULL,  /* Task input parameter */
-    0,  /* Priority of the task */
-    &taskAnimation,  /* Task handle. */
-    0); /* Core where the task should run */  
+    run,   // Function to implement the task
+    "Animation",    // Name of the task
+    2048,           // Stack size in words
+    NULL,           // Task input parameter
+    0,              // Priority of the task
+    &taskAnimation, // Task handle.
+    0);             // Core where the task should run
 }
 
+void update() {
+  // Clear all pixels.
+  pixels::clear();
 
-
-//TODO : RENAME UPDATE LED AND MOVE TO PIXEL
-void updateAnimation() {
-  //
-  pixels::pixels.clear();
-
-  for (int i=0; i<pixels::pixels.numPixels(); i++) {
+  // Iterate over all pixels.
+  pixels::numPixels();
+  for (int i=0; i<pixels::numPixels(); i++) {
 
     // Get animation color.
-    Color color = animation.getColor(i);
+    Color color = current.getColor(i);
 
     // If in transition: Mix with previous color.
     if (transitionTimer.isStarted() && !transitionTimer.isFinished()) {
-      color = Color::lerp( prevAnimation.getColor(i), color, transitionTimer );
+      color = Color::lerp( previous.getColor(i), color, transitionTimer );
     }
 
     // Set pixel.
-    pixels::pixels.setPixelColor(i, color.r(), color.g(), color.b());
+    pixels::set(i, color.r(), color.g(), color.b());
   }
 }
 
-void displayAnimation() {
-  pixels::pixels.show();
+void display() {
+  pixels::display();
 }
 
-void runAnimation(void *parameters) {
+void run(void *parameters) {
+  // Infinite loop.
   for (;;) {
+
+    // Wait for mutex.
     if (lockMutex()) {
       
-      Plaquette.step();
-      updateAnimation();
+      // Update animation.
+      pq::Plaquette.step();
+      update();
       
+      // Unlock mutex.
       unlockMutex();
       
-      displayAnimation();
+      // Display animation frame.
+      display();
     }
   }
 }
 
-
-}//namespace animations
+}

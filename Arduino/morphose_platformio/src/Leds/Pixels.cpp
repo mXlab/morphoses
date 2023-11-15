@@ -1,19 +1,21 @@
 #include "Pixels.h"
+#include <Adafruit_NeoPixel.h>
 
-namespace pixels{
+// Which pin on the Arduino is connected to the NeoPixels.
+#define PIXELS_PIN 13
 
+namespace pixels {
+
+// The neopixel strip instance.
 Adafruit_NeoPixel pixels(NUM_PIXELS, PIXELS_PIN, PIXELS_TYPE);
-//**************************************************************
-PixelIterator currentRegionIterator;
 
-
-void initPixels() {
+void init() {
   // INITIALIZE NeoPixel strip object (REQUIRED)  
   pixels.begin(); 
 }
 
 // Sets one pixel.
-void setPixel(int i, int r, int g, int b, int w) {
+void set(int i, int r, int g, int b, int w) {
   pixels.setPixelColor(i, pixels.Color(r, g, b, w));
 
 //  portDISABLE_INTERRUPTS();  
@@ -23,7 +25,7 @@ void setPixel(int i, int r, int g, int b, int w) {
 }
 
 // Sets all pixels.
-void setPixels(int r, int g, int b, int w) {
+void setAll(int r, int g, int b, int w) {
   // Set all pixel colors to 'off'
   pixels.clear();
 
@@ -37,19 +39,54 @@ void setPixels(int r, int g, int b, int w) {
 //  portENABLE_INTERRUPTS();
 }
 
-void clearPixels() {
+void clear() {
   pixels.clear();
 }
 
+int numPixels() {
+  return pixels.numPixels();
+}
 
+void display() {
+  pixels.show();
+}
 
+struct PixelIterator {
+  Region region;
+  int nextPixel;
+  int endPixel;
 
-void beginPixelWrite(PixelRegion region) {
+  // Constructor.
+  PixelIterator(Region r=ALL) : region(r) {
+    nextPixel = 0;
+    int nPixels = pixels.numPixels();
+    if (region == TOP) {
+      nPixels = nPixels * 3 / 4;
+    }
+    else if (region == BOTTOM) {
+      nextPixel = nPixels * 3 / 4;
+      nPixels /= 4;
+    }
+
+    endPixel = nextPixel + nPixels;
+  }
+
+  // Iterator methods.
+  bool hasNext() const { return nextPixel < endPixel; }
+  int  next() { return nextPixel++; }
+};
+
+// Iterator for current region.
+PixelIterator currentRegionIterator;
+
+void beginPixelWrite(Region region) {
   currentRegionIterator = PixelIterator(region);
 }
 
 bool hasNextPixelWrite() { return currentRegionIterator.hasNext(); }
+
 bool nextPixelWrite(int r, int g, int b, int w) {
+  // Set pixel color for next pixel in region.
   if (currentRegionIterator.hasNext()) {
     pixels.setPixelColor(currentRegionIterator.next(), pixels.Color(r, g, b, w));
     return true;
@@ -62,10 +99,12 @@ void endPixelWrite() {
   pixels.show();
 }
 
-int pixelIsInsideRegion(int i, PixelRegion region) {
+bool insideRegion(int i, Region region) {
+  // Verify index is in range.
   if (i < 0 || i >= pixels.numPixels())
     return false;
   
+  // Verify if index is in region.
   if (region == ALL)
     return true;
   else if (region == TOP)
@@ -75,10 +114,11 @@ int pixelIsInsideRegion(int i, PixelRegion region) {
 }
 
 // Sets pixels in a given region.
-void setPixelsRegion(pixels::PixelRegion region, int r, int g, int b, int w) {
+void setRegion(Region region, int r, int g, int b, int w) {
   // Sets values depending on region (default values are for region == ALL).
   PixelIterator it(region);
   while (it.hasNext()) {
+    // Set pixel color for each pixel in region.
     pixels.setPixelColor(it.next(), pixels.Color(r, g, b, w));
   }
 
@@ -88,7 +128,4 @@ void setPixelsRegion(pixels::PixelRegion region, int r, int g, int b, int w) {
 //  portENABLE_INTERRUPTS();
 }
 
-
-
-
-}//namespace pixels
+} // namespace pixels

@@ -1,112 +1,88 @@
 #ifndef ANIMATION_H
 #define ANIMATION_H
 
-#include "Globals.h"
-#include "Color.h"
+#include "Leds/Color.h"
+#include "Leds/Pixels.h"
 #include "pq_trig8.h"
-#include "Pixels.h"
-#include <PlaquetteLib.h>
-using namespace pq;
 
+namespace animations {
+
+// Enum to specify the type of animation
 enum AnimationType {
   FULL,
   SIDE,
   CENTER
 };
 
-
-
+// Animation class definition
 class Animation {
   
 public:
-  Animation() : region(pixels::ALL), type(FULL), period(1), isRgb(true), noise(0), osc(1.0f) {}
+  // Constructor
+  Animation();
   
-  void copyFrom(const Animation& o) {
-    region = o.region;
-    type = o.type;
-    period = o.period;
-    isRgb = o.isRgb;
-    noise = o.noise;
-    baseColor = o.baseColor;
-    altColor = o.altColor;
-
-    osc.period(period);
-  }
+  // Copy properties from another Animation object
+  void copyFrom(const Animation& o);
   
-  Color getColor(int i) {
-    if (!pixelIsInsideRegion(i, region))
-      return Color(); // black
-
-    float offset = 0;
-    if (type == SIDE)
-      offset = i / (float)NUM_PIXELS_PER_BLOCK;
-
-    return Color::lerp(baseColor, altColor, (osc.shiftBy(offset) + randomFloat(-noise, +noise)));
-  }
+  // Get color for a specific pixel
+  Color getColor(int i);
   
-  void setBaseColor(int r, int g, int b) {
-    baseColor.setRgb(r, g, b);
-  }
+  // Set base color
+  void setBaseColor(int r, int g, int b);
 
-  void setAltColor(int r, int g, int b) {
-    altColor.setRgb(r, g, b);
-  }
+  // Set alternative color
+  void setAltColor(int r, int g, int b);
 
-  void setNoise(float noise_) {
-    noise = constrain(noise_, 0, 1);
-  }
+  // Set noise level
+  void setNoise(float noise_);
 
-  void setType(AnimationType type_) {
-    type = type_;
-  }
+  // Set the type of animation
+  void setType(AnimationType type_);
 
-  void setPeriod(float period_) {
-    osc.period(period_);
-  }
+  // Set period for oscillation
+  void setPeriod(float period_);
 
-  void setRegion(pixels::PixelRegion region_) {
-    region = region_;
-  }
+  // Set region of pixels to affect
+  void setRegion(pixels::Region region_);
  
 public:
-  pixels::PixelRegion   region;
-  AnimationType type;
-
-  float   period;
-  bool    isRgb;
-
-//  bool    noiseIsGlobal;
-  float   noise;
+  pixels::Region   region;    // Region of pixels affected
+  AnimationType type;      // Type of animation
+  float         period;    // Period of oscillation
+  bool          isRgb;     // Whether the color is RGB
+  float         noise;     // Noise level
   
-  Color   baseColor;
-  Color   altColor;
+  Color         baseColor; // Base color
+  Color         altColor;  // Alternative color
 
-  SineOsc osc;
+  pq::SineOsc       osc;       // Sine Oscillator object for animation
 };
 
-namespace animations{
-extern Animation animation;
-extern Animation prevAnimation;
-extern Timer transitionTimer;
+Animation& currentAnimation();
+Animation& previousAnimation();
 
-void runAnimation(void *parameters);
+// Start animation transition timer.
+void beginTransition();
 
-
+// Lock animation mutex.
 bool lockMutex();
 
+// Unlock animation mutex.
 void unlockMutex();
 
+// Initialize animation.
 void initialize();
 
+// Update animation.
 void update();
 
-void updateAnimation();
+// Display animation.
+void display();
 
-void displayAnimation();
-
-
-}//namespace animations
-
+// Task handle.
+void run(void *parameters);
 
 
-#endif
+} // namespace name
+
+#endif // ANIMATION_H
