@@ -1,37 +1,35 @@
+#include "IMU.h"
+
 #include <SparkFun_BNO080_Arduino_Library.h>
 #include <Chrono.h>
 
+#include "Config.h"
+#include "communications/osc.h"
+#include "Morphose.h"
+#include "Utils.h"
 
-class MorphosesIMU : public BNO080 {
-  private:
-    boolean _isMain;
-//    boolean _recalibrationMode;
-    boolean _initialized;
+namespace imus{
 
-    float _headingOffset;
-  
-  public:
-    MorphosesIMU(boolean isMain) : _isMain(isMain), _initialized(false), _headingOffset(0) {}
 
-    const char* name() const { return _isMain ? "main" : "side"; }
+  const char* MorphosesIMU::name() const { return _isMain ? "main" : "side"; }
 
-    // Start an IMU-specific OSC Message by calling this with appropriate sub-address. Result will be "/{main,side}/<addr>".
-    OSCMessage& oscBundle(const char* addr) {
-      char fullAddr[32];
-      sprintf(fullAddr, "/%s%s", name(), addr);
-      return bndl.add(fullAddr);
-    }
+  // Start an IMU-specific OSC Message by calling this with appropriate sub-address. Result will be "/{main,side}/<addr>".
+  OSCMessage& MorphosesIMU::oscBundle(const char* addr) {
+    char fullAddr[32];
+    sprintf(fullAddr, "/%s%s", name(), addr);
+    return osc::bundle.add(fullAddr);
+  }
 
-    uint8_t i2cAddress() const { return _isMain ? 0x4B : 0x4A; }
+    uint8_t MorphosesIMU::i2cAddress() const { return _isMain ? 0x4B : 0x4A; }
 
-    boolean isInitialized() const { return _initialized; }
+    boolean MorphosesIMU::isInitialized() const { return _initialized; }
 
-    void init() {
+    void MorphosesIMU::init() {
       // Try to connect.
       boolean isOk = begin( i2cAddress() );
       if (!isOk) {
-        debug("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
-        blinkIndicatorLed(1000, 0.1);
+        osc::debug("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
+        utils::blinkIndicatorLed(1000, 0.1);
       }
 
       // Connected: initialize.
@@ -46,16 +44,16 @@ class MorphosesIMU : public BNO080 {
       }
       
       // Add details and send.  
-      oscBundle(isOk ? "/ready" : "/error").add(boardName).add("i2c");
-      sendOscBundle();
+      oscBundle(isOk ? "/ready" : "/error").add(morphose::name).add("i2c");
+      osc::sendOscBundle();
     }
 
-    boolean process() {
+    boolean MorphosesIMU::process() {
       // Get data.
       bool available = dataAvailable();
     
       // Send data over OSC.
-      if (available && sendOSC)
+      if (available && osc::sendOSC) // flag that determines to send or not should be internal to class
       {
         oscBundle("/quat").add(getQuatI()).add(getQuatJ()).add(getQuatK()).add(getQuatReal());
         oscBundle("/rot").add((float)degrees(getRoll())).add((float)degrees(getPitch())).add((float)degrees(getYaw()));
@@ -84,21 +82,21 @@ class MorphosesIMU : public BNO080 {
       return available;
     }
 
-    void calibrateBegin() {
+    void MorphosesIMU::calibrateBegin() {
       calibrateAll();
       enableGameRotationVector(IMU_SAMPLE_RATE);
       enableMagnetometer(IMU_SAMPLE_RATE);
       oscBundle("/calibration-begin");
     }
 
-    void calibrateEnd() {
+    void MorphosesIMU::calibrateEnd() {
       endCalibration();
       enableRotationVector(IMU_SAMPLE_RATE);
       enableMagnetometer(IMU_SAMPLE_RATE);
       oscBundle("/calibration-end");
     }
 
-    void calibrateSave() {
+    void MorphosesIMU::calibrateSave() {
       saveCalibration();
       requestCalibrationStatus();
       Chrono calibrationChrono;
@@ -115,19 +113,19 @@ class MorphosesIMU : public BNO080 {
       oscBundle(isSaved ? "/calibration-save-done" : "/calibration-save-error");
     }
 
-    void tare(float currentHeading) {
+    void MorphosesIMU::tare(float currentHeading) {
       _headingOffset = currentHeading - getRawHeading();
     }
 
-    float getHeading() {
-      return wrapAngle180(getRawHeading() + _headingOffset);
+    float MorphosesIMU::getHeading() {
+      return utils::wrapAngle180(getRawHeading() + _headingOffset);
     }
 
-    float getRawHeading() {
+    float MorphosesIMU::getRawHeading() {
       return (float)degrees(getYaw());
     }
 
-};
+///----
 
 MorphosesIMU imuMain(true);
 MorphosesIMU imuSide(false);
@@ -137,32 +135,32 @@ MorphosesIMU imuSide(false);
 
 void initIMUs() {
   if (!imuMain.isInitialized())
-    debug("Main imu not initialized");
+    osc::debug("Main imu not initialized");
     imuMain.init();
   if (!imuSide.isInitialized())
-    debug("Side imu not initialized");
+    osc::debug("Side imu not initialized");
     imuSide.init();
 
-  debug("Successfully initialized both imus");
-  //sendOscBundle(); //Why are we sending a bundle at initialization? 
+  osc::debug("Successfully initialized both imus");
+  osc::sendOscBundle(); //Why are we sending a bundle at initialization? 
 }
 
 void calibrateBeginIMUs() {
   imuMain.calibrateBegin();
   imuSide.calibrateBegin();
-  sendOscBundle();
+  osc::sendOscBundle();
 }
 
 void calibrateEndIMUs() {
   imuMain.calibrateEnd();
   imuSide.calibrateEnd();  
-  sendOscBundle();
+  osc::sendOscBundle();
 }
 
 void calibrateSaveIMUs() {
   imuMain.calibrateSave();
   imuSide.calibrateSave();  
-  sendOscBundle();
+  osc::sendOscBundle();
 }
 
 void sleepIMUs() {
@@ -179,7 +177,7 @@ void wakeIMUs() {
 void processIMUs() {
   imuMain.process();
   imuSide.process();
-  sendOscBundle();
+  osc::sendOscBundle();
 }
 
 float getHeading() {
@@ -193,3 +191,5 @@ float getRawHeading() {
 void tare(float currentHeading) {
   imuMain.tare(currentHeading);
 }
+
+}//namespace imus
