@@ -1,3 +1,6 @@
+#include "Morphose.h"
+#include "Utils.h"
+
 //TODO : MOVE THIS TO Morphose
 #define STEER_MAX 0.5f
 #define HEADING_FRONT_TOLERANCE 30
@@ -29,7 +32,7 @@ void startNavigation() {
   navigationMode = true;
 
   // Save starting position.
-  startingPosition.set(getPosition());
+  startingPosition.set(morphose::getPosition());
   velocityTimer.start();  
 
   // Reset errors.
@@ -43,7 +46,7 @@ void startNavigationHeading(float speed, float relativeHeading=0) {
   float currentHeading = getHeading();
 
   // Set target heading.
-  targetHeading = - wrapAngle180(currentHeading + relativeHeading);
+  targetHeading = - utils::wrapAngle180(currentHeading + relativeHeading);
 
   // Set target speed.
   targetSpeed = max(speed, 0.0f);
@@ -54,7 +57,7 @@ void startNavigationHeading(float speed, float relativeHeading=0) {
 
 void stepNavigationHeading() {
   // Check correction. Positive: too much to the left; negative: too much to the right.
-  float relativeHeading = wrapAngle180(targetHeading + getHeading());
+  float relativeHeading = utils::wrapAngle180(targetHeading + getHeading());
   float absoluteRelativeHeading = abs(relativeHeading);
 
   // Compute speed.
@@ -105,9 +108,9 @@ float getNavigationVelocityQuality() {
 
 void stopNavigationHeading() {
   // Update navigation velocity.
-  velocity = (getPosition() - startingPosition);
+  velocity = (morphose::getPosition() - startingPosition);
   velocityHeading = REFERENCE_ORIENTATION.angle(velocity);
-  if (!engineIsMovingForward()) velocityHeading = wrapAngle180(velocityHeading + 180);
+  if (!engineIsMovingForward()) velocityHeading = utils::wrapAngle180(velocityHeading + 180);
   
   // Align IMU offset to velocity heading.
   if (getNavigationVelocityQuality() >= NAVIGATION_ERROR_THRESHOLD)

@@ -1,5 +1,5 @@
-#ifndef MORPHOSE_OTA_H
-#define MORPHOSE_OTA_H
+#ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_OTA_H_
+#define ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_OTA_H_
 
 #include <ArduinoOTA.h>
 
@@ -7,7 +7,7 @@ void updateOTA() {
     ArduinoOTA.handle();
 }
 
-void initOTA(const char* hostname=0) {
+void initOTA(const char* hostname = 0) {
   // Port defaults to 3232
   // ArduinoOTA.setPort(3232);
 
@@ -27,7 +27,7 @@ void initOTA(const char* hostname=0) {
       String type;
       if (ArduinoOTA.getCommand() == U_FLASH)
         type = "sketch";
-      else // U_SPIFFS
+      else  // U_SPIFFS
         type = "filesystem";
 
       // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
@@ -51,4 +51,4 @@ void initOTA(const char* hostname=0) {
   ArduinoOTA.begin();
 }
 
-#endif
+#endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_OTA_H_

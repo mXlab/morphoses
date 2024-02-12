@@ -1,5 +1,5 @@
-#ifndef MORPHOSES_PIXELS_H
-#define MORPHOSES_PIXELS_H
+#ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_LIGHTS_PIXELS_H_
+#define ARDUINO_MORPHOSE_PLATFORMIO_SRC_LIGHTS_PIXELS_H_
 
 #include <Globals.h>
 
@@ -15,10 +15,10 @@ enum Region {
 void init();
 
 // Set one pixel.
-void set(int i, int r, int g, int b, int w=0);
+void set(int i, int r, int g, int b, int w = 0);
 
 // Set all pixels.
-void setAll(int r, int g, int b, int w=0);
+void setAll(int r, int g, int b, int w = 0);
 
 // Clear all pixels.
 void clear();
@@ -33,9 +33,9 @@ void display();
 bool insideRegion(int i, Region region);
 
 // Set the color of a region.
-void setRegion(Region region, int r, int g, int b, int w=0);
+void setRegion(Region region, int r, int g, int b, int w = 0);
 
-} //namespace pixels
+}  // namespace pixels
 
 
-#endif
+#endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_LIGHTS_PIXELS_H_

@@ -8,7 +8,7 @@
 #include "Morphose.h"
 #include "Utils.h"
 
-namespace imus{
+namespace imus {
 
 
   const char* MorphosesIMU::name() const { return _isMain ? "main" : "side"; }
@@ -26,24 +26,20 @@ namespace imus{
 
     void MorphosesIMU::init() {
       // Try to connect.
-      boolean isOk = begin( i2cAddress() );
+      boolean isOk = begin(i2cAddress());
       if (!isOk) {
         osc::debug("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
         utils::blinkIndicatorLed(1000, 0.1);
-      }
-
-      // Connected: initialize.
-      else {
-        //Wire.setClock(400000); //Increase I2C data rate to 400kHz
-    
+        // Connected: initialize.
+      } else {
+        // Wire.setClock(400000); //Increase I2C data rate to 400kHz
         // Enable rotation vector.
         enableRotationVector(IMU_SAMPLE_RATE);
         enableMagnetometer(IMU_SAMPLE_RATE);
-        
         _initialized = true;
       }
-      
-      // Add details and send.  
+
+      // Add details and send.
       oscBundle(isOk ? "/ready" : "/error").add(morphose::name).add("i2c");
       osc::sendOscBundle();
     }
@@ -51,16 +47,15 @@ namespace imus{
     boolean MorphosesIMU::process() {
       // Get data.
       bool available = dataAvailable();
-    
+
       // Send data over OSC.
-      if (available && osc::sendOSC) // flag that determines to send or not should be internal to class
-      {
+      if (available && osc::sendOSC) {  // flag that determines to send or not should be internal to class
         oscBundle("/quat").add(getQuatI()).add(getQuatJ()).add(getQuatK()).add(getQuatReal());
         oscBundle("/rot").add((float)degrees(getRoll())).add((float)degrees(getPitch())).add((float)degrees(getYaw()));
         oscBundle("/accur").add(getMagAccuracy()).add(degrees(getQuatRadianAccuracy()));
         oscBundle("/mag").add(getMagX()).add(getMagY()).add(getMagZ());
       }
-    
+
     //  // Verify if accuracy is okay, otherwise try to re-calibrate.
     //  if (getMagAccuracy() <= IMU_LOW_ACCURACY) {
     //    recalibrationMode = true;
@@ -68,17 +63,16 @@ namespace imus{
     //    while (getMagAccuracy() < IMU_HIGH_ACCURACY) {
     //      bndl.add("/error").add(boardName).add("accuracy").add(getMagAccuracy());
     //      sendOscBundle();
-    //    
+    //
     //      setMotorsPower(true);
     //      setMotorsSpeed(1);
-    //      
+    //
     //      setMotorsSteer(1);
     //      delay(10000UL);
     //      setMotorsSteer(-1);
     //      delay(10000UL);
     //    }
     //  }
-      
       return available;
     }
 
@@ -134,15 +128,17 @@ MorphosesIMU imuSide(false);
 #define IMU_HIGH_ACCURACY 3
 
 void initIMUs() {
-  if (!imuMain.isInitialized())
+  if (!imuMain.isInitialized()) {
     osc::debug("Main imu not initialized");
     imuMain.init();
-  if (!imuSide.isInitialized())
+  }
+  if (!imuSide.isInitialized()) {
     osc::debug("Side imu not initialized");
     imuSide.init();
+  }
 
   osc::debug("Successfully initialized both imus");
-  osc::sendOscBundle(); //Why are we sending a bundle at initialization? 
+  osc::sendOscBundle();  // Why are we sending a bundle at initialization?
 }
 
 void calibrateBeginIMUs() {
@@ -153,13 +149,13 @@ void calibrateBeginIMUs() {
 
 void calibrateEndIMUs() {
   imuMain.calibrateEnd();
-  imuSide.calibrateEnd();  
+  imuSide.calibrateEnd();
   osc::sendOscBundle();
 }
 
 void calibrateSaveIMUs() {
   imuMain.calibrateSave();
-  imuSide.calibrateSave();  
+  imuSide.calibrateSave();
   osc::sendOscBundle();
 }
 
@@ -192,4 +188,4 @@ void tare(float currentHeading) {
   imuMain.tare(currentHeading);
 }
 
-}//namespace imus
+}  // namespace imus

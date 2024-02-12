@@ -5,52 +5,87 @@
  * 
  */
 #include "Network.h"
+
 #include <ArduinoLog.h>
-#include "Morphose.h"
 #include <Chrono.h>
-#include <Utils.h>
+
+#include "communications/osc.h"
+#include "Morphose.h"
+#include "Utils.h"
 
 
-namespace network{
+namespace network {
 
+    //  IP address registry
+    byte destIPs[MAX_DEST_IPS];
+    int numActiveIPs = 0, lastAddedIPIndex = 0;
 
-
-     IPAddress pcIP{192,168,0,199};
-     IPAddress mcuIP;
-     IPAddress broadcast{192,168,0,255};
+     IPAddress pcIP{192, 168, 0, 148};
+     IPAddress mcuIP{192, 168, 0, 17};
+     IPAddress broadcast{192, 168, 0, 255};
      IPAddress subnet(255, 255, 255, 0);
+     IPAddress gateway(192, 168, 0, 1);
      WiFiUDP udp{};
 
 
-    //Holds event ids for possibility to remove them
+    //  Holds event ids for possibility to remove them
     wifi_event_id_t event_disconnect_id = 0;
     wifi_event_id_t event_connect_id = 0;
     wifi_event_id_t event_ip_id = 0;
 
 
-    // ROUTER SSID AND PSWRD
-    const char *ssid = "Morphoses";
-    const char *pswd = "BouleQuiRoule";
+    //  ROUTER SSID AND PSWRD
+    const char *ssid = "Chien1";
+    const char *pswd = "Pizzabacon";
 
-    const int outgoingPort = 8130;
+    int outgoingPort = 8130;
     const int incomingPort = 8000;
 
 
+    void addDestinationIPAddress(byte ip3) {
+  // Determine if the address we want to add is already registered.
+
+
+  bool ipExists = false;
+  for (int i = 0; i < numActiveIPs; i++) {
+    // if the last byte matches
+    if (destIPs[i] == ip3) {
+      ipExists = true;
+      break;
+    }
+  }
+
+  if (!ipExists) {
+    //  if it doesn't exist, we add it
+    numActiveIPs = min(numActiveIPs+1, MAX_DEST_IPS);   // cap at max length
+
+    // if we overflow, we go back to position 1
+    // position 0 is reserved for the ML system's IP address
+    lastAddedIPIndex = (++lastAddedIPIndex - 1) % MAX_DEST_IPS + 1;    // loop between 1 and MAX_DEST_IPS
+
+    destIPs[lastAddedIPIndex] = ip3;
+
+    //  log for verification
+    #if defined(DEBUG_MODE)
+      Serial.print("NEW DEST. IP ADDED: ");
+      Serial.println(ip3);
+
+    #endif
+  }
+}
+
     void initialize(uint8_t maxTry) {
-
         Log.warningln("Initializing network interface");
-        
-
         Log.infoln("Trying to connect to router");
+
         if (!maybeConnectToRouter(maxTry)) {
             Log.errorln("WiFi unable to connect, Rebooting hardware.");
             utils::blinkIndicatorLed(100, 0.7, 20);
             ESP.restart();
         }
 
-        // on disconnect callback
-        //TODO : Verify why not in setWifiEvents
-       
+        //  on disconnect callback
+        // TODO(Etienne) : Verify why not in setWifiEvents
 
         initializeUDP(incomingPort);
         showRSSI();
@@ -62,24 +97,26 @@ namespace network{
 
 
             // delete old config
-            WiFi.disconnect(true);
-            WiFiClass::mode(WIFI_STA);
+            if(WiFi.disconnect(true,true)){
+                Log.infoln("Successfully delete wifi config");
+            }
+            WiFi.mode(WIFI_STA);
+            //WiFiClass::mode(WIFI_STA);
 
-             WiFi.setSleep(false); // enable the wifi all the time
+             WiFi.setSleep(false);  // enable the wifi all the time
              setWifiEvents();
-             //TODO : test autoreconnect function
-             //WiFi.setAutoReconnect(true);
+             // TODO(Etienne) : test autoreconnect function
+             // WiFi.setAutoReconnect(true);
 
-        //TODO : Maybe change hostname for robot+id
-        //WiFiClass::setHostname(getApSSID());
-        
+        // TODO(Etienne) : Maybe change hostname for robot+id
+        //  WiFiClass::setHostname(getApSSID());
 
-        //TODO : See with Sofian if static ip on esp is preferred
+        // TODO(Etienne): See with Sofian if static ip on esp is preferred
         // Configures static IP address
-        // if (!WiFi.config(MisBKit::networkConfig.localIP, MisBKit::networkConfig.gateway, subnet)) {
-        //     Log.errorln("STA Failed to configure");
-        //     return false;
-        // }
+        if (!WiFi.config(mcuIP, gateway, subnet)) {
+            Log.errorln("STA Failed to configure");
+            return false;
+        }
         return true;
     }
 
@@ -98,7 +135,6 @@ namespace network{
             if (millis() - start_time > timeout) {
                 break;
             }
-
         }
 
         Log.traceln(" ");
@@ -135,10 +171,8 @@ namespace network{
         }
 
         if (success) {
-
             return true;
         } else {
-
             return false;
         }
     }
@@ -148,18 +182,18 @@ namespace network{
     }
 
 
-    void showRSSI(){
-        //temp wifi debug
+    void showRSSI() {
+        // temp wifi debug
         char buff[64];
-        sprintf(buff,"Wifi rssi : %d" ,WiFi.RSSI() );
-        utils::debug(buff);
+        sprintf(buff, "Wifi rssi : %d" , WiFi.RSSI() );
+        osc::debug(buff);
     }
 
-    IPAddress getMcuIP(){
+    IPAddress getMcuIP() {
         return mcuIP;
         }
 
-     bool isConnected(){return (WiFi.status() == WL_CONNECTED);}
+     bool isConnected() {return (WiFi.status() == WL_CONNECTED);}
 
 // wifi events helpers
 
@@ -172,18 +206,15 @@ namespace network{
     }
 
     void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-        
         Log.warningln("Disconnected from WiFi");
-        //TODO : print disconnect reason as a string
+        // TODO(Etienne) : print disconnect reason as a string
         Log.infoln("Trying to Reconnect");
         maybeConnectToRouter(3);
-        
     }
 
     void WiFiGotIP(WiFiEvent_t event, WiFiEventInfo_t info) {
         mcuIP = WiFi.localIP();
         Log.noticeln("MCU IP address: [%p]", WiFi.localIP());
-    
     }
 
     void setWifiEvents() {
@@ -199,5 +230,5 @@ namespace network{
             WiFi.removeEvent(event_ip_id);
     }
 
-}//namespace network
+}    // namespace network
 

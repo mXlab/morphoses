@@ -1,8 +1,11 @@
-#ifndef OSC_H
-#define OSC_H
+#ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_OSC_H_
+#define ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_OSC_H_
+
 #include <Arduino.h>
 #include <OSCBundle.h>
+#include <OSCMessage.h>
 
+#include "Morphose.h"
 #define USE_BUNDLE true;
 
 /**
@@ -13,82 +16,52 @@
  */
 
 
-class OSCMessage; // forward declaration
 
 
 
-namespace osc
-{   
+
+namespace osc {
     extern OSCBundle bundle;
-
+    extern boolean sendOSC;
     /**
      * @brief OSC protocol update loop. Verify if there's an incoming message add points to the right callback
      */
     void update();
 
-
-    /**
-     * @brief create and send an OSC message containing a bool 
-     * @param addr address of the osc message to send
-     * @param val value to send
-     */
-    void send(const char *addr, bool val);
-
-    void send(const char *addr, char* val);
-
-    /**
-     * @brief create and send an OSC message containing an uint8_t 
-     * @param addr address of the osc message to send
-     * @param val value to send
-     */
-    void send(const char *addr, uint8_t val);
-
-    /**
-     * @brief create and send an OSC message containing an uint16_t 
-     * @param addr address of the osc message to send
-     * @param val value to send
-     */
-    void send(const char *addr, uint16_t val);
-
-    /**
-     * @brief create and send an OSC message containing three uint16_t value 
-     * @param addr address of the osc message to send
-     * @param val value to send
-     */
-    void send(const char *addr, uint16_t x,uint16_t y, uint16_t z );
-
-    /**
-     * @brief create and send an OSC message containing a float value 
-     * @param addr address of the osc message to send
-     * @param val value to send
-     */
-    void send(const char *addr, float val);
-
     void sendBundle();
-    /**
-     * @brief create and send osc message containing motor information
-     * 
-     * @param addr osc message address (use information name. must start with "/")
-     * @param id id of the motor's information
-     * @param val value of the information to send
-     */
-    void send(const char *addr, uint8_t id, uint8_t val);
+    void sendOscBundle(bool broadcast = false, boolean force = false, int port = morphose::outgoingPort);
 
-    /**
+     /**
      * @brief sends an OSCMessage object over UDP
      */
     void send(OSCMessage &msg);
 
+    /**
+     * @brief template to create and send an OSC message containing 1 value
+     * @param addr address of the osc message to send
+     * @param val value to send
+     */
+    template <typename T>
+      void send (const char *addr,T val){
+        OSCMessage msg(addr);
+        msg.add(val);
+        send(msg);
+    }
+
+        template <typename T>
+      void reply (OSCMessage &msg,T val){
+        msg.empty();
+        msg.add(val);
+        send(msg);
+    }
+
+    
 
     /**
      * @brief Sends wifi signal strength to host.
      */
     void sendSignalStrength(OSCMessage &msg);
-    
-    /**
-     * @brief Write the ID received to EEPROM and restart MisBkit
-     */
-    void setMisBKitId(OSCMessage &msg);
+
 
     /**
      * @brief Sends a debug message to host on /debug address
@@ -124,11 +97,23 @@ namespace osc
      */
     float castItemFromIndexToFloat(OSCMessage &msg, int idx);
 
-    
+    /// Smart-converts argument from message to integer.
+    bool getArgAsBool(OSCMessage& msg, int index);
+
+    /// Smart-converts argument from message to integer.
+    int32_t getArgAsInt(OSCMessage& msg, int index);
+
+    /// Smart-converts argument from message to float.
+    float getArgAsFloat(OSCMessage& msg, int index);
+
+    /// Returns true iff argument from message is convertible to a number.
+    boolean argIsNumber(OSCMessage& msg, int index);
+
     /**
      * @brief Sends a confirmation to host that the action asked is over
      */
     void confirm(OSCMessage &msg);
-} // namespace osc
+}  // namespace osc
 
-#endif
+#endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_OSC_H_
+

@@ -1,5 +1,5 @@
-#ifndef MORPHOSE_ENGINE_H
-#define MORPHOSE_ENGINE_H
+#ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_HARDWARE_ENGINE_H_
+#define ARDUINO_MORPHOSE_PLATFORMIO_SRC_HARDWARE_ENGINE_H_
 
 
 #include <Dynamixel2Arduino.h>
@@ -7,7 +7,7 @@
 
 #include "Utils.h"
 
-namespace motors{
+namespace motors {
 
   void initEngine();
   void setEnginePower(bool on);
@@ -22,5 +22,6 @@ namespace motors{
   void processEngine();
   void sendEngineInfo();
 
-}//namespace motors
-#endif
+}  // namespace motors
+#endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_HARDWARE_ENGINE_H_
+

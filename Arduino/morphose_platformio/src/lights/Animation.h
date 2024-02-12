@@ -1,5 +1,5 @@
-#ifndef ANIMATION_H
-#define ANIMATION_H
+#ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_LIGHTS_ANIMATION_H_
+#define ARDUINO_MORPHOSE_PLATFORMIO_SRC_LIGHTS_ANIMATION_H_
 
 #include "lights/Color.h"
 #include "lights/Pixels.h"
@@ -16,17 +16,16 @@ enum AnimationType {
 
 // Animation class definition
 class Animation {
-  
-public:
+   public:
   // Constructor
   Animation();
-  
+
   // Copy properties from another Animation object
   void copyFrom(const Animation& o);
-  
+
   // Get color for a specific pixel
   Color getColor(int i);
-  
+
   // Set base color
   void setBaseColor(int r, int g, int b);
 
@@ -44,16 +43,16 @@ public:
 
   // Set region of pixels to affect
   void setRegion(pixels::Region region_);
- 
-public:
+
+   public:
   pixels::Region   region;    // Region of pixels affected
   AnimationType type;      // Type of animation
   float         period;    // Period of oscillation
   bool          isRgb;     // Whether the color is RGB
   float         noise;     // Noise level
-  
-  Color         baseColor; // Base color
-  Color         altColor;  // Alternative color
+
+  Color         baseColor;  // Base color
+  Color         altColor;   // Alternative color
 
   pq::SineOsc       osc;       // Sine Oscillator object for animation
 };
@@ -83,6 +82,7 @@ void display();
 void run(void *parameters);
 
 
-} // namespace name
+}  // namespace animations
 
-#endif // ANIMATION_H
+#endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_LIGHTS_ANIMATION_H_
+

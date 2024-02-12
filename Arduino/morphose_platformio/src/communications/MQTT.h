@@ -1,5 +1,5 @@
-#ifndef MORPHOSE_MQTT_H
-#define MORPHOSE_MQTT_H
+#ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_MQTT_H_
+#define ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_MQTT_H_
 
 #include <Adafruit_MQTT.h>
 #include <Adafruit_MQTT_Client.h>
@@ -15,7 +15,7 @@
 #define MQTT_BROKER "192.168.0.200"
 #define MQTT_BROKER_PORT 1883
 
-namespace mqtt{
+namespace mqtt {
 
 
 
@@ -25,7 +25,7 @@ namespace mqtt{
 // Vec2f robotPositions[N_ROBOTS];
 // Vec2f currPosition;
 
-//TODO : MOve to morphose
+// TODO(Etienne): MOve to morphose
 // Smoother avgPositionX(AVG_POSITION_TIME_WINDOW);
 // Smoother avgPositionY(AVG_POSITION_TIME_WINDOW);
 // Vec2f avgPosition;
@@ -43,7 +43,7 @@ void update();
 
 
 
-//TODO : MOVE TO RESPECTIVE FILE
+// TODO(Etienne): MOVE TO RESPECTIVE FILE
 bool onMqttLocation(int robot, char* data);
 //{
 //   // Parse location.
@@ -65,24 +65,24 @@ bool onMqttLocation(int robot, char* data);
 // //      bndl.add("/pos").add(currPosition.x).add(currPosition.y);
 // //      currPosition += POSITION_ALPHA * ( newPosition - currPosition );
 //     }
-    
+
 // //    bndl.add("/pos").add(robot+1).add(robotPositions[robot].x).add(robotPositions[robot].y);
-      
+
 //     sendOscBundle();
 //   }
 
 //}
 
-void onMqttAnimation(char* data) ;
+void onMqttAnimation(char* data);
 //{
 //   // Parse location.
 //   JSONVar animationData = JSON.parse(data);
 //   JSONVar baseColor = animationData["base"];
 //   JSONVar altColor  = animationData["alt"];
-  
+
 //   if (lockAnimationMutex()) {
 //     prevAnimation.copyFrom(animation); // save animation
-    
+
 //     animation.setBaseColor(int(baseColor[0]), int(baseColor[1]), int(baseColor[2]));
 //     animation.setAltColor (int(altColor[0]),  int(altColor[1]),  int(altColor[2]));
 //     animation.setNoise(( float)  double(animationData["noise"]));
@@ -105,6 +105,6 @@ void onMqttAnimation(char* data) ;
 
 
 
-}//namespace mqtt
+}   // namespace mqtt
 
-#endif
+#endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_MQTT_H_

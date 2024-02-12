@@ -13,19 +13,23 @@
 
 namespace network {
 
-    extern IPAddress pcIP; //Computer controlling the kit's IP
+    extern IPAddress pcIP;              // Computer controlling the kit's IP
     extern IPAddress mcuIP;
     extern IPAddress broadcast;
     extern IPAddress subnet;
     extern WiFiUDP udp;
-    
-    
+    extern int outgoingPort;
+
+    #define MAX_DEST_IPS 4
+    extern byte destIPs[MAX_DEST_IPS];
+    extern int numActiveIPs, lastAddedIPIndex;
 
 
 
 // wifi helpers
 
     IPAddress getMcuIP();
+    void addDestinationIPAddress(byte ip3);
 
     void showRSSI();
 
@@ -90,6 +94,6 @@ namespace network {
 
 
 
-} // namespace network
+}   // namespace network
 
 #endif

@@ -89,7 +89,7 @@ bool lockMutex() {
 }
 
 void unlockMutex() {
-  xSemaphoreGive (animationMutex);  // release the mutex
+  xSemaphoreGive(animationMutex);  // release the mutex
 }
 
 void initialize() {
@@ -98,13 +98,13 @@ void initialize() {
 
   // Create task.
   xTaskCreatePinnedToCore(
-    run,   // Function to implement the task
-    "Animation",    // Name of the task
-    2048,           // Stack size in words
-    NULL,           // Task input parameter
-    0,              // Priority of the task
-    &taskAnimation, // Task handle.
-    0);             // Core where the task should run
+    run,                  // Function to implement the task
+    "Animation",          // Name of the task
+    2048,                 // Stack size in words
+    NULL,                 // Task input parameter
+    0,                    // Priority of the task
+    &taskAnimation,       // Task handle.
+    0);                   // Core where the task should run
 }
 
 void update() {
@@ -113,14 +113,13 @@ void update() {
 
   // Iterate over all pixels.
   pixels::numPixels();
-  for (int i=0; i<pixels::numPixels(); i++) {
-
+  for (int i = 0; i < pixels::numPixels(); i++) {
     // Get animation color.
     Color color = current.getColor(i);
 
     // If in transition: Mix with previous color.
     if (transitionTimer.isStarted() && !transitionTimer.isFinished()) {
-      color = Color::lerp( previous.getColor(i), color, transitionTimer );
+      color = Color::lerp(previous.getColor(i), color, transitionTimer);
     }
 
     // Set pixel.
@@ -135,21 +134,19 @@ void display() {
 void run(void *parameters) {
   // Infinite loop.
   for (;;) {
-
     // Wait for mutex.
     if (lockMutex()) {
-      
       // Update animation.
       pq::Plaquette.step();
       update();
-      
+
       // Unlock mutex.
       unlockMutex();
-      
+
       // Display animation frame.
       display();
     }
   }
 }
 
-}
+}  // namespace animations

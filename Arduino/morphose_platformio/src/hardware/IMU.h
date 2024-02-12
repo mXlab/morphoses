@@ -1,32 +1,32 @@
-#ifndef MORPHOSE_IMU_H
-#define MORPHOSE_IMU_H
+#ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_HARDWARE_IMU_H_
+#define ARDUINO_MORPHOSE_PLATFORMIO_SRC_HARDWARE_IMU_H_
 
 #include <SparkFun_BNO080_Arduino_Library.h>
 #include <Chrono.h>
 
 #include "communications/osc.h"
 
-namespace imus{
+namespace imus {
 
 class MorphosesIMU : public BNO080 {
-  private:
+   private:
     boolean _isMain;
 //    boolean _recalibrationMode;
     boolean _initialized;
 
     float _headingOffset;
-  
-  public:
+
+   public:
     MorphosesIMU(boolean isMain) : _isMain(isMain), _initialized(false), _headingOffset(0) {}
 
-    const char* name() const; 
+    const char* name() const;
     // Start an IMU-specific OSC Message by calling this with appropriate sub-address. Result will be "/{main,side}/<addr>".
     OSCMessage& oscBundle(const char* addr);
 
-    uint8_t i2cAddress() const; 
+    uint8_t i2cAddress() const;
     boolean isInitialized() const;
 
-    void init(); 
+    void init();
 
     boolean process();
 
@@ -40,8 +40,7 @@ class MorphosesIMU : public BNO080 {
 
     float getHeading();
 
-    float getRawHeading(); 
-
+    float getRawHeading();
 };
 
 // Etienne : commented because only accessed by this file. could only be in .cpp
@@ -62,6 +61,6 @@ class MorphosesIMU : public BNO080 {
   float getRawHeading();
   void tare(float currentHeading);
 
-}//namespace imus
+}  // namespace imus
 
-#endif
+#endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_HARDWARE_IMU_H_

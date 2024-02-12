@@ -61,26 +61,30 @@
 
 // Configuration file.
 #include <Arduino.h>
+
+#include <ArduinoLog.h>
+#include <Chrono.h>
 #include <PlaquetteLib.h>
 using namespace pq;
 
-#include <ArduinoLog.h>
-//TODO : Merge config and global or move to Morphose.h
-#include "Config.h"
-#include "Globals.h"
-#include "Morphose.h"
 
-#include "Utils.h"
-#include "communications/OTA.h"
-#include "Comm.h"
+// TODO(Etienne): Merge config and global or move to Morphose.h
+#include "Config.h"
+
+#include "communications/MQTT.h"
 #include "communications/Network.h"
 #include "communications/osc.h"
-#include "communications/MQTT.h"
+#include "communications/OTA.h"
 
+#include "Globals.h"
 
-#include "lights/Pixels.h"
 #include "lights/Animation.h"
+#include "lights/Pixels.h"
 
+#include "Logger.h"
+#include "Morphose.h"
+#include "Utils.h"
+// #include "Comm.h"
 
 // hardware
 // #include "IMU.h"
@@ -88,24 +92,31 @@ using namespace pq;
 // #include "Navigation.h"
 // #include "Energy.h"
 
-//TODO : MAYBE REMOVE THIS INCLUDE
-//#include "OSCCallbacks.h"
+// TODO(Etienne): MAYBE REMOVE THIS INCLUDE
+// #include "OSCCallbacks.h"
 
 
-#include <Chrono.h>
+
 
 // Variables & Objects //////////////////////////
 
 Chrono sendDataChrono;
 
-//TaskHandle_t taskReceiveMessages;
-//TaskHandle_t taskSendData;
-//
-//SemaphoreHandle_t receiveMessagesMutex = NULL;
+/*
+ * OLD : was already commented
+ * 
+ *  //TaskHandle_t taskReceiveMessages;
+ *  //TaskHandle_t taskSendData;
+ *   //
+ *   //SemaphoreHandle_t receiveMessagesMutex = NULL;
+ * 
+ */
 
 
 // --------------- HELPERS ----------------
 
+// TODO(Etienne): MOVE TO OSC or morphose
+// sends data . i guess i should move this to morphose
 // void sendData() {
 //   processIMUs();
 //   processNavigation();
@@ -113,13 +124,15 @@ Chrono sendDataChrono;
 
 //   sendNavigationInfo();
 //   sendEngineInfo();
-  
+
 //   // Send OSC bundle.
 //   sendOscBundle();
 // }
 
+
+
+// MOVED TO OSC. TEST TO SEE IF CAN REMOVE
 void processMessage() {
-  
   // OSCMessage messIn;
   // IPAddress remote;
   // if (!receiveMessage(messIn, &remote))
@@ -144,97 +157,100 @@ void processMessage() {
   // else if (messIn.route("/calib",  calibration));
   // else if (messIn.route("/rgb", rgb));
 
-
-//   else if (messIn.fullMatch("/base-color")) {
-//    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
-//      int r = getArgAsInt(messIn, 0);
-//      int g = getArgAsInt(messIn, 1);
-//      int b = getArgAsInt(messIn, 2);
-////        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
-//      animation.baseColor.setRgb(r, g, b);
-//    }
-//  }
-//
-//   else if (messIn.fullMatch("/alt-color")) {
-//    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
-//      int r = getArgAsInt(messIn, 0);
-//      int g = getArgAsInt(messIn, 1);
-//      int b = getArgAsInt(messIn, 2);
-////        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
-//      animation.altColor.setRgb(r, g, b);
-//    }
-//  }
-//
-//  else if (messIn.fullMatch("/period")) {
-//    if (argIsNumber(messIn, 0)) {
-//      float p = getArgAsFloat(messIn, 0);
-//      animation.setPeriod(p);
-//    }
-//  }
-//
-//  else if (messIn.fullMatch("/noise")) {
-//    if (argIsNumber(messIn, 0)) {
-//      float noise = getArgAsFloat(messIn, 0);
-//      int global = argIsNumber(messIn, 1) ? getArgAsBool(messIn, 1) : true;
-//      animation.setNoise(noise, global);
-//    }
-//  }
-//
-//  else if (messIn.fullMatch("/animation-type")) {
-//    if (argIsNumber(messIn, 0)) {
-//      AnimationType type = (AnimationType) getArgAsInt(messIn, 0);
-//      animation.setType(type);
-//    }
-//  }
-//
-//  else if (messIn.fullMatch("/animation-region")) {
-//    if (argIsNumber(messIn, 0)) {
-//      PixelRegion region = (PixelRegion) getArgAsInt(messIn, 0);
-//      animation.setRegion(region);
-//    }
-//  }
-
+/*  OLD : Was already commented 
+      //   else if (messIn.fullMatch("/base-color")) {
+      //    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
+      //      int r = getArgAsInt(messIn, 0);
+      //      int g = getArgAsInt(messIn, 1);
+      //      int b = getArgAsInt(messIn, 2);
+      ////        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
+      //      animation.baseColor.setRgb(r, g, b);
+      //    }
+      //  }
+      //
+      //   else if (messIn.fullMatch("/alt-color")) {
+      //    if (argIsNumber(messIn, 0) && argIsNumber(messIn, 1) && argIsNumber(messIn, 2)) { 
+      //      int r = getArgAsInt(messIn, 0);
+      //      int g = getArgAsInt(messIn, 1);
+      //      int b = getArgAsInt(messIn, 2);
+      ////        int w = argIsNumber(messIn, 3) ? getArgAsInt(messIn, 3) : 0;
+      //      animation.altColor.setRgb(r, g, b);
+      //    }
+      //  }
+      //
+      //  else if (messIn.fullMatch("/period")) {
+      //    if (argIsNumber(messIn, 0)) {
+      //      float p = getArgAsFloat(messIn, 0);
+      //      animation.setPeriod(p);
+      //    }
+      //  }
+      //
+      //  else if (messIn.fullMatch("/noise")) {
+      //    if (argIsNumber(messIn, 0)) {
+      //      float noise = getArgAsFloat(messIn, 0);
+      //      int global = argIsNumber(messIn, 1) ? getArgAsBool(messIn, 1) : true;
+      //      animation.setNoise(noise, global);
+      //    }
+      //  }
+      //
+      //  else if (messIn.fullMatch("/animation-type")) {
+      //    if (argIsNumber(messIn, 0)) {
+      //      AnimationType type = (AnimationType) getArgAsInt(messIn, 0);
+      //      animation.setType(type);
+      //    }
+      //  }
+      //
+      //  else if (messIn.fullMatch("/animation-region")) {
+      //    if (argIsNumber(messIn, 0)) {
+      //      PixelRegion region = (PixelRegion) getArgAsInt(messIn, 0);
+      //      animation.setRegion(region);
+      //    }
+      //  }
+*/
 }
 
 
 // ---------- PROGRAM ---------------
 
-void setup()
-{
-  delay(2000);
+void setup() {
+  delay(5000);
   Plaquette.begin();
-
-
-//TODO : MOVE TO IMU
+  Serial.begin(115200);
+  Log.begin(LOG_LEVEL_VERBOSE, &Serial);
+// TODO(Etienne): MOVE TO IMU
 // // Start I2C.
 //   Wire.begin();
 //   Wire.setClock(400000); //Increase I2C data rate to 400kHz
 
   // Start serial.
-  Serial.begin(115200);
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
-  }
-  Log.begin(LOG_LEVEL_VERBOSE,&Serial);
+  
 
-  Log.infoln(" Morphose - 2023");
+ 
+
+  Log.infoln(" Morphose - 2023 - 3");
+
+  logger::initialize();
 
 
+  // 1.initialize robot config
+  // TODO(Etienne): change robot id attribution with defines in pio envs.
+  morphose::initialize(network::getMcuIP());  // cannot send message before this point. Morphose needs to be initialized
 
-  // Initialize Wifi and UDP.
 
-  //initWifi();
+  // 2. initialize robot network connection
   network::initialize();
+  delay(1000);
 
-  morphose::initialize(network::getMcuIP());
-
-  utils::debug(" OTA initialization");
+  osc::debug(" Network initialized");
+  
+  
+  osc::debug(" OTA initialization");
   // Initialize OTA.
-  initOTA(morphose::name); 
+  //initOTA(morphose::name);
 
   // Initialize MQTT connection.
-  utils::debug(" MQTT initialization");
-  mqtt::initialize();
+  //osc::debug(" MQTT initialization");
+  //mqtt::initialize();
 
 
 
@@ -251,54 +267,56 @@ void setup()
   // initPixels();
 
   // Initialize animation system.
-  utils::debug(" Animation initialization");
-  animations::initialize();
+  //osc::debug(" Animation initialization");
+  //animations::initialize();
 
   // debug(" IMU initialization");
   // initIMUs(); // maybe move to setup
 
   morphose::sayHello();
-  utils::debug("---------------- End of setup ----------------");
 
- 
+  osc::debug("---------------- End of setup ----------------");
+
+
+  logger::info("Morphose initialization ok");
 }
 
 
-void loop()
-{
+void loop() {
+  logger::update();
 
   // Check for incoming messages.
-  // processMessage();
+  // processMessage(); //replaced by osc::update
 
   // // Update OTA.
-  updateOTA();
+  //updateOTA();
 
   // Check connection status: reconnect if connection lost.
   if (!network::isConnected()) {
     Serial.println("Lost wifi connection");
+    logger::error("Lost wifi connection");
     network::initialize();
   }
-  osc::update();
+
+  osc::update(); // TESTED. All calbacks can be reached
 
   // Init IMUs if not already initialized.
   // initIMUs(); // maybe move to setup
 
   // Update MQTT.
-     mqtt::update();
+  // mqtt::update();
 
-    morphose::update();
-
-
+  // morphose::update();
 
   // // Send messages.
-  // if (sendDataChrono.hasPassed(SEND_DATA_INTERVAL)) {
-  //   //sendData();
+  if (sendDataChrono.hasPassed(SEND_DATA_INTERVAL*10, true)) {
+    // sendData();
+    //logger::info("-");
+    // Energy checkpoint to prevent damage when low
+    // checkEnergy();
 
-  //   // Energy checkpoint to prevent damage when low 
-  //   checkEnergy();
-
-  //   // Restart chrono.
-  //   sendDataChrono.start();
-  // }
+    // Restart chrono.
+    // sendDataChrono.start();
+  }
 }
 

@@ -1,16 +1,16 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_UTILS_H_
+#define ARDUINO_MORPHOSE_PLATFORMIO_SRC_UTILS_H_
 #include <Arduino.h>
 
-namespace utils{
+namespace utils {
 
 // Flush serial.
-void flushInputSerial(HardwareSerial& serial=Serial);
+void flushInputSerial(HardwareSerial& serial = Serial);
 
 // Wait until serial is ready.
-void waitForInputSerial(HardwareSerial& serial=Serial);
+void waitForInputSerial(HardwareSerial& serial = Serial);
 
-void blinkIndicatorLed(unsigned long period, float pulseProportion=0.5, int nBlinks=1);
+void blinkIndicatorLed(unsigned long period, float pulseProportion = 0.5, int nBlinks = 1);
 
 // Compute firstAngle - secondAngle, remapped in [-180, 180]. The method that computes
 // the angles should be called enough frequently that if the object rotate to the left
@@ -23,7 +23,7 @@ float wrapAngle180(float angle);
 
 
 // Remaps normalised value in [-1, 1] to [midPoint-maxRange, midPoint+maxRange].
-int safeRemapNorm(float unitVal, int maxRange, int midPoint=0);
+int safeRemapNorm(float unitVal, int maxRange, int midPoint = 0);
 
 
 float wrapAngle360(float angle);
@@ -33,7 +33,7 @@ void debug(const char *_msg);
 
 
 
-}//namespace utils
+}  // namespace utils
 
 
-#endif
+#endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_UTILS_H_

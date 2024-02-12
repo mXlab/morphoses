@@ -1,21 +1,20 @@
-#ifndef COLOR_H_
-#define COLOR_H_
+#ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_LIGHTS_COLOR_H_
+#define ARDUINO_MORPHOSE_PLATFORMIO_SRC_LIGHTS_COLOR_H_
 
 #include <PlaquetteLib.h>
 
-#include "hsv_rgb_convert.h"
+#include "lights/hsv_rgb_convert.h"
 
 class Color {
 public:
-
   // RGB/HSV values.
   uint16_t _rh;
   uint8_t  _gs, _bv;
   bool _isRgb;
 
   // Constructor.
-  Color(bool rgb=true);
-  Color(int rh, int gs, int bv, bool rgb=true);
+  Color(bool rgb = true);
+  Color(int rh, int gs, int bv, bool rgb = true);
 
   // Factory methods.
   static Color rgb(int r, int g, int b);
@@ -25,7 +24,7 @@ public:
   void copyFrom(const Color& o) {
     *this = isRgb() ? o.toRgb() : o.toHsv();
   }
-  
+
   int r() const;
   int g() const;
   int b() const;
@@ -55,10 +54,10 @@ public:
   Color toRgb() const { return Color::rgb(r(), g(), b()); }
   Color toHsv() const { return Color::hsv(h(), s(), v()); }
 
-private:
-  int _hsvToRgbComponent(int c) const;
-  int _rgbToHsvComponent(int c) const;
+   private:
+    int _hsvToRgbComponent(int c) const;
+    int _rgbToHsvComponent(int c) const;
 };
 
 
-#endif /* COLOR_H_ */
+#endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_LIGHTS_COLOR_H_

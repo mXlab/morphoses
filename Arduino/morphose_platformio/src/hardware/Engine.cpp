@@ -11,18 +11,18 @@
 #define MOTORS_STEER_MIDDLE 180
 #define DXL_SERIAL   Serial1
 
-namespace motors{
+namespace motors {
 
   // Dynamixel parameters ***********************************
-  const uint8_t DXL_DIR_PIN = 5; // DYNAMIXEL Shield DIR PIN
-  const uint8_t DXL_ID_SPEED = 1; //motor for rolling
-  const uint8_t DXL_ID_STEER = 2; // motor for steering left right
+  const uint8_t DXL_DIR_PIN = 5;  // DYNAMIXEL Shield DIR PIN
+  const uint8_t DXL_ID_SPEED = 1;  // motor for rolling
+  const uint8_t DXL_ID_STEER = 2;  // motor for steering left right
   const float DXL_PROTOCOL_VERSION = 2.0;
 
   // Dynamixel motor control object.
   Dynamixel2Arduino dxl(DXL_SERIAL, DXL_DIR_PIN);
 
-  //This namespace is required to use Control table item names
+  // This namespace is required to use Control table item names
   using namespace ControlTableItem;
 
   uint32_t profile_acceleration_rolling = 30;
@@ -44,8 +44,8 @@ namespace motors{
     // Turn off torque when configuring items in EEPROM area
     dxl.torqueOff(DXL_ID_SPEED);
     dxl.torqueOff(DXL_ID_STEER);
-    dxl.setOperatingMode(DXL_ID_SPEED, OP_VELOCITY); // rolling
-    dxl.setOperatingMode(DXL_ID_STEER, OP_POSITION); // steering left right
+    dxl.setOperatingMode(DXL_ID_SPEED, OP_VELOCITY);  // rolling
+    dxl.setOperatingMode(DXL_ID_STEER, OP_POSITION);  // steering left right
     dxl.torqueOn(DXL_ID_SPEED);
     dxl.torqueOn(DXL_ID_STEER);
 
@@ -68,7 +68,7 @@ namespace motors{
     }
   }
   void setEngineSpeed(float speed) {
-    dxl.setGoalVelocity(DXL_ID_SPEED, utils::safeRemapNorm(speed, MOTORS_SPEED_MAX), UNIT_RAW); // +n=CCW, -n=CW
+    dxl.setGoalVelocity(DXL_ID_SPEED, utils::safeRemapNorm(speed, MOTORS_SPEED_MAX), UNIT_RAW);  // +n=CCW, -n=CW
     currentSpeed = speed;
   }
 
@@ -94,8 +94,8 @@ namespace motors{
     return dxl.readControlTableItem(PRESENT_TEMPERATURE, DXL_ID_STEER);
   }
 
+  // TODO(ETIENNE): Verify why this is empty
   void processEngine() {
-
   }
 
   void sendEngineInfo() {
@@ -104,4 +104,4 @@ namespace motors{
     osc::bundle.add("/steer").add(getEngineSteer());
   }
 
-}//namespace motors
+}  // namespace motors
