@@ -1,0 +1,48 @@
+---
+behaviors:
+  go_to_y:
+    action_profile: h
+    state_profile:
+      - this.d_y
+      - this.y
+      - this.mrz
+    reward_profile:
+      - type: single
+        weight: 0.75
+        args:
+          variable: this.y
+          absolute: false
+      - type: single
+        weight: 0.25
+        args:
+          variable: this.d_y
+          absolute: false
+    stop_profile:
+      min_duration: 30
+      max_duration: 180
+      high_reward_threshold: 1.0
+      high_reward_duration: 15
+    curiosity_weight: 0
+    q_model_type: tables
+    n_state_tiles: [ [3, 3, 4] ]
+    n_state_tilings: 2
+    time_step: 3
+    time_balance: 1
+    learning_rate: 0.1
+    #learning_rate: 0.2
+    epsilon: 0.05
+    temperature: 0.05
+    policy: boltzmann
+    gamma: 0.7
+    n_hidden_forward: 6
+    max_speed: 1.0
+    max_steer: 1.0
+    navigation_mode: true
+
+sequence:
+  - go_to_y
+
+robots:
+  - robot1
+  - robot2
+  - robot3

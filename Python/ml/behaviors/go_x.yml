@@ -1,0 +1,33 @@
+---
+behaviors:
+  go_to_x:
+    action_profile: x-
+    state_profile:
+#      - this.d_x
+#      - this.x
+      - this.mrz
+    reward_profile:
+      - type: sum
+        args:
+          variables: [ this.d_x, this.x ]
+          absolute: false
+    curiosity_weight: 0
+    q_model_type: tables
+#    n_state_tiles: [ [3, 3, 4] ]
+    n_state_tiles: [ [4] ]
+    n_state_tilings: 1
+    time_step: 2
+    time_balance: 1
+    learning_rate: 0.1
+    #learning_rate: 0.2
+    epsilon: 0.05
+    temperature: 0.05
+    policy: boltzmann
+    gamma: 0.7
+    n_hidden_forward: 6
+    max_speed: 1.0
+    max_steer: 1.0
+robots:
+#  robot1: go_to_x
+  robot2: go_to_x
+#  robot2: get_close

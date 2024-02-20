@@ -1,0 +1,52 @@
+---
+robots:
+  - name: "robot1"
+    id: 1
+    version: 3
+    rtls_id: 1a1e
+    ip: "192.168.0.110"
+    osc_send_port: 8000
+    osc_recv_port: 8110
+    osc_visualizer_send_port: 8111
+  - name: "robot2"
+    id: 2
+    rtls_id: 0f32
+    version: 3
+    ip: "192.168.0.120"
+    osc_send_port: 8000
+    osc_recv_port: 8120
+    osc_visualizer_send_port: 8121
+  - name: "robot3"
+    id: 3
+    rtls_id: 5b26
+    version: 3
+    ip: "192.168.0.130"
+    osc_send_port: 8000
+    osc_recv_port: 8130
+    osc_visualizer_send_port: 8131
+things:
+  - name: "thing1"
+    rtls_id: 0b85
+rtls_gateway:
+  ip: "192.168.0.200"
+  rtls_recv_port: 1883
+boundaries:
+  x_min: 0.0
+  x_max: 4.95
+  y_min: 0.0
+  y_max: 6.35
+virtual_boundaries:
+  use: False
+  x_min: 0.3
+  x_max: 4.8
+  y_min: -1.0
+  y_max: 6.1
+  recenter_offset: 0.5
+control_interface:
+  ip: "localhost"
+  osc_send_port: 9000
+  osc_recv_port: 8002
+visualizer:
+  ip: "localhost"
+room_heading: 0 # raw heading when robot points in the same direction as the x axis
+close_dist: 1.5
