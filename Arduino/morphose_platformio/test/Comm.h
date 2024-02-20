@@ -13,12 +13,19 @@
 #include <ESP8266WiFi.h>
 #endif
 
+#include "Utils.h"
+
+
 // Constants ////////////////////////////////////
 //#define WIFI_CONNECTION_TIMEOUT 5000
 
-boolean sendOSC = true; // default
+//modev to osc
+// boolean sendOSC = true; // default
 
-OSCBundle bndl;
+//MOvED TO OSC and renamed bundle
+//OSCBundle bndl;
+
+
 WiFiUDP udp;
 
 // IP address registry
@@ -35,24 +42,27 @@ int robotId;
 // The destination port is 81 followed by the boardID.
 int destPort;
 
+// MOVED TO MORPHOSE.h
 // A human readable name for the board.
-char boardName[16];
+//char boardName[16];
 
 // Function declarations ////////////////////////
 
-/// Smart-converts argument from message to integer.
-bool getArgAsBool(OSCMessage& msg, int index);
+//MOVED TO OSC
+    // /// Smart-converts argument from message to integer.
+    // bool getArgAsBool(OSCMessage& msg, int index);
 
-/// Smart-converts argument from message to integer.
-int32_t getArgAsInt(OSCMessage& msg, int index);
+    // /// Smart-converts argument from message to integer.
+    // int32_t getArgAsInt(OSCMessage& msg, int index);
 
-/// Smart-converts argument from message to float.
-float getArgAsFloat(OSCMessage& msg, int index);
+    // /// Smart-converts argument from message to float.
+    // float getArgAsFloat(OSCMessage& msg, int index);
 
-/// Returns true iff argument from message is convertible to a number.
-boolean argIsNumber(OSCMessage& msg, int index);
+    // /// Returns true iff argument from message is convertible to a number.
+    // boolean argIsNumber(OSCMessage& msg, int index);
 
 
+//TODO : Verify if already moved
 // TODO : Move to osc
 // void send(OSCMessage &msg) {
 //   udp.beginPacket(IPAddress(192,168,0,255), LOCAL_PORT );
@@ -63,7 +73,7 @@ boolean argIsNumber(OSCMessage& msg, int index);
 
 
 
-//TODO : MOVE TO OSC
+// MOVED TO OSC
 // void sendOscBundleToIP(const IPAddress& ip, boolean force, int port) {
 
 //   udp.beginPacket(ip, port);
@@ -76,7 +86,7 @@ boolean argIsNumber(OSCMessage& msg, int index);
 
 
 
-//TODO MOVE TO OSC
+//MOVED TO OSC
 // Sends currently built bundle (with optional broadcasting option).
 // ** WARNING **: The beginPacket() & sendPacket() functions need to be called regularly
 // otherwise the program seems to have trouble receiving data and loses some packets. It 
@@ -180,12 +190,12 @@ bool receiveMessage(OSCMessage& messIn, IPAddress* returnRemoteIP=0) {
 }
 
 
-//TODO : Move to morphose.h
-void initBoardInfo(int id) {
-  robotId = (id % 100) / 10;
-  destPort = 8000 + id;
-  sprintf(boardName, "robot%d", robotId); // eg. "robot1"
-}
+// Moved to morphose.h
+// void initBoardInfo(int id) {
+//   robotId = (id % 100) / 10;
+//   destPort = 8000 + id;
+//   sprintf(boardName, "robot%d", robotId); // eg. "robot1"
+// }
 
 // bool wifiIsConnected() {
 //   return (WiFi.status() == WL_CONNECTED);
@@ -289,42 +299,42 @@ void addDestinationIPAddress(byte ip3) {
 //   sendOscBundle(true);
 // }
 
+//MOVED TO OSC
+    // bool getArgAsBool(OSCMessage& msg, int index) {
+    //   return (bool)getArgAsInt(msg, index);
+    // }
 
-bool getArgAsBool(OSCMessage& msg, int index) {
-  return (bool)getArgAsInt(msg, index);
-}
-
-/// Smart-converts argument from message to integer.
-int32_t getArgAsInt(OSCMessage& msg, int index) {
-  if (msg.isInt(index))
-    return msg.getInt(index);
-  else if (msg.isBoolean(index))
-    return (msg.getBoolean(index) ? 1 : 0);
-  else {
-    double val = 0;
-    if (msg.isFloat(index))       val = msg.getFloat(index);
-    else if (msg.isDouble(index)) val = msg.getDouble(index);
-    return round(val);
-  }
-}
+    // /// Smart-converts argument from message to integer.
+    // int32_t getArgAsInt(OSCMessage& msg, int index) {
+    //   if (msg.isInt(index))
+    //     return msg.getInt(index);
+    //   else if (msg.isBoolean(index))
+    //     return (msg.getBoolean(index) ? 1 : 0);
+    //   else {
+    //     double val = 0;
+    //     if (msg.isFloat(index))       val = msg.getFloat(index);
+    //     else if (msg.isDouble(index)) val = msg.getDouble(index);
+    //     return round(val);
+    //   }
+    // }
 
 
-/// Smart-converts argument from message to float.
-float getArgAsFloat(OSCMessage& msg, int index) {
-  if (msg.isFloat(index))
-    return msg.getFloat(index);
-  else if (msg.isDouble(index))
-    return (float)msg.getDouble(index);
-  else if (msg.isBoolean(index))
-    return (msg.getBoolean(index) ? 1 : 0);
-  else
-    return (float)msg.getInt(index);
-}
+    // /// Smart-converts argument from message to float.
+    // float getArgAsFloat(OSCMessage& msg, int index) {
+    //   if (msg.isFloat(index))
+    //     return msg.getFloat(index);
+    //   else if (msg.isDouble(index))
+    //     return (float)msg.getDouble(index);
+    //   else if (msg.isBoolean(index))
+    //     return (msg.getBoolean(index) ? 1 : 0);
+    //   else
+    //     return (float)msg.getInt(index);
+    // }
 
-/// Returns true iff argument from message is convertible to a number.
-boolean argIsNumber(OSCMessage& msg, int index) {
-  return (msg.isInt(index) || msg.isFloat(index) || msg.isDouble(index) || msg.isBoolean(index));
-}
+    // /// Returns true iff argument from message is convertible to a number.
+    // boolean argIsNumber(OSCMessage& msg, int index) {
+    //   return (msg.isInt(index) || msg.isFloat(index) || msg.isDouble(index) || msg.isBoolean(index));
+    // }
 
 
 #endif

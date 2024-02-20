@@ -14,7 +14,7 @@ Color Color::hsv(int h, int s, int v) {
 
 Color Color::lerp(Color from, Color to, float t) {
   Color result;
-  
+
   // Make sure to operate in the same space.
   to.setIsRgb(from.isRgb());
 
@@ -25,9 +25,8 @@ Color Color::lerp(Color from, Color to, float t) {
     float g = pq::mapFrom01(t, from.g(), to.g());
     float b = pq::mapFrom01(t, from.b(), to.b());
     result.setRgb(round(r), round(g), round(b));
-  }
-  else {
-    // TODO: change this
+  } else {
+    // TODO(Etienne): change this .... Why??
     float r = pq::mapFrom01(t, from.r(), to.r());
     float g = pq::mapFrom01(t, from.g(), to.g());
     float b = pq::mapFrom01(t, from.b(), to.b());
@@ -64,8 +63,7 @@ void Color::setB(int b) {
 void Color::setRgb(int r, int g, int b) {
   if (_isRgb) {
     _rh = r; _gs = g; _bv = b;
-  }
-  else {
+  } else {
     rgb_to_hsv_int(&r, &g, &b);
     setHsv(r, g, b);
   }
@@ -98,8 +96,7 @@ void Color::setV(int v) {
 void Color::setHsv(int h, int s, int v) {
   if (!_isRgb) {
     _rh = h; _gs = s; _bv = v;
-  }
-  else {
+  } else {
     hsv_to_rgb_int(&h, &s, &v);
     setRgb(h, s, v);
   }

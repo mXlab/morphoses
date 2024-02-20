@@ -2,21 +2,17 @@
 #include <Arduino.h>
 #include "OSCMessage.h"
 
-namespace utils
-{
-
+namespace utils {
 
 void flushInputSerial(HardwareSerial& serial) {
   while (serial.available())
     serial.read();
 }
 
-
 void waitForInputSerial(HardwareSerial& serial) {
   while (!serial.available()) delay(10);
   flushInputSerial(serial);
 }
-
 
 void blinkIndicatorLed(unsigned long period, float pulseProportion, int nBlinks) {
   while (nBlinks--) {
@@ -32,13 +28,11 @@ int getAngleDifference(int firstAngle, int secondAngle)
   return ((((secondAngle - firstAngle) % 360) + 540) % 360) - 180;
 }
 
-
 float wrapAngle180(float angle) {
   while (angle >  180) angle -= 360;
   while (angle < -180) angle += 360;
   return angle;
 }
-
 
 int safeRemapNorm(float unitVal, int maxRange, int midPoint) {
   float remappedVal = midPoint + constrain(unitVal, -1, 1) * maxRange;
@@ -51,11 +45,14 @@ float wrapAngle360(float angle) {
   return angle;
 }
 
-//TODO : Move to osc.h
-void debug(const char *_msg) {
-        // OSCMessage msg("/debug");
-        // msg.add(_msg);
-        // send(msg);
-        Serial.println(_msg);
-    }
-} // namespace utils
+
+// Moved to osc.h
+// void debug(const char *_msg) {
+//         // OSCMessage msg("/debug");
+//         // msg.add(_msg);
+//         // send(msg);
+//         Serial.println(_msg);
+//     }
+
+
+}  // namespace utils

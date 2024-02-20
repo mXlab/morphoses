@@ -1,7 +1,9 @@
-#include "osc.h"
-#include <OSCMessage.h>
-#include <OSCBundle.h>
+#include "communications/osc.h"
+
 #include <ArduinoLog.h>
+#include <OSCBundle.h>
+#include <OSCMessage.h>
+
 #include "Network.h"
 #include "Morphose.h"
 #include "OSCCallbacks.h"
@@ -9,61 +11,10 @@
 namespace osc {
 
     OSCBundle bundle{};
+    boolean sendOSC = true;  // default
 
     void confirm(OSCMessage &msg) {
-        msg.empty();
-        msg.add(true);
-        osc::send(msg);
-    }
-
-    void send(const char *addr, const uint8_t id, const uint8_t val) {
-        
-        OSCMessage msg(addr);
-
-        msg.add(id);
-        msg.add(val);
-
-
-        send(msg);
-    }
-
-    void send(const char *addr, const bool val) {
-        OSCMessage msg(addr);
-        msg.add(val);
-        send(msg);
-    }
-
-
-    void send(const char *addr, const uint8_t val) {
-        OSCMessage msg(addr);
-        msg.add(val);
-        send(msg);
-    }
-
-    void send(const char *addr, const uint16_t val) {
-        OSCMessage msg(addr);
-        msg.add(val);
-        send(msg);
-    }
-
-    void send(const char *addr, const uint16_t x, const uint16_t y, const uint16_t z) {
-        OSCMessage msg(addr);
-        msg.add(x);
-        msg.add(y);
-        msg.add(z);
-        send(msg);
-    }
-
-    void send(const char *addr, const float val) {
-        OSCMessage msg(addr);
-        msg.add(val);
-        send(msg);
-    }
-
-    void send(const char *addr, char* val) {
-        OSCMessage msg(addr);
-        msg.add(val);
-        send(msg);
+        reply<bool>(msg,true);
     }
 
     void send(const char *addr) {
@@ -78,18 +29,50 @@ namespace osc {
         msg.empty();
     }
 
-    void sendBundle(){
+    void debug(const char *_msg) {
+        Log.infoln(_msg);  // TODO(Etienne): Remove. Only for debugging
+        send<const char *>("/debug",_msg);
+    }
+
+
+    void sendBundle() {
         network::udp.beginPacket(network::pcIP, morphose::outgoingPort);
         bundle.send(network::udp);
         network::udp.endPacket();
         bundle.empty();
     }
 
-    void debug(const char *_msg) {
-        OSCMessage msg("/debug");
-        msg.add(_msg);
-        send(msg);
+
+    void sendOscBundleToIP(const IPAddress& ip, boolean force, int port) {
+        network::udp.beginPacket(ip, port);
+        if (sendOSC || force) {
+            bundle.send(network::udp);   // send the bytes to the SLIP stream
+        }
+        network::udp.endPacket();   // mark the end of the OSC Packet ** keep this line** (see warning above)
     }
+
+// Sends currently built bundle (with optional broadcasting option).
+// ** WARNING **: The beginPacket() & sendPacket() functions need to be called regularly
+// otherwise the program seems to have trouble receiving data and loses some packets. It
+// is unclear why, but this seems to resolve the issue.
+void sendOscBundle(bool broadcast, bool force, int port) {
+    if (broadcast) {
+        sendOscBundleToIP(network::broadcast, force, port);
+    } else {
+        // loop through registered IP addresses and send same packet to each of them
+        for (byte i = 0; i < network::numActiveIPs; i++) {
+        // create temporary IP address
+        IPAddress ip(DEST_IP_0, DEST_IP_1, DEST_IP_2, network::destIPs[i]);
+
+        // begin packet
+        sendOscBundleToIP(ip, force, port);
+        }
+    }
+    bundle.empty();     // empty the bundle to free room for a new one
+    }
+
+
+
 
 
     uint8_t castItemFromIndexToInt(OSCMessage &msg, int idx) {
@@ -131,26 +114,83 @@ namespace osc {
         return val;
     }
 
+/// Smart-converts argument from message to integer.
+int32_t getArgAsInt(OSCMessage& msg, int index) {
+  if (msg.isInt(index)) {
+    return msg.getInt(index);
+  } else if (msg.isBoolean(index)) {
+    return (msg.getBoolean(index) ? 1 : 0);
+  } else {
+    double val = 0;
+    if (msg.isFloat(index))       val = msg.getFloat(index);
+    else if (msg.isDouble(index)) val = msg.getDouble(index);
+    return round(val);
+  }
+}
+
+bool getArgAsBool(OSCMessage& msg, int index) {
+  return (bool)getArgAsInt(msg, index);
+}
+
+/// Smart-converts argument from message to float.
+float getArgAsFloat(OSCMessage& msg, int index) {
+  if (msg.isFloat(index)) {
+    return msg.getFloat(index);
+  } else if (msg.isDouble(index)) {
+    return (float)msg.getDouble(index);
+  } else if (msg.isBoolean(index)) {
+    return (msg.getBoolean(index) ? 1 : 0);
+  } else {
+    return (float)msg.getInt(index);
+}
+}
+/// Returns true iff argument from message is convertible to a number.
+boolean argIsNumber(OSCMessage& msg, int index) {
+  return (msg.isInt(index) || msg.isFloat(index) || msg.isDouble(index) || msg.isBoolean(index));
+}
+
     void update() {
         // OSC Routine
         // Tried to wrap this in a class and in a namespace and it makes the mcu crash for unknown reasons
-        //OSCMessage msg;
-        OSCBundle bundle;
+        // OSCMessage msg;
+        OSCMessage msg;
         uint16_t size = network::udp.parsePacket();
-        
+
         if (size > 0) {
             while (size--) {
-                bundle.fill(network::udp.read());
+                msg.fill(network::udp.read());
             }
 
-            if (!bundle.hasError()) { 
+            if (!msg.hasError()) {
                 // if message has no errors
-                //TODO : set dispatch here
-                bundle.dispatch("/bonjour",oscCallback::bonjour);
-            }
-            else // If message contains an error
-            {
-                switch (bundle.getError()) {
+                // TODO(Etienne) : set dispatch here
+                msg.dispatch("/bonjour",             oscCallback::bonjour);
+                msg.dispatch("/get/data",            oscCallback::getData);
+                msg.dispatch("/speed",               oscCallback::speed);
+                msg.dispatch("/steer",               oscCallback::steer);
+                msg.dispatch("/nav/start",           oscCallback::startNavigation);
+                msg.dispatch("/nav/stop",            oscCallback::stopNavigation);
+                msg.dispatch("/reboot",              oscCallback::reboot);
+                msg.dispatch("/stream",              oscCallback::stream);
+                msg.dispatch("/power",               oscCallback::power);
+                msg.dispatch("/calib/begin",         oscCallback::calibrationBegin);
+                msg.dispatch("/calib/end",           oscCallback::calibrationEnd);
+                msg.dispatch("/calib/save",          oscCallback::saveCalibration);
+                msg.dispatch("/rgb/all",             oscCallback::rgbAll);
+                msg.dispatch("/rgb/one",             oscCallback::rgbOne);
+                msg.dispatch("/rgb/region",          oscCallback::rgbRegion);
+                msg.dispatch("/base-color",          oscCallback::baseColor);
+                msg.dispatch("/alt-color",           oscCallback::altColor);
+                msg.dispatch("/period",              oscCallback::animationPeriod);
+                msg.dispatch("/noise",               oscCallback::noise);
+                msg.dispatch("/animation-type",      oscCallback::animationType);
+                msg.dispatch("/animation-region",    oscCallback::animationRegion);
+                msg.dispatch("/log",                 oscCallback::log);  // TODO(Etienne): Remove. Only for debug
+                msg.dispatch("/flush",               oscCallback::readyToFlush);
+                msg.dispatch("/endLog",               oscCallback::endLog);
+            
+            } else {    // If message contains an error
+                switch (msg.getError()) {
                     case BUFFER_FULL:
                         Log.errorln("OSC MESSAGE ERROR : BUFFER_FULL");
                         break;
@@ -173,8 +213,7 @@ namespace osc {
                         break;
                 }
             }
-        } 
-            
         }
-    
-} // namespace osc
+    }
+}   // namespace osc
+
