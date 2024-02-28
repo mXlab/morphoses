@@ -3,7 +3,6 @@
 #include <SparkFun_BNO080_Arduino_Library.h>
 #include <Chrono.h>
 
-#include "Config.h"
 #include "communications/osc.h"
 #include "Morphose.h"
 #include "Utils.h"
@@ -25,6 +24,7 @@ namespace imus {
     boolean MorphosesIMU::isInitialized() const { return _initialized; }
 
     void MorphosesIMU::init() {
+
       // Try to connect.
       boolean isOk = begin(i2cAddress());
       if (!isOk) {
@@ -32,16 +32,17 @@ namespace imus {
         utils::blinkIndicatorLed(1000, 0.1);
         // Connected: initialize.
       } else {
-        // Wire.setClock(400000); //Increase I2C data rate to 400kHz
+        Wire.setClock(400000); //Increase I2C data rate to 400kHz
         // Enable rotation vector.
         enableRotationVector(IMU_SAMPLE_RATE);
         enableMagnetometer(IMU_SAMPLE_RATE);
         _initialized = true;
+         osc::debug("BNO080 initialized");
       }
 
       // Add details and send.
       oscBundle(isOk ? "/ready" : "/error").add(morphose::name).add("i2c");
-      osc::sendOscBundle();
+      osc::sendBundle();
     }
 
     boolean MorphosesIMU::process() {
@@ -49,13 +50,15 @@ namespace imus {
       bool available = dataAvailable();
 
       // Send data over OSC.
-      if (available && osc::sendOSC) {  // flag that determines to send or not should be internal to class
+      // if (available && osc::sendOSC) {  // flag that determines to send or not should be internal to class
+      if (available) {
         oscBundle("/quat").add(getQuatI()).add(getQuatJ()).add(getQuatK()).add(getQuatReal());
         oscBundle("/rot").add((float)degrees(getRoll())).add((float)degrees(getPitch())).add((float)degrees(getYaw()));
         oscBundle("/accur").add(getMagAccuracy()).add(degrees(getQuatRadianAccuracy()));
         oscBundle("/mag").add(getMagX()).add(getMagY()).add(getMagZ());
       }
 
+     // TODO(Etienne) : Old comment Verify if we keep
     //  // Verify if accuracy is okay, otherwise try to re-calibrate.
     //  if (getMagAccuracy() <= IMU_LOW_ACCURACY) {
     //    recalibrationMode = true;
@@ -127,7 +130,10 @@ MorphosesIMU imuSide(false);
 #define IMU_LOW_ACCURACY  1
 #define IMU_HIGH_ACCURACY 3
 
-void initIMUs() {
+void initialize() {
+    
+     
+
   if (!imuMain.isInitialized()) {
     osc::debug("Main imu not initialized");
     imuMain.init();
@@ -137,43 +143,42 @@ void initIMUs() {
     imuSide.init();
   }
 
-  osc::debug("Successfully initialized both imus");
-  osc::sendOscBundle();  // Why are we sending a bundle at initialization?
 }
 
-void calibrateBeginIMUs() {
+void beginCalibration() {
   imuMain.calibrateBegin();
   imuSide.calibrateBegin();
-  osc::sendOscBundle();
+  osc::sendBundle();
 }
 
-void calibrateEndIMUs() {
+void endCalibration() {
   imuMain.calibrateEnd();
   imuSide.calibrateEnd();
-  osc::sendOscBundle();
+  osc::sendBundle();
 }
 
-void calibrateSaveIMUs() {
+void saveCalibration() {
   imuMain.calibrateSave();
   imuSide.calibrateSave();
-  osc::sendOscBundle();
+  osc::sendBundle();
 }
 
-void sleepIMUs() {
+void sleep() {
   imuMain.modeSleep();
   imuSide.modeSleep();
 }
 
-void wakeIMUs() {
+void wake() {
   imuMain.modeOn();
   imuSide.modeOn();
 }
 
 
-void processIMUs() {
+void process() {
   imuMain.process();
   imuSide.process();
-  osc::sendOscBundle();
+
+  //osc::sendBundle(); // TODO(Etienne): Verify with Sofian why we are sending right away
 }
 
 float getHeading() {

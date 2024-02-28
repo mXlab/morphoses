@@ -6,30 +6,31 @@
 #include <OSCMessage.h>
 
 #include "Morphose.h"
+
 #define USE_BUNDLE true;
 
 /**
  * TODO:
  * - Change oscmessages for bundle in send()
- * - examine if timetag is needed to properly sequence actions
  * 
  */
 
 
-
-
-
-
 namespace osc {
     extern OSCBundle bundle;
-    extern boolean sendOSC;
+
+    bool isBroadcasting();
+    void setBroadcast(bool onoff);
+
     /**
      * @brief OSC protocol update loop. Verify if there's an incoming message add points to the right callback
      */
     void update();
 
     void sendBundle();
-    void sendOscBundle(bool broadcast = false, boolean force = false, int port = morphose::outgoingPort);
+    void sendBundle(IPAddress ip, uint16_t port);
+
+    // void sendOscBundle(bool broadcast = false, boolean force = false, int port = morphose::outgoingPort);
 
      /**
      * @brief sends an OSCMessage object over UDP
@@ -55,13 +56,6 @@ namespace osc {
         send(msg);
     }
 
-    
-
-    /**
-     * @brief Sends wifi signal strength to host.
-     */
-    void sendSignalStrength(OSCMessage &msg);
-
 
     /**
      * @brief Sends a debug message to host on /debug address
@@ -77,7 +71,7 @@ namespace osc {
      * @param idx index of the argement to cast
      * @return uint8_t - value of the specified argument casted to uint8_t
      */
-    uint8_t castItemFromIndexToInt(OSCMessage &msg, int idx);
+    uint8_t castItemFromIndexToInt(OSCMessage &msg, int idx); // TODO(Etienne) : REmove because never used
 
     /**
      * @brief cast the specified argument of the osc message to uint16_t and returns it
@@ -86,7 +80,7 @@ namespace osc {
      * @param idx index of the argement to cast
      * @return uint16_t - value of the specified argument casted to uint16_t
      */
-    uint16_t castItemFromIndexToInt16(OSCMessage &msg, int idx);
+    uint16_t castItemFromIndexToInt16(OSCMessage &msg, int idx); // TODO(Etienne) : REmove because never used
 
     /**
      * @brief cast the specified argument of the osc message to float and returns it
@@ -95,7 +89,7 @@ namespace osc {
      * @param idx index of the argement to cast
      * @return float - value of the specified argument casted to float
      */
-    float castItemFromIndexToFloat(OSCMessage &msg, int idx);
+    float castItemFromIndexToFloat(OSCMessage &msg, int idx); // TODO(Etienne) : REmove because never used
 
     /// Smart-converts argument from message to integer.
     bool getArgAsBool(OSCMessage& msg, int index);
@@ -109,10 +103,7 @@ namespace osc {
     /// Returns true iff argument from message is convertible to a number.
     boolean argIsNumber(OSCMessage& msg, int index);
 
-    /**
-     * @brief Sends a confirmation to host that the action asked is over
-     */
-    void confirm(OSCMessage &msg);
+
 }  // namespace osc
 
 #endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_OSC_H_

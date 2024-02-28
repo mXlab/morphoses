@@ -11,6 +11,7 @@ namespace morphose {
     extern int id;
     extern char name[16];
     extern int outgoingPort;
+    extern bool stream;
 
     void initialize(IPAddress ip);
 
@@ -24,31 +25,35 @@ namespace morphose {
 
     void sayHello();
 
+    void resetPosition();
+
     Vec2f getPosition();
 
     void setCurrentPosition(Vec2f newPosition);
 
+    void sendData();
+
 namespace navigation {
-        void startNavigation();
+        void start();
 
-        void startNavigationHeading(float speed, float relativeHeading = 0);
+        void startHeading(float speed, float relativeHeading = 0);
 
-        void stepNavigationHeading();
+        void stepHeading();
 
         // Returns the quality of the velocity calculation from 0% to 100% ie. [0..1]
-        float getNavigationVelocityQuality();
+        float getVelocityQuality();
 
-        void stopNavigationHeading();
+        void stopHeading();
 
-        void processNavigation();
+        void process();
 
         Vec2f getVelocity();
 
-        float getVelocityHeading();
+        float getVelocityHeading(); //TODO(Etienne) :Never used verify if keep
 
-        void sendNavigationInfo();
+        void sendInfo();
 
-        void updateNavigationVelocity(bool movingForward);
+        void updateNavigationVelocity(bool movingForward); //TODO(Etienne) :Never used and funciton is empty verify if keep
 
     }  // namespace navigation
 
@@ -56,7 +61,7 @@ namespace navigation {
 namespace energy {
         void deepSleepLowMode(float batteryVoltage);
         void deepSleepCriticalMode(float batteryVoltage);
-        void checkEnergy();
+        void check();
 
     }  // namespace energy
 }  // namespace morphose

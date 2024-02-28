@@ -11,10 +11,15 @@
 namespace osc {
 
     OSCBundle bundle{};
-    boolean sendOSC = true;  // default
+    bool broadcast = true;
 
-    void confirm(OSCMessage &msg) {
-        reply<bool>(msg,true);
+
+    bool isBroadcasting(){
+        return broadcast;
+    }
+
+    void setBroadcast( bool onoff){
+        broadcast = onoff;
     }
 
     void send(const char *addr) {
@@ -23,7 +28,11 @@ namespace osc {
     }
 
     void send(OSCMessage &msg) {
-        network::udp.beginPacket(network::pcIP, morphose::outgoingPort);
+        if(broadcast){
+            network::udp.beginPacket(network::broadcast, network::outgoingPort);
+        }else{
+            network::udp.beginPacket(network::pcIP, network::outgoingPort);
+        }
         msg.send(network::udp);
         network::udp.endPacket();
         msg.empty();
@@ -35,44 +44,53 @@ namespace osc {
     }
 
 
-    void sendBundle() {
-        network::udp.beginPacket(network::pcIP, morphose::outgoingPort);
+    void sendBundle(IPAddress ip, uint16_t port) {
+        //Serial.println(ip);
+        //Serial.println(port);
+        network::udp.beginPacket(ip,port);
         bundle.send(network::udp);
         network::udp.endPacket();
         bundle.empty();
     }
 
-
-    void sendOscBundleToIP(const IPAddress& ip, boolean force, int port) {
-        network::udp.beginPacket(ip, port);
-        if (sendOSC || force) {
-            bundle.send(network::udp);   // send the bytes to the SLIP stream
-        }
-        network::udp.endPacket();   // mark the end of the OSC Packet ** keep this line** (see warning above)
-    }
-
-// Sends currently built bundle (with optional broadcasting option).
-// ** WARNING **: The beginPacket() & sendPacket() functions need to be called regularly
-// otherwise the program seems to have trouble receiving data and loses some packets. It
-// is unclear why, but this seems to resolve the issue.
-void sendOscBundle(bool broadcast, bool force, int port) {
-    if (broadcast) {
-        sendOscBundleToIP(network::broadcast, force, port);
-    } else {
-        // loop through registered IP addresses and send same packet to each of them
-        for (byte i = 0; i < network::numActiveIPs; i++) {
-        // create temporary IP address
-        IPAddress ip(DEST_IP_0, DEST_IP_1, DEST_IP_2, network::destIPs[i]);
-
-        // begin packet
-        sendOscBundleToIP(ip, force, port);
+    void sendBundle() {
+        if(broadcast){
+            sendBundle(network::broadcast, network::outgoingPort);
+        }else{
+            sendBundle(network::pcIP, network::outgoingPort);
         }
     }
-    bundle.empty();     // empty the bundle to free room for a new one
-    }
 
+    // TODO(Etienne) : Verify if still needed. If not remove from code
 
+//     void sendOscBundleToIP(const IPAddress& ip, boolean force, int port) {
+//         network::udp.beginPacket(ip, port);
+//         if (sendOSC || force) {
+//             bundle.send(network::udp);   // send the bytes to the SLIP stream
+//         }
+//         network::udp.endPacket();   // mark the end of the OSC Packet ** keep this line** (see warning above)
+//     }
 
+// // Sends currently built bundle (with optional broadcasting option).
+// // ** WARNING **: The beginPacket() & sendPacket() functions need to be called regularly
+// // otherwise the program seems to have trouble receiving data and loses some packets. It
+// // is unclear why, but this seems to resolve the issue.
+// void sendOscBundle(bool broadcast, bool force, int port) {
+//     if (broadcast) {
+//         sendOscBundleToIP(network::broadcast, force, port);
+//     } else {
+
+//         // // loop through registered IP addresses and send same packet to each of them
+//         for (byte i = 0; i < network::numActiveIPs; i++) {
+//             // create temporary IP address
+//             IPAddress ip(DEST_IP_0, DEST_IP_1, DEST_IP_2, network::destIPs[i]);
+
+//             // begin packet
+//             sendOscBundleToIP(ip, force, port);
+//         }
+//     }
+//     bundle.empty();     // empty the bundle to free room for a new one
+//     }
 
 
     uint8_t castItemFromIndexToInt(OSCMessage &msg, int idx) {
@@ -153,50 +171,75 @@ boolean argIsNumber(OSCMessage& msg, int index) {
         // OSC Routine
         // Tried to wrap this in a class and in a namespace and it makes the mcu crash for unknown reasons
         // OSCMessage msg;
-        OSCMessage msg;
+        OSCBundle msg;  // TODO(Etienne) :Verify if receiving bundles or messages.
+        OSCMessage temp;
         uint16_t size = network::udp.parsePacket();
 
         if (size > 0) {
+
             while (size--) {
                 msg.fill(network::udp.read());
             }
 
+            if (DEBUG_MODE) {
+                Serial.print("Received packet of size ");
+                Serial.println(size);
+                Serial.print("From : ");
+                Serial.print(network::udp.remoteIP());
+                Serial.print(", port : ");
+                Serial.println(network::udp.remotePort());
+                Serial.println(F("OSC message received:"));
+                msg.send(Serial);
+                Serial.println(" ");
+            }
+
+            
+
             if (!msg.hasError()) {
-                // if message has no errors
-                // TODO(Etienne) : set dispatch here
-                msg.dispatch("/bonjour",             oscCallback::bonjour);
+                if (DEBUG_MODE){
+                    Serial.println("no errors in packet"); 
+                } 
+                Serial.println("Message received");
+                bundle.add("/received").add(morphose::name).add(network::udp.remoteIP()[3]);
+                sendBundle();
+   
+                msg.dispatch("/bonjour",             oscCallback::bonjour);//ok
+                msg.dispatch("/broadcast",           oscCallback::broadcast);
                 msg.dispatch("/get/data",            oscCallback::getData);
-                msg.dispatch("/speed",               oscCallback::speed);
-                msg.dispatch("/steer",               oscCallback::steer);
+                msg.dispatch("/speed",               oscCallback::speed); //ok
+                msg.dispatch("/steer",               oscCallback::steer); //ok
                 msg.dispatch("/nav/start",           oscCallback::startNavigation);
                 msg.dispatch("/nav/stop",            oscCallback::stopNavigation);
-                msg.dispatch("/reboot",              oscCallback::reboot);
+                msg.dispatch("/reboot",              oscCallback::reboot); //ok
                 msg.dispatch("/stream",              oscCallback::stream);
-                msg.dispatch("/power",               oscCallback::power);
+                msg.dispatch("/power",               oscCallback::power); //ok
                 msg.dispatch("/calib/begin",         oscCallback::calibrationBegin);
                 msg.dispatch("/calib/end",           oscCallback::calibrationEnd);
                 msg.dispatch("/calib/save",          oscCallback::saveCalibration);
-                msg.dispatch("/rgb/all",             oscCallback::rgbAll);
-                msg.dispatch("/rgb/one",             oscCallback::rgbOne);
-                msg.dispatch("/rgb/region",          oscCallback::rgbRegion);
-                msg.dispatch("/base-color",          oscCallback::baseColor);
-                msg.dispatch("/alt-color",           oscCallback::altColor);
-                msg.dispatch("/period",              oscCallback::animationPeriod);
-                msg.dispatch("/noise",               oscCallback::noise);
-                msg.dispatch("/animation-type",      oscCallback::animationType);
-                msg.dispatch("/animation-region",    oscCallback::animationRegion);
+                msg.dispatch("/rgb/all",             oscCallback::rgbAll); //ok
+                msg.dispatch("/rgb/one",             oscCallback::rgbOne); //ok
+                msg.dispatch("/rgb/region",          oscCallback::rgbRegion); //ok
+                msg.dispatch("/base-color",          oscCallback::baseColor);  // TODO(Etienne) : Verify if keeping. Not present in old sofian code
+                msg.dispatch("/alt-color",           oscCallback::altColor);  // TODO(Etienne) : Verify if keeping. Not present in old sofian code
+                msg.dispatch("/period",              oscCallback::animationPeriod);  // TODO(Etienne) : Verify if keeping. Not present in old sofian code
+                msg.dispatch("/noise",               oscCallback::noise);  // TODO(Etienne) : Verify if keeping. Not present in old sofian code
+                msg.dispatch("/animation-type",      oscCallback::animationType);  // TODO(Etienne) : Verify if keeping. Not present in old sofian code
+                msg.dispatch("/animation-region",    oscCallback::animationRegion);  // TODO(Etienne) : Verify if keeping. Not present in old sofian code
                 msg.dispatch("/log",                 oscCallback::log);  // TODO(Etienne): Remove. Only for debug
                 msg.dispatch("/flush",               oscCallback::readyToFlush);
                 msg.dispatch("/endLog",               oscCallback::endLog);
             
-            } else {    // If message contains an error
+            } else {    // If message contains an error;
+                
                 switch (msg.getError()) {
                     case BUFFER_FULL:
                         Log.errorln("OSC MESSAGE ERROR : BUFFER_FULL");
                         break;
 
                     case INVALID_OSC:
+                        
                         Log.errorln("OSC MESSAGE ERROR : INVALID_OSC");
+                        
                         break;
 
                     case ALLOCFAILED:

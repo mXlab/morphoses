@@ -1,9 +1,13 @@
 #ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_LIGHTS_PIXELS_H_
 #define ARDUINO_MORPHOSE_PLATFORMIO_SRC_LIGHTS_PIXELS_H_
 
-#include <Globals.h>
+// #include <Globals.h>
 
 namespace pixels {
+
+#define NUM_PIXELS 32
+#define NUM_PIXELS_PER_BLOCK 8
+#define PIXELS_TYPE (NEO_GRBW + NEO_KHZ800)
 
 enum Region {
   ALL = 0,
@@ -12,7 +16,7 @@ enum Region {
 };
 
 // Function declarations
-void init();
+void initialize();
 
 // Set one pixel.
 void set(int i, int r, int g, int b, int w = 0);

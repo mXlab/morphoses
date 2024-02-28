@@ -6,7 +6,7 @@
 #include <VectorXf.h>
 #include <WiFi.h>
 
-#include "Globals.h"
+// #include "Globals.h"
 #include "hardware/IMU.h"
 #include "hardware/Engine.h"
 #include "communications/Network.h"
@@ -20,10 +20,10 @@ namespace morphose {
     int id;
     char name[16];
     int outgoingPort;
+    bool stream = true;
+    Chrono sendRate{true};
 
     Vec2f currPosition;
-
-// TODO(Etienne) : MOve to morphose
     pq::Smoother avgPositionX(AVG_POSITION_TIME_WINDOW);
     pq::Smoother avgPositionY(AVG_POSITION_TIME_WINDOW);
     Vec2f avgPosition;
@@ -51,12 +51,24 @@ namespace morphose {
 
     void setOutgoingPort(const int id) {
         outgoingPort = 8100 + (id*10);
-        network::outgoingPort; // sets port in network file for desired robot port.
-        Log.infoln("Robot streaming port is : %d", outgoingPort);
+        network::outgoingPort = outgoingPort; // sets port in network file for desired robot port.
+        Log.infoln("Robot streaming port is : %d", network::outgoingPort);
     }
 
     void sayHello() {
-        osc::send("/bonjour", name);  // TODO(Etienne): SEND IN A BUNDLE
+        bool lastState = osc::isBroadcasting();
+
+        osc::setBroadcast(true);
+        osc::bundle.add("/bonjour").add(name);
+        osc::sendBundle();
+        osc::setBroadcast(lastState); 
+    }
+
+    void resetPosition(){
+        currPosition.set(0, 0);
+        avgPosition.set(0, 0);
+        avgPositionX.reset();
+        avgPositionY.reset();
     }
 
     Vec2f getPosition() {
@@ -77,8 +89,25 @@ namespace morphose {
 
     void update() {
         updateLocation();
+
+        if(sendRate.hasPassed(STREAM_INTERVAL, true)){
+            if(stream){
+                Serial.println(stream);
+                sendData();
+                // Send OSC bundle.
+                osc::sendBundle();
+            }
+            energy::check();  // Energy checkpoint to prevent damage when low
+        }
     }
 
+    void sendData() {
+        imus::process();
+        morphose::navigation::process();
+        motors::processEngine();
+        morphose::navigation::sendInfo();
+        motors::sendEngineInfo();
+    }
 
 namespace navigation {
         #define STEER_MAX 0.5f
@@ -106,7 +135,7 @@ namespace navigation {
         float velocityHeading;
         Chrono velocityTimer;
 
-        void startNavigation() {
+        void start() {
         // Start navigation mode.
         navigationMode = true;
 
@@ -120,7 +149,7 @@ namespace navigation {
         velocity.set(0, 0);
         }
 
-        void startNavigationHeading(float speed, float relativeHeading) {
+        void startHeading(float speed, float relativeHeading) {
         // Get current heading.
         float currentHeading = imus::getHeading();
 
@@ -130,11 +159,11 @@ namespace navigation {
         // Set target speed.
         targetSpeed = max(speed, 0.0f);
 
-        startNavigation();
+        start();
         }
 
 
-        void stepNavigationHeading() {
+        void stepHeading() {
         // Check correction. Positive: too much to the left; negative: too much to the right.
         float relativeHeading = utils::wrapAngle180(targetHeading + imus::getHeading());
         float absoluteRelativeHeading = abs(relativeHeading);
@@ -149,7 +178,7 @@ namespace navigation {
 
         // If we are too much away from our direction, reset.
         if (navigationError >= MAX_NAVIGATION_ERROR) {
-            startNavigation();
+            start();
         } else {
             cumulativeNavigationError += navigationError;
             nNavigationSteps++;
@@ -171,7 +200,7 @@ namespace navigation {
         }
 
         // Returns the quality of the velocity calculation from 0% to 100% ie. [0..1]
-        float getNavigationVelocityQuality() {
+        float getVelocityQuality() {
         // First part of the error depends on distance moved: longer distances are more reliable.
         float absoluteMovement = velocity.length();  // absolute distance covered
         float movementQuality = pq::mapFloat(absoluteMovement, MIN_RELIABLE_NAVIGATION_DISTANCE, MAX_RELIABLE_NAVIGATION_DISTANCE, 0, 1);
@@ -184,14 +213,14 @@ namespace navigation {
         return (movementQuality + navigationQuality) / 2.0f;
         }
 
-        void stopNavigationHeading() {
+        void stopHeading() {
         // Update navigation velocity.
         velocity = (morphose::getPosition() - startingPosition);
         velocityHeading = REFERENCE_ORIENTATION.angle(velocity);
         if (!motors::engineIsMovingForward()) velocityHeading = utils::wrapAngle180(velocityHeading + 180);
 
         // Align IMU offset to velocity heading.
-        if (getNavigationVelocityQuality() >= NAVIGATION_ERROR_THRESHOLD)
+        if (getVelocityQuality() >= NAVIGATION_ERROR_THRESHOLD)
             imus::tare(velocityHeading);
 
         // Reset engine.
@@ -204,9 +233,9 @@ namespace navigation {
         targetSpeed = 0;
         }
 
-        void processNavigation() {
+        void process() {
             if (navigationMode) {
-                stepNavigationHeading();
+                stepHeading();
             }
         }
 
@@ -219,14 +248,16 @@ namespace navigation {
         return velocityHeading;
         }
 
-        void sendNavigationInfo() {
+        void sendInfo() {
         osc::bundle.add("/heading").add(imus::getHeading());
         osc::bundle.add("/velocity").add(getVelocity().x).add(getVelocity().y);
-        osc::bundle.add("/heading-quality").add(getNavigationVelocityQuality());
+        osc::bundle.add("/heading-quality").add(getVelocityQuality());
         }
 
         void updateNavigationVelocity(boolean movingForward) {
         }
+
+ 
 
     }  // namespace navigation
 
@@ -241,8 +272,8 @@ namespace energy {
 
         void deepSleepLowMode(float batteryVoltage) {
             osc::bundle.add("/error").add("battery-low").add(batteryVoltage);
-            osc::sendOscBundle();
-            delay(1000);
+            osc::sendBundle();
+            delay(1000);    // TODO(Etienne): Verify with sofian why delay here
             // Wakeup every 10 seconds.
             esp_sleep_enable_timer_wakeup(ENERGY_VOLTAGE_LOW_WAKEUP_TIME * 1000000UL);
 
@@ -252,21 +283,22 @@ namespace energy {
 
         void deepSleepCriticalMode(float batteryVoltage) {
             osc::bundle.add("/error").add("battery-critical").add(batteryVoltage);
-            osc::sendOscBundle();
-            delay(1000);
+            osc::sendBundle();
+            delay(1000);    // TODO(Etienne): Verify with sofian why delay here
 
             // Go to sleep forever.
             esp_deep_sleep_start();
         }
 
-        void checkEnergy() {
+        void check() {
+            Serial.println("Checking energy");
             // Read battery voltage.
             float batteryVoltage = motors::getBatteryVoltage();
 
             // Low voltage: Launch safety procedure.
             if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
                 // Put IMUs to sleep to protect them.
-                imus::sleepIMUs();
+                imus::sleep();
 
                 // Power engine off.
                 motors::setEnginePower(false);

@@ -9,7 +9,7 @@
 
 namespace motors {
 
-  void initEngine();
+  void initialize();
   void setEnginePower(bool on);
   void setEngineSpeed(float speed);
   void setEngineSteer(float steer);
@@ -17,8 +17,8 @@ namespace motors {
   float getEngineSteer();
   float engineIsMovingForward();
   float getBatteryVoltage();
-  int getEngineSpeedTemperature();
-  int getEngineSteerTemperature();
+  int getEngineSpeedTemperature();  // TODO(Etienne): Never used. Verify if need to keep
+  int getEngineSteerTemperature();  // TODO(Etienne): Never used. Verify if need to keep
   void processEngine();
   void sendEngineInfo();
 

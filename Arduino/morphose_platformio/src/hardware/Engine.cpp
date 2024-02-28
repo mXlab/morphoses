@@ -35,7 +35,7 @@ namespace motors {
   float currentSpeed;
   float currentSteer;
 
-  void initEngine() {
+  void initialize() {
     // Set Port baudrate to 57600bps for DYNAMIXEL motors.
     dxl.begin(57600);
     // Set Port Protocol Version. This has to match with DYNAMIXEL protocol version.
@@ -56,6 +56,7 @@ namespace motors {
     dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_ID_STEER, profile_velocity_steering);
 
     currentSpeed = currentSteer = 0;
+    osc::debug("Motors initialized");
   }
 
   void setEnginePower(bool on) {

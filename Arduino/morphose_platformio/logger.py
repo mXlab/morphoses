@@ -69,11 +69,11 @@ def endOfLog(client_address: tuple[str, int], address: str, *osc_args: list[any]
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--ip",
-        default="192.168.0.148", help="The ip to listen on")
+        default="192.168.0.180", help="The ip to listen on")
     parser.add_argument("--inport",
-        type=int, default=8110, help="The port to listen on")
+        type=int, default=8120, help="The port to listen on")
     parser.add_argument("--outport",
-        type=int, default=800, help="The port to listen on")
+        type=int, default=8000, help="The port to listen on")
     args = parser.parse_args()
 
 

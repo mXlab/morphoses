@@ -46,13 +46,6 @@ float wrapAngle360(float angle) {
 }
 
 
-// Moved to osc.h
-// void debug(const char *_msg) {
-//         // OSCMessage msg("/debug");
-//         // msg.add(_msg);
-//         // send(msg);
-//         Serial.println(_msg);
-//     }
 
 
 }  // namespace utils

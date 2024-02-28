@@ -123,13 +123,6 @@ namespace logger
     }
 
     // logFile.begin();
-
-    // listDir(LittleFS, "/", 0);
-    // listDir(LittleFS, "/littlefs", 0);
-
-    // writeFile(LittleFS, "/data.log", "Potato");
-    // readFile(LittleFS,"/data.log");
-
     logFile.reset();
     // Set the space reserved to the log (in bytes)
     logFile.setSizeLimit(limit);
@@ -208,6 +201,7 @@ namespace logger
     logFile.append(" ");
    }
 
+  // TODO(Etienne): Verify if can remove commented code
   bool sendOSC(const char *buffer, int n) {
     int index = 0;
     Serial.println(n);

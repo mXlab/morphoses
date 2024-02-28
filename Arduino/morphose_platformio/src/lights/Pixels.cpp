@@ -9,7 +9,7 @@ namespace pixels {
   // The neopixel strip instance.
   Adafruit_NeoPixel pixels(NUM_PIXELS, PIXELS_PIN, PIXELS_TYPE);
 
-  void init() {
+  void initialize() {
     // INITIALIZE NeoPixel strip object (REQUIRED)
     pixels.begin();
   }

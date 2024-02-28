@@ -9,13 +9,17 @@
 
 
 namespace mqtt {
-
+// MQTT settings.
 const char* broker{"192.168.0.200"};
 const int brokerPort {1883};
 
+// RTLS IDs.
+static const char *ROBOT_RTLS_IDS[N_ROBOTS] = { "1a1e", "0f32", "5b26" };
+static char ROBOT_RTLS_MQTT_ADDRESS[N_ROBOTS][32];  // Internal use to keep full MQTT addresses.
+static char ROBOT_CUSTOM_MQTT_ADDRESS[32];
+
 // Create an ESP32 WiFiClient class to connect to the MQTT server.
 WiFiClient client;
-
 
 // Setup the MQTT client class by passing in the WiFi client and MQTT server and login details.
 Adafruit_MQTT_Client mqtt(&client, broker, brokerPort);
@@ -46,12 +50,7 @@ void initialize() {
   mqttAnimationData = new Adafruit_MQTT_Subscribe(&mqtt, ROBOT_CUSTOM_MQTT_ADDRESS);
   mqtt.subscribe(mqttAnimationData);
 
-
-// TODO(Etienne) :MOVE TO MORPHOSE
-//   currPosition.set(0, 0);
-//   avgPosition.set(0, 0);
-//   avgPositionX.reset();
-//   avgPositionY.reset();
+  morphose::resetPosition();
 }
 
 
@@ -65,15 +64,13 @@ void connect() {
 
 
     // Send error
-
     osc::bundle.add("/error").add("mqtt-connect").add(errorStr);
     osc::sendBundle();
-    // sendOscBundle();
-
     mqtt.disconnect();
+    
   } else {
-    // bndl.add("/ready").add("mqtt-connect");
-    // sendOscBundle();
+      osc::bundle.add("/ready").add("mqtt-connect");
+      osc::sendBundle();
     Serial.println("MQTT Connected!");
   }
 }
@@ -88,27 +85,19 @@ void update() {
       connect();
   }
 
-
   // this is our 'wait for incoming subscription packets and callback em' busy subloop
   // try to spend your time here:
   Adafruit_MQTT_Subscribe *subscription;
   while (subscription = mqtt.readSubscription(10)) {
     if (subscription == mqttAnimationData) {
       Log.infoln("Animation updated");
-     // onMqttAnimation((char *)mqttAnimationData->lastread);
+     onAnimation((char *)mqttAnimationData->lastread);
     } else {
       for (int i=0; i < N_ROBOTS; i++) {
         if (subscription == mqttRobotLocations[i]) {
             Log.infoln("Location %d updated", i+1);
-            if (onMqttLocation(i, (char *)mqttRobotLocations[i]->lastread) && i+1 == morphose::id) {
-                morphose::setCurrentPosition(newPosition);
-            }
-
-            // buffer all robot positions
-            robotPositions[i].set(newPosition);
-            // TODO(Etienne): ADD chrono to send robot position priodically or remove.
-
-          break;
+            onLocation(i, (char *)mqttRobotLocations[i]->lastread);
+            break;
         }
       }
     }
@@ -121,19 +110,28 @@ void update() {
   }
 }
 
-bool onMqttLocation(int robot, char* data) {
+void onLocation(int robot, char* data) {
   // Parse location.
   JSONVar location = JSON.parse(data);
   JSONVar position = location["position"];
   if ((int)position["quality"] > 50) {
     // Set current position.
     newPosition = Vec2f((float)double(position["x"]), (float)double(position["y"]));  // weird way to do this
-    return true;
+    
+    // buffer all robot positions
+    robotPositions[robot].set(newPosition);
+
+     if (robot+1 == morphose::id) {
+        morphose::setCurrentPosition(newPosition);
+     }
+    
+
+    // TODO(Etienne): Verify with Sofian why whe send a bundle here. There was some commented code in old version here
+    osc::sendBundle();
   }
-  return false;
 }
 
-void onMqttAnimation(char* data){
+void onAnimation(char* data){
   // Parse location.
   JSONVar animationData = JSON.parse(data);
   JSONVar _baseColor = animationData["base"];
@@ -143,7 +141,7 @@ void onMqttAnimation(char* data){
 // TODO(Sofian) : Works for now. Find a way to wrap all in function and pass data without to much redundency. Maybe pass pointer to json data
   if (animations::lockMutex()) {
     animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
-    animations::currentAnimation().setBaseColor(int(baseColor[0]), int(baseColor[1]), int(baseColor[2]));
+    animations::currentAnimation().setBaseColor(int(baseColor[0]), int(baseColor[1]), int(baseColor[2])); // TODO(Etienne): Already int why casting?
     animations::currentAnimation().setAltColor(int(altColor[0]),  int(altColor[1]),  int(altColor[2]));
     animations::currentAnimation().setNoise((float)  double(animationData["noise"]));
     animations::currentAnimation().setPeriod((float) double(animationData["period"]));

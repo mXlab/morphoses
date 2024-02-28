@@ -12,16 +12,19 @@
 #include "communications/osc.h"
 #include "Morphose.h"
 #include "Utils.h"
+#include "Logger.h"
 
 
 namespace network {
 
     //  IP address registry
     byte destIPs[MAX_DEST_IPS];
+
+    IPAddress ipList[MAX_DEST_IPS];
     int numActiveIPs = 0, lastAddedIPIndex = 0;
 
-     IPAddress pcIP{192, 168, 0, 148};
-     IPAddress mcuIP{192, 168, 0, 17};
+     IPAddress pcIP{192, 168, 0, 100};
+     IPAddress mcuIP{192, 168, 0, ROBOT_ID};
      IPAddress broadcast{192, 168, 0, 255};
      IPAddress subnet(255, 255, 255, 0);
      IPAddress gateway(192, 168, 0, 1);
@@ -35,13 +38,16 @@ namespace network {
 
 
     //  ROUTER SSID AND PSWRD
-    const char *ssid = "Chien1";
-    const char *pswd = "Pizzabacon";
+    const char *ssid = "SM-A520W1739";
+    const char *pswd = "osvu6368";
+    // const char *ssid = "Morphoses";
+    // const char *pswd = "BouleQuiRoule";
 
-    int outgoingPort = 8130;
+    int outgoingPort = 8000 + ROBOT_ID;
     const int incomingPort = 8000;
 
 
+  
     void addDestinationIPAddress(byte ip3) {
   // Determine if the address we want to add is already registered.
 
@@ -81,12 +87,9 @@ namespace network {
         if (!maybeConnectToRouter(maxTry)) {
             Log.errorln("WiFi unable to connect, Rebooting hardware.");
             utils::blinkIndicatorLed(100, 0.7, 20);
+           network::removeWifiEvents();
             ESP.restart();
         }
-
-        //  on disconnect callback
-        // TODO(Etienne) : Verify why not in setWifiEvents
-
         initializeUDP(incomingPort);
         showRSSI();
     }
@@ -95,21 +98,17 @@ namespace network {
     bool configureStation() {
         Log.infoln("Network interface configuration for station mode");
 
-
             // delete old config
-            if(WiFi.disconnect(true,true)){
+            if (WiFi.disconnect(true, true)) {
                 Log.infoln("Successfully delete wifi config");
             }
             WiFi.mode(WIFI_STA);
-            //WiFiClass::mode(WIFI_STA);
+            WiFi.setSleep(false);  // enable the wifi all the time
+            setWifiEvents();
 
-             WiFi.setSleep(false);  // enable the wifi all the time
-             setWifiEvents();
              // TODO(Etienne) : test autoreconnect function
-             // WiFi.setAutoReconnect(true);
+             WiFi.setAutoReconnect(true);
 
-        // TODO(Etienne) : Maybe change hostname for robot+id
-        //  WiFiClass::setHostname(getApSSID());
 
         // TODO(Etienne): See with Sofian if static ip on esp is preferred
         // Configures static IP address
@@ -124,7 +123,9 @@ namespace network {
     bool connectToWiFi(const char *_ssid, const char *_pwd, uint16_t timeout) {
         Chrono anim(true);
         unsigned long start_time{millis()};
+        
         WiFi.begin(_ssid, _pwd);
+        WiFi.waitForConnectResult();
 
         while (WiFiClass::status() != WL_CONNECTED) {
             utils::blinkIndicatorLed(500);
@@ -136,6 +137,11 @@ namespace network {
                 break;
             }
         }
+
+        mcuIP = WiFi.localIP();
+
+        Serial.println("IP: ");
+        Serial.println(mcuIP);
 
         Log.traceln(" ");
         Log.setShowLevel(true);
@@ -189,31 +195,22 @@ namespace network {
         osc::debug(buff);
     }
 
-    IPAddress getMcuIP() {
-        return mcuIP;
-        }
-
      bool isConnected() {return (WiFi.status() == WL_CONNECTED);}
 
 // wifi events helpers
 
     void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-            auto _ssid = WiFi.SSID().c_str();
-            Log.noticeln("");
-            Log.setShowLevel(true);
-            Log.noticeln("Connected to network %s successfully.", _ssid);
-            Log.setShowLevel(false);
+
+            Log.noticeln("Connected to network.");
     }
 
     void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
-        Log.warningln("Disconnected from WiFi");
-        // TODO(Etienne) : print disconnect reason as a string
-        Log.infoln("Trying to Reconnect");
-        maybeConnectToRouter(3);
+       
+        Log.warningln("Disconnected from WiFi %d", info.wifi_sta_disconnected.reason);
+        logger::error("Lost wifi connection");
     }
 
     void WiFiGotIP(WiFiEvent_t event, WiFiEventInfo_t info) {
-        mcuIP = WiFi.localIP();
         Log.noticeln("MCU IP address: [%p]", WiFi.localIP());
     }
 

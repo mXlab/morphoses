@@ -16,21 +16,32 @@
 
 namespace oscCallback {
 
+void broadcast(OSCMessage& msg){
+  bool state = osc::getArgAsBool(msg,0);
+
+  osc::setBroadcast(state);
+  char buff[32];
+  sprintf(buff, "set broadcasting to %d", state);
+  osc::debug(buff);
+}
+
 void bonjour(OSCMessage& msg) {
   // Collect last part of IP address and add it to the list of destinations.
   // byte destIP3 = osc::argIsNumber(msg, 0) ? osc::getArgAsInt(msg, 0) : udp.remoteIP()[3];
   byte destIP3 = network::udp.remoteIP()[3];
+
   char buff[32];
   sprintf(buff, "ip3: %d", destIP3);
   osc::debug(buff);
+  // TODO(Etienne) : Verify if still needed
   network::addDestinationIPAddress(destIP3);
   osc::bundle.add("/bonjour").add(morphose::name).add(destIP3);
   osc::sendBundle();
 }
 
 void reboot(OSCMessage& msg) {
-  
   osc::debug("Rebooting esp.");
+  network::removeWifiEvents();
   ESP.restart();
 }
 
@@ -55,33 +66,31 @@ void steer(OSCMessage& msg) {
 }
 
 void getData(OSCMessage& msg) {
-  // if (osc::argIsNumber(msg, 0)) {
-  //   bool stream = getArgAsBool(msg, 0);
-  //   // If new value, enable/disable OSC & wake/sleep IMU.
-  //   if (sendOSC != stream) {
-  //     sendOSC = stream;
-  //     if (sendOSC)
-  //       wakeIMUs();
-  //     else
-  //       sleepIMUs();
-  //   }
-  // }
+  osc::debug("get data");
 
-    osc::debug("get data");
+  morphose::sendData();
+  // TODO(Etienne): Verify if this work or if get data should just broadcast instead
+  
+  osc::sendBundle(network::udp.remoteIP(), network::outgoingPort);
+  
 }
 
 void stream(OSCMessage& msg) {
+  Serial.println("Set stream");
   if (osc::argIsNumber(msg, 0)) {
     bool stream = osc::getArgAsBool(msg, 0);
-    osc::debug("Starting stream");
+    
     // If new value, enable/disable OSC & wake/sleep IMU.
-    if (osc::sendOSC != stream) {
-      osc::sendOSC = stream;
-      if (osc::sendOSC)
-        imus::wakeIMUs();
-      else
-        imus::sleepIMUs();
-    }
+    
+    if (stream) {
+      osc::debug("Starting stream");
+      morphose::stream = 1;
+      imus::wake();
+    }else{
+      osc::debug("Stopping stream");
+      morphose::stream = 0;
+      imus::sleep();
+    } 
   }
 }
 
@@ -99,29 +108,28 @@ void startNavigation(OSCMessage& msg) {
       char buff[64];
       sprintf(buff, "Start navigation heading with speed %.2F", speed);
       osc::debug(buff);
-      morphose::navigation::startNavigationHeading(speed, osc::argIsNumber(msg, 1) ? osc::getArgAsFloat(msg, 1) : 0);
+      morphose::navigation::startHeading(speed, osc::argIsNumber(msg, 1) ? osc::getArgAsFloat(msg, 1) : 0);
     }
 }
 
 void stopNavigation(OSCMessage& msg) {
-   
     osc::debug("Stop navigation heading");
-    morphose::navigation::stopNavigationHeading();
+    morphose::navigation::stopHeading();
 }
 
 void calibrationBegin(OSCMessage& msg) {
     osc::debug("Start IMUS calibration");
-    imus::calibrateBeginIMUs();
+    imus::beginCalibration();
   }
 
 void calibrationEnd(OSCMessage& msg) {
     osc::debug("Stop IMUS calibration");
-    imus::calibrateEndIMUs();
+    imus::endCalibration();
   }
 
 void saveCalibration(OSCMessage& msg) {
     osc::debug("Saving imus calibration");
-    imus::calibrateSaveIMUs();
+    imus::saveCalibration();
 }
 
 void rgbAll(OSCMessage& msg) {
@@ -133,7 +141,7 @@ void rgbAll(OSCMessage& msg) {
       char buff[64];
       sprintf(buff, "Set all pixels to %d, %d, %d, %d", r, g, b, w);
       osc::debug(buff);
-      pixels::set(r, g, b, w);
+      pixels::setAll(r, g, b, w);
     }
 }
 
