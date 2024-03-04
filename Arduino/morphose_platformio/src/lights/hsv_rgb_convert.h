@@ -49,7 +49,7 @@ rgb_to_hsv_int(int *red         /* returns hue        */,
   float  h, s, v;
   float  minimum;
   float  delta;
-
+  Serial.println("here");
   r = *red;
   g = *green;
   b = *blue;

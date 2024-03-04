@@ -21,17 +21,17 @@ namespace network {
     extern int outgoingPort;
 
     // TODO(Etienne) : Remove if addDestinationIPAddress is not used anymore
-    #define MAX_DEST_IPS 4
-    extern IPAddress ipList[MAX_DEST_IPS];
-    extern byte destIPs[MAX_DEST_IPS];
-    extern int numActiveIPs, lastAddedIPIndex;
+    // #define MAX_DEST_IPS 4
+    // extern IPAddress ipList[MAX_DEST_IPS];
+    // extern byte destIPs[MAX_DEST_IPS];
+    // extern int numActiveIPs, lastAddedIPIndex;
 
 
 
 // wifi helpers
     
     // TODO(Etienne) : Verify if still needed
-    void addDestinationIPAddress(byte ip3);
+    // void addDestinationIPAddress(byte ip3);
 
     void showRSSI();
 

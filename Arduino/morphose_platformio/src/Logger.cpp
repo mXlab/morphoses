@@ -70,9 +70,9 @@ namespace logger
     }
   }
 
+
   bool error(const char *message) {
     char buff[128];
-
     sprintf(buff, "E: %s", message);
 
     if (!logFile.isFull()) {
@@ -113,17 +113,8 @@ namespace logger
     {
       Log.infoln("File system mounted");
     }
-    else
-    {
-      // TODO(Etienne): Remove because using formatOnFail flag now
-      Log.errorln("File system NOT mounted. Formating memory");
-      // LittleFS.format();
-      // LittleFS.begin();
-      // while (1) delay(100);
-    }
-
-    // logFile.begin();
-    logFile.reset();
+   
+   
     // Set the space reserved to the log (in bytes)
     logFile.setSizeLimit(limit);
     logFile.setChunkSize(128);
@@ -183,7 +174,6 @@ namespace logger
 
       //previousFlushTime += flushPeriod;
       if (!flushConfirm) {
-        //osc::debug("Time to flush");
         osc::send("/flush", 1);
         flushTimer.stop();
         return;

@@ -31,8 +31,6 @@ Adafruit_MQTT_Subscribe* mqttAnimationData;
 Vec2f robotPositions[N_ROBOTS];
 Vec2f newPosition;
 
-int baseColor[3];
-int altColor[3];
 
 void initialize() {
   // Subscribe to RTLS robot location messages.
@@ -95,7 +93,7 @@ void update() {
     } else {
       for (int i=0; i < N_ROBOTS; i++) {
         if (subscription == mqttRobotLocations[i]) {
-            Log.infoln("Location %d updated", i+1);
+            //Log.infoln("Location %d updated", i+1);
             onLocation(i, (char *)mqttRobotLocations[i]->lastread);
             break;
         }
@@ -141,16 +139,12 @@ void onAnimation(char* data){
 // TODO(Sofian) : Works for now. Find a way to wrap all in function and pass data without to much redundency. Maybe pass pointer to json data
   if (animations::lockMutex()) {
     animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
-    animations::currentAnimation().setBaseColor(int(baseColor[0]), int(baseColor[1]), int(baseColor[2])); // TODO(Etienne): Already int why casting?
-    animations::currentAnimation().setAltColor(int(altColor[0]),  int(altColor[1]),  int(altColor[2]));
+    animations::currentAnimation().setBaseColor(int(_baseColor[0]), int(_baseColor[1]), int(_baseColor[2])); // TODO(Etienne): Already int why casting?
+    animations::currentAnimation().setAltColor(int(_altColor[0]),  int(_altColor[1]),  int(_altColor[2]));
     animations::currentAnimation().setNoise((float)  double(animationData["noise"]));
     animations::currentAnimation().setPeriod((float) double(animationData["period"]));
     animations::currentAnimation().setType((animations::AnimationType)int(animationData["type"]));
     animations::currentAnimation().setRegion((pixels::Region)int(animationData["region"]) );
-
-  // TODO(Sofian): Decide if keep in code
-  // transitionTimer.duration(double(animationData["transition"]));
-
     animations::beginTransition();  // start transition
     animations::unlockMutex();
   }

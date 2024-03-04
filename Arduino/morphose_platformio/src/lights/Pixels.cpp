@@ -16,28 +16,24 @@ namespace pixels {
 
   // Sets one pixel.
   void set(int i, int r, int g, int b, int w) {
-    pixels.setPixelColor(i, pixels.Color(r, g, b, w));
+    pixels.setPixelColor(i, r, g, b, w);
 
-  //  portDISABLE_INTERRUPTS();
-    // Send the updated pixel colors to the hardware.
-    pixels.show();
-  //  portENABLE_INTERRUPTS();
   }
 
-  // Sets all pixels.
-  void setAll(int r, int g, int b, int w) {
-    // Set all pixel colors to 'off'
-    pixels.clear();
+  // // Sets all pixels.
+  // void setAll(int r, int g, int b, int w) {
+  //   // Set all pixel colors to 'off'
+  //   pixels.clear();
 
-    // Write all pixels.
-    for (int i = 0; i < pixels.numPixels(); i++)
-      pixels.setPixelColor(i, pixels.Color(r, g, b, w));
+  //   // Write all pixels.
+  //   for (int i = 0; i < pixels.numPixels(); i++)
+  //     pixels.setPixelColor(i, pixels.Color(r, g, b, w));
 
-  //  portDISABLE_INTERRUPTS();
-    // Send the updated pixel colors to the hardware.
-    pixels.show();
-  //  portENABLE_INTERRUPTS();
-  }
+  // //  portDISABLE_INTERRUPTS();
+  //   // Send the updated pixel colors to the hardware.
+  //   pixels.show();
+  // //  portENABLE_INTERRUPTS();
+  // }
 
   void clear() {
     pixels.clear();
@@ -113,7 +109,7 @@ struct PixelIterator {
   }
 
   // Sets pixels in a given region.
-  void setRegion(Region region, int r, int g, int b, int w) {
+  void setRegion(Region region, int r, int g, int b, int w) { // TODO(ETIENNE): Function is not used maybe remove
     // Sets values depending on region (default values are for region == ALL).
     PixelIterator it(region);
     while (it.hasNext()) {
