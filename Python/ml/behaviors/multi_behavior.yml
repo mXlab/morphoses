@@ -1,0 +1,172 @@
+---
+behaviors:
+
+  immobilism:
+    action_profile: cross
+    state_profile:
+      - this.d_mrx
+      - this.d_mry
+      - this.d_mrz
+    reward_profile:
+      - type: inv_delta_position
+    stop_profile:
+      min_duration: 15
+      max_duration: 120
+      high_reward_threshold: 0.4
+      high_reward_duration: 15
+    curiosity_weight: 0
+    q_model_type: tables
+    n_state_tiles: 1
+    n_state_tilings: 1
+    time_step: 5
+    navigation_mode: false
+    learning_rate: 0.5
+    #learning_rate: 0.1
+    gamma: 0.5
+    epsilon: 1
+
+  dance:
+    action_profile: cross
+    state_profile:
+      - this.d_mrx
+      - this.d_mry
+      - this.d_mrz
+    reward_profile:
+      - type: sum
+        weight: 0.25
+        args:
+          variables:
+            - this.d_mrx
+            - this.d_mry
+            - this.d_mrz
+          absolute: True
+          invert: False
+      - type: inv_delta_position
+        weight: 0.75
+    stop_profile:
+      min_duration: 15
+      max_duration: 240
+      high_reward_threshold: -0.1
+      high_reward_duration: 10
+    curiosity_weight: 0.0
+    q_model_type: tables
+    n_state_tiles: 3
+    n_state_tilings: 1
+    time_step: 0.5
+    time_balance: 0.1
+    learning_rate: 0.5
+    #learning_rate: 0.2
+    epsilon: 0.05
+    gamma: 0.5
+    n_hidden_forward: 3
+    max_speed: 0.8
+    max_steer: 0.8
+
+  go_to_y:
+    action_profile: h
+    state_profile:
+      - this.d_y
+      - this.y
+      - this.mrz
+    reward_profile:
+      - type: single
+        weight: 0.75
+        args:
+          variable: this.y
+          absolute: false
+      - type: single
+        weight: 0.25
+        args:
+          variable: this.d_y
+          absolute: false
+    stop_profile:
+      min_duration: 30
+      max_duration: 180
+      high_reward_threshold: 1.0
+      high_reward_duration: 15
+    curiosity_weight: 0
+    q_model_type: tables
+    n_state_tiles: [ [3, 3, 4] ]
+    n_state_tilings: 2
+    time_step: 5
+    time_balance: 1
+    learning_rate: 0.1
+    #learning_rate: 0.2
+    epsilon: 0.05
+    temperature: 0.05
+    policy: boltzmann
+    gamma: 0.7
+    n_hidden_forward: 6
+    max_speed: 1.0
+    max_steer: 1.0
+    navigation_mode: true
+
+  curiosity:
+    action_profile: grid
+    state_profile:
+      - this.mrx
+      - this.mry
+      - this.mrz
+    reward_profile:
+      - type: inv_delta_euler # dummy
+    stop_profile:
+      min_duration: 60
+      max_duration: 180
+      high_reward_threshold: 0.5
+      high_reward_duration: 15
+    curiosity_weight: 1.0
+    q_model_type: tables
+    n_state_tiles: 5
+    n_state_tilings: 3
+    time_step: 2.0
+    learning_rate: 0.5
+    #learning_rate: 0.2
+    policy: mixed
+    epsilon: 0.1
+    gamma: 0.7
+    n_hidden_forward: 5
+    max_speed: 1.0
+    max_steer: 1.0
+
+  get_close_thing1:
+    action_profile: x
+    state_profile:
+      - this.close_thing1
+      - this.quadrant_thing1
+    reward_profile:
+      - type: get_close
+        args:
+          target: thing1
+    stop_profile:
+      min_duration: 30
+      max_duration: 180
+      high_reward_threshold: 0.5
+      high_reward_duration: 20
+    curiosity_weight: 0
+    q_model_type: tables
+    n_state_tiles: [ [2, 4] ]
+    n_state_tilings: 1
+    time_step: 10
+    time_balance: 1
+    navigation_mode: True
+#    learning_rate: 0.1
+    learning_rate: 0.2
+    epsilon: 0.25
+    temperature: 1
+    policy: boltzmann
+    gamma: 0.7
+    n_hidden_forward: 6
+    max_speed: 0.4
+    max_steer: 1.0
+
+sequence:
+#  - curiosity
+#  - go_to_y
+#  - get_close_thing1
+#  - dance
+  - immobilism
+
+robots:
+  - robot1
+  - robot2
+  - robot3

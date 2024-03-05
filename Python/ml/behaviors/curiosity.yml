@@ -1,0 +1,27 @@
+---
+behaviors:
+  curiosity:
+    action_profile: grid
+    state_profile:
+      - this.rx
+      - this.ry
+      - this.rz
+    reward_profile:
+      - type: inv_delta_euler # dummy
+    curiosity_weight: 1.0
+    q_model_type: tables
+    n_state_tiles: 5
+    n_state_tilings: 3
+    time_step: 1.0
+    learning_rate: 0.5
+    #learning_rate: 0.2
+    policy: mixed
+    epsilon: 0.1
+    gamma: 0.7
+    n_hidden_forward: 5
+    max_speed: 1.0
+    max_steer: 0.8
+robots:
+  robot1: curiosity
+  robot2: curiosity
+  robot3: curiosity

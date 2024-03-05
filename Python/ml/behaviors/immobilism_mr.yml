@@ -1,0 +1,33 @@
+---
+behaviors:
+  immobilism:
+    action_profile: cross
+    state_profile:
+      - this.d_mrx
+      - this.d_mry
+      - this.d_mrz
+    reward_profile:
+      - type: inv_delta_position
+      - type: sum
+        args:
+          variables:
+            - this.d_mrx
+            - this.d_mry
+            - this.d_mrz
+          absolute: True
+          invert: True
+    curiosity_weight: 0
+    q_model_type: tables
+    n_state_tiles: 1
+    n_state_tilings: 1
+    time_step: 5
+    navigation_mode: false
+    learning_rate: 0.5
+    #learning_rate: 0.1
+    gamma: 0.5
+    epsilon: 1
+robots:
+  robot1: immobilism
+  robot2: immobilism
+  robot3: immobilism
+

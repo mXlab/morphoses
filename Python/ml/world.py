@@ -599,8 +599,8 @@ class World:
             self.entities[robot].store_action([0, 0], self.get_time())
             self.set_color(robot, [0, 255, 255])
             self.messaging.send(robot, "/power", 1)
-            self.messaging.send(robot, "/stream", 1)
-            self.messaging.send(robot, "/stream", 1, board_name='imu')
+            self.messaging.send(robot, "/stream", 0)
+            #self.messaging.send(robot, "/stream", 1, board_name='imu')
 
         # Call an update to initialize data.
         print("Init data")
@@ -633,6 +633,7 @@ class World:
 
         for robot_name in self.robots:
             robot = self.entities[robot_name]
+            self.messaging.send(robot_name, "/get/data", 1)
             if robot.group_is_valid('position'):
                 self.send_info(robot_name, "/pos", robot.get_position())
             if robot.group_is_valid('quaternion_side'):

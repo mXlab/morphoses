@@ -1,0 +1,49 @@
+---
+behaviors:
+  constrained_movement:
+    action_profile: cross
+    state_profile:
+      - this.d_mrx
+      - this.d_mry
+      - this.d_mrz
+    reward_profile:
+      - type: sum
+        args:
+          variables:
+            - this.d_mrx
+            - this.d_mry
+#            - this.d_mrz
+          absolute: True
+          invert: False
+      - type: inv_delta_position
+#      - type: sum
+#        args:
+#          variables:
+#            - this.d_x
+#            - this.d_y
+#          absolute: True
+#          invert: True
+    stop_profile:
+      min_duration: 15
+      max_duration: 240
+      high_reward_threshold: -0.1
+      high_reward_duration: 10
+    curiosity_weight: 0.0
+    q_model_type: tables
+    n_state_tiles: 3
+    n_state_tilings: 1
+    time_step: 0.5
+    time_balance: 0.1
+    learning_rate: 0.5
+    #learning_rate: 0.2
+    epsilon: 0.05
+    gamma: 0.5
+    n_hidden_forward: 3
+    max_speed: 0.8
+    max_steer: 0.8
+robots:
+  robot1: constrained_movement
+  robot2: constrained_movement
+  robot3: constrained_movement
+#  robot2: movement
+#  robot2: immobilisme2

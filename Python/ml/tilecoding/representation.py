@@ -515,7 +515,7 @@ class TileCoding(Projector):
                                       [np.zeros((state.shape[0], 1), dtype='int')])) \
                             + self.index_offset
         else:
-            indices = np.hstack((t(state) for t in self.tilings)) \
+            indices = np.hstack([t(state) for t in self.tilings]) \
                             + self.index_offset
 
         return indices.squeeze()
