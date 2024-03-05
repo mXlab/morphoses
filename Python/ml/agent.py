@@ -60,6 +60,8 @@ class Agent:
         self.use_ann = not q_model_type == "tables"
         self.use_tile_coding = not q_model_type == "ann"
 
+        print("Use ann: " + str(self.use_ann))
+
         # Create tiling if needed.
         if self.use_tile_coding:
             n_state_tiles = kwargs.get('n_state_tiles', 5)
@@ -121,21 +123,23 @@ class Agent:
     def get_max_steer(self):
         return self.max_steer
 
-    def reset_weights(model):
+    def reset_weights(self, model):
         import keras.backend as K
         session = K.get_session()
         for layer in model.layers:
-            if hasattr(layer, 'kernel_initializer'):
+            if hasattr(layer, 'kernel.initializer'):
                 layer.kernel.initializer.run(session=session)
-            if hasattr(layer, 'bias_initializer'):
+            if hasattr(layer, 'bias.initializer'):
                 layer.bias.initializer.run(session=session)
 
     def reset(self):
+        # Reset Q-function model.
         if self.use_ann:
             self.reset_weights(self.model_q)
         else:
             self.model_q.fill(0)
 
+        # Reset forward model (for curiosity).
         self.reset_weights(self.model_forward)
 
     def begin(self):

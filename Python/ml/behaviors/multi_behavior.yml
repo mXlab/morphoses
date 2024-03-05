@@ -2,6 +2,7 @@
 behaviors:
 
   immobilism:
+    title: Be still
     action_profile: cross
     state_profile:
       - this.d_mrx
@@ -26,6 +27,7 @@ behaviors:
     epsilon: 1
 
   dance:
+    title: Shake without moving
     action_profile: cross
     state_profile:
       - this.d_mrx
@@ -63,6 +65,7 @@ behaviors:
     max_steer: 0.8
 
   go_to_y:
+    title: Move in one direction
     action_profile: h
     state_profile:
       - this.d_y
@@ -102,6 +105,7 @@ behaviors:
     navigation_mode: true
 
   curiosity:
+    title: Be curious
     action_profile: grid
     state_profile:
       - this.mrx
@@ -129,6 +133,7 @@ behaviors:
     max_steer: 1.0
 
   get_close_thing1:
+    title: Get closer
     action_profile: x
     state_profile:
       - this.close_thing1
@@ -163,10 +168,10 @@ sequence:
 #  - curiosity
 #  - go_to_y
 #  - get_close_thing1
-#  - dance
+  - dance
   - immobilism
 
 robots:
   - robot1
-  - robot2
-  - robot3
+#  - robot2
+#  - robot3

@@ -596,7 +596,7 @@ class World:
         print("Init robots")
         for robot in self.robots:
             self.set_motors(robot, 0, 0)
-            self.entities[robot].store_action([0, 0], self.get_time())
+            self.entities[robot].store_action(0, self.get_time())
             self.set_color(robot, [0, 255, 255])
             self.messaging.send(robot, "/power", 1)
             self.messaging.send(robot, "/stream", 0)
@@ -673,7 +673,7 @@ class World:
         # Correct euler yaw with room heading offset.
         self.entities[entity_name].store_quaternion_main(quat, self.get_time(), -self.room_heading)
 
-    def send_info(self, entity_name, address, args):
+    def send_info(self, entity_name, address, args=[]):
         self.messaging.send_info("/{}{}".format(entity_name, address), args)
 
     def debug(self):
