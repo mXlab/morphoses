@@ -24,7 +24,7 @@ def confirmFlush(client_address: tuple[str, int], address: str, *osc_args: list[
     
     if doOnce == False:
         named_tuple = time.localtime() # get struct_time
-        time_string = "./logs/{}_{}_{}.txt".format(named_tuple[0],named_tuple[1],named_tuple[2])
+        time_string = "{}/{}_{}_{}.txt".format(folder_path,named_tuple[0],named_tuple[1],named_tuple[2])
         filename = time_string
         if(not os.path.isfile(filename)):
             print("No such file")
@@ -64,7 +64,6 @@ def endOfLog(client_address: tuple[str, int], address: str, *osc_args: list[any]
     
         
     
-    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -72,7 +71,6 @@ if __name__ == "__main__":
         default="192.168.0.100", help="The ip to listen on")
     parser.add_argument("--outport",
         type=int, default=8000, help="The port to listen on")
-    args = parser.parse_args()
     parser.add_argument("--id",
         type=int, default=1, help="robot id")
     args = parser.parse_args()
@@ -85,15 +83,16 @@ dispatcher = Dispatcher()
 dispatcher.map("/flush", confirmFlush,needs_reply_address= True)
 dispatcher.map("/endLog", endOfLog,needs_reply_address= True)
 dispatcher.map("/log", writeLog)
-  
 
-if(not os.path.exists("./logs/robot{}".format(id))):
+folder_path = "./logs/robot{}".format(args.id)
+
+if(not os.path.exists(folder_path)):
     print("No logs directory. Creating one.")
-    os.makedirs("./logs")
+    os.makedirs(folder_path)
 
 
 named_tuple = time.localtime() # get struct_time
-time_string = "./logs/{}_{}_{}.txt".format(named_tuple[0],named_tuple[1],named_tuple[2])
+time_string = "{}/{}_{}_{}.txt".format(folder_path,named_tuple[0],named_tuple[1],named_tuple[2])
 filename = time_string
 if(not os.path.isfile(filename)):
     print("No such file")
