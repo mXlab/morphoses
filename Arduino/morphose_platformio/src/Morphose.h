@@ -53,8 +53,6 @@ namespace navigation {
 
         void sendInfo();
 
-        void updateNavigationVelocity(bool movingForward); //TODO(Etienne) :Never used and funciton is empty verify if keep
-
     }  // namespace navigation
 
 

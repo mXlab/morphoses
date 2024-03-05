@@ -12,6 +12,7 @@
 #include "communications/Network.h"
 #include "communications/osc.h"
 #include "Utils.h"
+#include "Logger.h"
 
 #define AVG_POSITION_TIME_WINDOW 0.2f
 
@@ -92,7 +93,6 @@ namespace morphose {
 
         if(sendRate.hasPassed(STREAM_INTERVAL, true)){
             if(stream){
-                Serial.println(stream);
                 sendData();
                 // Send OSC bundle.
                 osc::sendBundle();
@@ -254,8 +254,6 @@ namespace navigation {
         osc::bundle.add("/heading-quality").add(getVelocityQuality());
         }
 
-        void updateNavigationVelocity(boolean movingForward) {
-        }
 
  
 
@@ -291,25 +289,36 @@ namespace energy {
         }
 
         void check() {
-            Serial.println("Checking energy");
+            #if defined(MORPHOSE_DEBUG)
+                //Serial.println("Checking energy");
+            #endif
             // Read battery voltage.
             float batteryVoltage = motors::getBatteryVoltage();
-
+            
             // Low voltage: Launch safety procedure.
             if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
                 // Put IMUs to sleep to protect them.
+                osc::debug("Voltage low");
+                logger::error("Voltage low");
                 imus::sleep();
 
                 // Power engine off.
                 motors::setEnginePower(false);
 
                 // If energy level is critical, just shut down the ESP.
-                if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL)
+                if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL){
+                    osc::debug("Voltage Critical");
+                    logger::error("Voltage Critical");
+                    logger::flush();
+
                 deepSleepCriticalMode(batteryVoltage);
 
+                }
+
                 // Otherwise, sleep but wake up to show that something is wrong.
-                else
+                else{
                 deepSleepLowMode(batteryVoltage);
+                }
             }
         }
     }  // namespace energy

@@ -44,6 +44,7 @@ Color Animation::getColor(int i) {
 
 // Set the base color
 void Animation::setBaseColor(int r, int g, int b) {
+    
     baseColor.setRgb(r, g, b);
 }
 
@@ -108,11 +109,8 @@ void initialize() {
 }
 
 void update() {
-  // Clear all pixels.
-  pixels::clear();
 
   // Iterate over all pixels.
-  pixels::numPixels();
   for (int i = 0; i < pixels::numPixels(); i++) {
     // Get animation color.
     Color color = current.getColor(i);
@@ -124,6 +122,7 @@ void update() {
 
     // Set pixel.
     pixels::set(i, color.r(), color.g(), color.b());
+
   }
 }
 
@@ -136,15 +135,16 @@ void run(void *parameters) {
   for (;;) {
     // Wait for mutex.
     if (lockMutex()) {
+
       // Update animation.
       pq::Plaquette.step();
-      update();
 
+      update();
       // Unlock mutex.
       unlockMutex();
-
       // Display animation frame.
       display();
+      
     }
   }
 }

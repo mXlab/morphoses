@@ -83,22 +83,10 @@ using namespace pq;
 #include "Utils.h"
 
 
-//TODO : ADD BROADCAST OSC MESSAGES
-//      ADD START on demand and can swtich stream on/off 
-
 // Variables & Objects //////////////////////////
 
 Chrono sendDataChrono;
 
-/*
- * OLD : was already commented
- * 
- *  //TaskHandle_t taskReceiveMessages;
- *  //TaskHandle_t taskSendData;
- *   //
- *   //SemaphoreHandle_t receiveMessagesMutex = NULL;
- * 
- */
 
 // ---------- PROGRAM ---------------
 
@@ -113,23 +101,23 @@ void setup() {
   
   logger::initialize();
 
-  network::initialize(); //ok
+  network::initialize();
   delay(1000);
   osc::debug("Network initialized");
   char buff[32];
   sprintf(buff,"Osc broadcast state: %d\n",  osc::isBroadcasting());
 
   osc::debug(buff);
-  motors::initialize(); //ok
+  motors::initialize();
   osc::debug("Motors initialized");
 
-  morphose::energy::check();  //ok
+  morphose::energy::check();
   osc::debug("Energy initialized");
 
-  pixels::initialize();  //ok
+  pixels::initialize();
   osc::debug("LEDS initialized");
 
- animations::initialize();  //ok
+ animations::initialize();
   osc::debug(" Animation initialized");
 
   imus::initialize();

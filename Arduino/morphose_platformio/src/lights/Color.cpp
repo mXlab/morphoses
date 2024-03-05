@@ -26,7 +26,6 @@ Color Color::lerp(Color from, Color to, float t) {
     float b = pq::mapFrom01(t, from.b(), to.b());
     result.setRgb(round(r), round(g), round(b));
   } else {
-    // TODO(Etienne): change this .... Why??
     float r = pq::mapFrom01(t, from.r(), to.r());
     float g = pq::mapFrom01(t, from.g(), to.g());
     float b = pq::mapFrom01(t, from.b(), to.b());
@@ -61,6 +60,7 @@ void Color::setB(int b) {
 }
 
 void Color::setRgb(int r, int g, int b) {
+
   if (_isRgb) {
     _rh = r; _gs = g; _bv = b;
   } else {

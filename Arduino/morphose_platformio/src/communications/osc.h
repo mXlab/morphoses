@@ -7,13 +7,7 @@
 
 #include "Morphose.h"
 
-#define USE_BUNDLE true;
 
-/**
- * TODO:
- * - Change oscmessages for bundle in send()
- * 
- */
 
 
 namespace osc {

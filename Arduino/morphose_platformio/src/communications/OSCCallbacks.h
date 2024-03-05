@@ -34,7 +34,7 @@ void bonjour(OSCMessage& msg) {
   sprintf(buff, "ip3: %d", destIP3);
   osc::debug(buff);
   // TODO(Etienne) : Verify if still needed
-  network::addDestinationIPAddress(destIP3);
+  //network::addDestinationIPAddress(destIP3);
   osc::bundle.add("/bonjour").add(morphose::name).add(destIP3);
   osc::sendBundle();
 }
@@ -69,9 +69,7 @@ void getData(OSCMessage& msg) {
   osc::debug("get data");
 
   morphose::sendData();
-  // TODO(Etienne): Verify if this work or if get data should just broadcast instead
-  
-  osc::sendBundle(network::udp.remoteIP(), network::outgoingPort);
+  osc::sendBundle();
   
 }
 
@@ -80,16 +78,15 @@ void stream(OSCMessage& msg) {
   if (osc::argIsNumber(msg, 0)) {
     bool stream = osc::getArgAsBool(msg, 0);
     
-    // If new value, enable/disable OSC & wake/sleep IMU.
     
     if (stream) {
       osc::debug("Starting stream");
       morphose::stream = 1;
-      imus::wake();
+
     }else{
       osc::debug("Stopping stream");
       morphose::stream = 0;
-      imus::sleep();
+
     } 
   }
 }
@@ -132,118 +129,6 @@ void saveCalibration(OSCMessage& msg) {
     imus::saveCalibration();
 }
 
-void rgbAll(OSCMessage& msg) {
-    if (osc::argIsNumber(msg, 0) && osc::argIsNumber(msg, 1) && osc::argIsNumber(msg, 2)) {
-      int r = osc::getArgAsInt(msg, 0);
-      int g = osc::getArgAsInt(msg, 1);
-      int b = osc::getArgAsInt(msg, 2);
-      int w = osc::argIsNumber(msg, 3) ? osc::getArgAsInt(msg, 3) : 0;
-      char buff[64];
-      sprintf(buff, "Set all pixels to %d, %d, %d, %d", r, g, b, w);
-      osc::debug(buff);
-      pixels::setAll(r, g, b, w);
-    }
-}
-
-void rgbOne(OSCMessage& msg) {
-    if (osc::argIsNumber(msg, 0) && osc::argIsNumber(msg, 1) && osc::argIsNumber(msg, 2) && osc::argIsNumber(msg, 3)) {
-      int i = osc::getArgAsInt(msg, 0);
-      int r = osc::getArgAsInt(msg, 1);
-      int g = osc::getArgAsInt(msg, 2);
-      int b = osc::getArgAsInt(msg, 3);
-      int w = osc::argIsNumber(msg, 4) ? osc::getArgAsInt(msg, 4) : 0;
-      char buff[64];
-      sprintf(buff, "Set pixel %d to %d, %d, %d, %d",i , r, g, b, w);
-      osc::debug(buff);
-      pixels::set(i, r, g, b, w);
-    }
-}
-
-void rgbRegion(OSCMessage& msg) {
-    if (osc::argIsNumber(msg, 0) && osc::argIsNumber(msg, 1) && osc::argIsNumber(msg, 2) && osc::argIsNumber(msg, 3)) {
-      pixels::Region region = (pixels::Region) osc::getArgAsInt(msg, 0);
-      int r = osc::getArgAsInt(msg, 1);
-      int g = osc::getArgAsInt(msg, 2);
-      int b = osc::getArgAsInt(msg, 3);
-      int w = osc::argIsNumber(msg, 4) ? osc::getArgAsInt(msg, 4) : 0;
-      char buff[64];
-      sprintf(buff, "Set pixel region %d to %d, %d, %d, %d",osc::getArgAsInt(msg, 0), r, g, b, w);
-      osc::debug(buff);
-      pixels::setRegion(region, r, g, b, w);
-    }
-}
-
-
-void baseColor(OSCMessage& msg) {
-  if (osc::argIsNumber(msg, 0) && osc::argIsNumber(msg, 1) && osc::argIsNumber(msg, 2)) {
-    int r = osc::getArgAsInt(msg, 0);
-    int g = osc::getArgAsInt(msg, 1);
-    int b = osc::getArgAsInt(msg, 2);
-//        int w = osc::argIsNumber(msg, 3) ? osc::getArgAsInt(msg, 3) : 0;
-    char buff[64];
-    sprintf(buff, "base color to %d, %d, %d", r, g, b);
-    osc::debug(buff);
-    animations::currentAnimation().baseColor.setRgb(r, g, b);
-  }
-                 }
-
-void altColor(OSCMessage& msg) {
-                   if (osc::argIsNumber(msg, 0) && osc::argIsNumber(msg, 1) && osc::argIsNumber(msg, 2)) {
-                     int r = osc::getArgAsInt(msg, 0);
-                     int g = osc::getArgAsInt(msg, 1);
-                     int b = osc::getArgAsInt(msg, 2);
-                //        int w = osc::argIsNumber(msg, 3) ? osc::getArgAsInt(msg, 3) : 0;
-                char buff[64];
-    sprintf(buff, "alt color to %d, %d, %d", r, g, b);
-    osc::debug(buff);
-                     animations::currentAnimation().altColor.setRgb(r, g, b);
-                   }
-                 }
-
-void animationPeriod(OSCMessage& msg) {
-  {
-                   if (osc::argIsNumber(msg, 0)) {
-                     float p = osc::getArgAsFloat(msg, 0);
-
-                     char buff[64];
-    sprintf(buff, "period to %d ", p);
-    osc::debug(buff);
-                     animations::currentAnimation().setPeriod(p);
-                   }
-                 }
-}
-
-void noise(OSCMessage& msg) {
-                   if (osc::argIsNumber(msg, 0)) {
-                     float noise = osc::getArgAsFloat(msg, 0);
-                     int global = osc::argIsNumber(msg, 1) ? osc::getArgAsBool(msg, 1) : true;
-
-                     char buff[64];
-    sprintf(buff, "noise to %.2F", noise);
-    osc::debug(buff);
-                     animations::currentAnimation().setNoise(noise);
-                   }
-                 }
-
-void animationType(OSCMessage& msg) {
-                   if (osc::argIsNumber(msg, 0)) {
-                     animations::AnimationType type = (animations::AnimationType) osc::getArgAsInt(msg, 0);
-                     char buff[64];
-    sprintf(buff, "anim to %d", osc::getArgAsInt(msg, 0));
-    osc::debug(buff);
-                     animations::currentAnimation().setType(type);
-                   }
-                 }
-
-void animationRegion(OSCMessage& msg) {
-                   if (osc::argIsNumber(msg, 0)) {
-                     pixels::Region region = (pixels::Region) osc::getArgAsInt(msg, 0);
-                     char buff[64];
-    sprintf(buff, "anim region to %d", osc::getArgAsInt(msg, 0));
-    osc::debug(buff);
-                     animations::currentAnimation().setRegion(region);
-  }
-}
 
 void log(OSCMessage& msg) {
     int val =  msg.getInt(0);

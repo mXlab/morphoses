@@ -56,7 +56,6 @@ namespace motors {
     dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_ID_STEER, profile_velocity_steering);
 
     currentSpeed = currentSteer = 0;
-    osc::debug("Motors initialized");
   }
 
   void setEnginePower(bool on) {
@@ -95,9 +94,6 @@ namespace motors {
     return dxl.readControlTableItem(PRESENT_TEMPERATURE, DXL_ID_STEER);
   }
 
-  // TODO(ETIENNE): Verify why this is empty
-  void processEngine() {
-  }
 
   void sendEngineInfo() {
     osc::bundle.add("/battery").add(getBatteryVoltage());

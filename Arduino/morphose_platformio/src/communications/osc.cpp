@@ -45,8 +45,6 @@ namespace osc {
 
 
     void sendBundle(IPAddress ip, uint16_t port) {
-        //Serial.println(ip);
-        //Serial.println(port);
         network::udp.beginPacket(ip,port);
         bundle.send(network::udp);
         network::udp.endPacket();
@@ -60,38 +58,6 @@ namespace osc {
             sendBundle(network::pcIP, network::outgoingPort);
         }
     }
-
-    // TODO(Etienne) : Verify if still needed. If not remove from code
-
-//     void sendOscBundleToIP(const IPAddress& ip, boolean force, int port) {
-//         network::udp.beginPacket(ip, port);
-//         if (sendOSC || force) {
-//             bundle.send(network::udp);   // send the bytes to the SLIP stream
-//         }
-//         network::udp.endPacket();   // mark the end of the OSC Packet ** keep this line** (see warning above)
-//     }
-
-// // Sends currently built bundle (with optional broadcasting option).
-// // ** WARNING **: The beginPacket() & sendPacket() functions need to be called regularly
-// // otherwise the program seems to have trouble receiving data and loses some packets. It
-// // is unclear why, but this seems to resolve the issue.
-// void sendOscBundle(bool broadcast, bool force, int port) {
-//     if (broadcast) {
-//         sendOscBundleToIP(network::broadcast, force, port);
-//     } else {
-
-//         // // loop through registered IP addresses and send same packet to each of them
-//         for (byte i = 0; i < network::numActiveIPs; i++) {
-//             // create temporary IP address
-//             IPAddress ip(DEST_IP_0, DEST_IP_1, DEST_IP_2, network::destIPs[i]);
-
-//             // begin packet
-//             sendOscBundleToIP(ip, force, port);
-//         }
-//     }
-//     bundle.empty();     // empty the bundle to free room for a new one
-//     }
-
 
     uint8_t castItemFromIndexToInt(OSCMessage &msg, int idx) {
         uint8_t val;
@@ -170,9 +136,7 @@ boolean argIsNumber(OSCMessage& msg, int index) {
     void update() {
         // OSC Routine
         // Tried to wrap this in a class and in a namespace and it makes the mcu crash for unknown reasons
-        // OSCMessage msg;
-        OSCBundle msg;  // TODO(Etienne) :Verify if receiving bundles or messages.
-        OSCMessage temp;
+        OSCMessage msg;
         uint16_t size = network::udp.parsePacket();
 
         if (size > 0) {
@@ -216,15 +180,6 @@ boolean argIsNumber(OSCMessage& msg, int index) {
                 msg.dispatch("/calib/begin",         oscCallback::calibrationBegin);
                 msg.dispatch("/calib/end",           oscCallback::calibrationEnd);
                 msg.dispatch("/calib/save",          oscCallback::saveCalibration);
-                msg.dispatch("/rgb/all",             oscCallback::rgbAll); //ok
-                msg.dispatch("/rgb/one",             oscCallback::rgbOne); //ok
-                msg.dispatch("/rgb/region",          oscCallback::rgbRegion); //ok
-                msg.dispatch("/base-color",          oscCallback::baseColor);  // TODO(Etienne) : Verify if keeping. Not present in old sofian code
-                msg.dispatch("/alt-color",           oscCallback::altColor);  // TODO(Etienne) : Verify if keeping. Not present in old sofian code
-                msg.dispatch("/period",              oscCallback::animationPeriod);  // TODO(Etienne) : Verify if keeping. Not present in old sofian code
-                msg.dispatch("/noise",               oscCallback::noise);  // TODO(Etienne) : Verify if keeping. Not present in old sofian code
-                msg.dispatch("/animation-type",      oscCallback::animationType);  // TODO(Etienne) : Verify if keeping. Not present in old sofian code
-                msg.dispatch("/animation-region",    oscCallback::animationRegion);  // TODO(Etienne) : Verify if keeping. Not present in old sofian code
                 msg.dispatch("/log",                 oscCallback::log);  // TODO(Etienne): Remove. Only for debug
                 msg.dispatch("/flush",               oscCallback::readyToFlush);
                 msg.dispatch("/endLog",               oscCallback::endLog);
@@ -239,6 +194,7 @@ boolean argIsNumber(OSCMessage& msg, int index) {
                     case INVALID_OSC:
                         
                         Log.errorln("OSC MESSAGE ERROR : INVALID_OSC");
+                        logger::error("OSC MESSAGE ERROR : INVALID_OSC");
                         
                         break;
 
