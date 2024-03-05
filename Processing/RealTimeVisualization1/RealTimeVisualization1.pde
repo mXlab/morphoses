@@ -25,7 +25,6 @@ final float TITLE_DURATION = 8.0;
 
 // OSC communication.
 OscP5 oscP5;
-NetAddress myRemoteLocation;
 
 // Number of values received.
 int nValuesReceived;
