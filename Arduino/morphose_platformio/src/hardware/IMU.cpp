@@ -6,6 +6,7 @@
 #include "communications/osc.h"
 #include "Morphose.h"
 #include "Utils.h"
+#include "Logger.h"
 
 namespace imus {
 
@@ -28,6 +29,7 @@ namespace imus {
       // Try to connect.
       boolean isOk = begin(i2cAddress());
       if (!isOk) {
+        logger::error("Cant initialize imus");
         osc::debug("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
         utils::blinkIndicatorLed(1000, 0.1);
         // Connected: initialize.

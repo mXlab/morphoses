@@ -69,11 +69,12 @@ def endOfLog(client_address: tuple[str, int], address: str, *osc_args: list[any]
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--ip",
-        default="192.168.0.180", help="The ip to listen on")
-    parser.add_argument("--inport",
-        type=int, default=8120, help="The port to listen on")
+        default="192.168.0.100", help="The ip to listen on")
     parser.add_argument("--outport",
         type=int, default=8000, help="The port to listen on")
+    args = parser.parse_args()
+    parser.add_argument("--id",
+        type=int, default=1, help="robot id")
     args = parser.parse_args()
 
 
@@ -86,7 +87,7 @@ dispatcher.map("/endLog", endOfLog,needs_reply_address= True)
 dispatcher.map("/log", writeLog)
   
 
-if(not os.path.exists("./logs")):
+if(not os.path.exists("./logs/robot{}".format(id))):
     print("No logs directory. Creating one.")
     os.makedirs("./logs")
 
@@ -101,9 +102,16 @@ if(not os.path.isfile(filename)):
     
 file = open(filename, "a")
 
+port = 0
 
+if id == 1:
+    port = 8110
+elif id == 2:
+    port = 8120
+elif id == 3:
+    port = 8130
 
 server = osc_server.ThreadingOSCUDPServer(
-    (args.ip, args.inport), dispatcher)
+    (args.ip, port), dispatcher)
 print("Serving on {}".format(server.server_address))
 server.serve_forever()

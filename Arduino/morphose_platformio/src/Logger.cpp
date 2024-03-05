@@ -38,37 +38,6 @@ namespace logger
 
   bool flushConfirm = false;
 
-  void event()
-  {
-    eventCounter++;
-
-    Serial.printf("Hey, event ->%d<- is just happened\n", eventCounter);
-
-    // formating
-    char record[15];
-    snprintf(record, 15, "value: %d", eventCounter);
-
-    // the second parameter allows to prepend to the record the current timestamp
-    bool success = logFile.append(record, true);
-
-    // printing infos
-    if (success)
-    {
-      Serial.println("Record stored!");
-    }
-    else
-    {
-      if (logFile.isFull())
-      {
-        Serial.println("Record NOT stored! You had filled the available space: flush or reset the "
-                       "log before appending another record");
-      }
-      else
-      {
-        Serial.println("Something goes wrong, record NOT stored!");
-      }
-    }
-  }
 
 
   bool error(const char *message) {
@@ -105,9 +74,6 @@ namespace logger
 
     // You may need to format the flash before using it
 
-#if defined(LFS_FORMAT)
-    LittleFS.format();
-#endif
 
     if (LittleFS.begin(true))
     {
@@ -137,7 +103,7 @@ namespace logger
   void flush(){
 
     bool val = logFile.flush();
-    Serial.println(val);
+
 
     osc::send("/endLog",1);
     while(flushConfirm) {
