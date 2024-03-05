@@ -17,8 +17,8 @@ namespace motors {
   float getEngineSteer();
   float engineIsMovingForward();
   float getBatteryVoltage();
-  int getEngineSpeedTemperature();  // TODO(Etienne): Never used. Verify if need to keep
-  int getEngineSteerTemperature();  // TODO(Etienne): Never used. Verify if need to keep
+  int getEngineSpeedTemperature();  
+  int getEngineSteerTemperature();  
   void sendEngineInfo();
 
 }  // namespace motors

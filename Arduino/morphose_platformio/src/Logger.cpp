@@ -157,41 +157,12 @@ namespace logger
     logFile.append(" ");
    }
 
-  // TODO(Etienne): Verify if can remove commented code
+
   bool sendOSC(const char *buffer, int n) {
     int index = 0;
-    Serial.println(n);
-    // Serial.println(buffer);
-    //   Serial.println(sizeof(buffer));
-    // Serial.println(n);
-    // Print a record at a time
-    // Log.errorln(buffer);
-    // Serial.println("inside send osc");
-    // OSCMessage msg("/log");
-    // msg.add(buffer);
-    // osc::send(msg);
-
-    // for(int i{0}; i<n,i++){
-
-    // }
-
-    // osc::send("/log",buffer);
-
-    // int size =strlen(&buffer[index]);
-    // Log.infoln(" index : %d, n = %d, size = %d", index, n, size);
-    // Log.infoln(&buffer[index]);
-
     while (index < n && strlen(&buffer[index]) > 0) {
       osc::send("/log", &buffer[index]);
-
       int size = strlen(&buffer[index]);
-      // Log.infoln(" index : %d, n = %d, size = %d", index, n, size);
-      // Log.infoln(&buffer[index]);
-      //  Serial.println("-------");
-      //   Serial.println(index);
-      //    Serial.println(&buffer[index]);
-      // osc::send("/log",&buffer[index]);
-      // +1, since '\0' is processed
       index += size + 1;
     }
 

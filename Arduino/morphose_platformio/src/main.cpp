@@ -96,7 +96,7 @@ void setup() {
   Plaquette.begin();
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
-  Log.infoln(" Morphose - 2023 - 6");
+  Log.infoln(" Morphose - 2023 - 7");
   Wire.begin();
   
   logger::initialize();

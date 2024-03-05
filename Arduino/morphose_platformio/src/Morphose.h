@@ -49,7 +49,7 @@ namespace navigation {
 
         Vec2f getVelocity();
 
-        float getVelocityHeading(); //TODO(Etienne) :Never used verify if keep
+        float getVelocityHeading(); 
 
         void sendInfo();
 

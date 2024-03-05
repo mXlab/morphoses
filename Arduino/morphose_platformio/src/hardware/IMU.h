@@ -11,7 +11,6 @@ namespace imus {
 class MorphosesIMU : public BNO080 {
    private:
     boolean _isMain;
-//    boolean _recalibrationMode;  // TODO(Etienne) : Old comment Verify if we keep
     boolean _initialized;
 
     float _headingOffset;
@@ -43,9 +42,6 @@ class MorphosesIMU : public BNO080 {
     float getRawHeading();
 };
 
-// TODO(Etienne) : commented because only accessed by this file. could only be in .cpp
-// MorphosesIMU imuMain(true);
-// MorphosesIMU imuSide(false);
 
   void initialize();
   void beginCalibration();
@@ -55,7 +51,7 @@ class MorphosesIMU : public BNO080 {
   void wake();
   void process();
   float getHeading();
-  float getRawHeading();  //TODO(Etienne): NEVER USED VERIFY IF WE KEEP
+  float getRawHeading();  
   void tare(float currentHeading);
 
 }  // namespace imus

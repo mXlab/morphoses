@@ -104,7 +104,6 @@ namespace morphose {
     void sendData() {
         imus::process();
         morphose::navigation::process();
-        motors::processEngine();
         morphose::navigation::sendInfo();
         motors::sendEngineInfo();
     }

@@ -125,7 +125,7 @@ void onLocation(int robot, char* data) {
     
 
     // TODO(Etienne): Verify with Sofian why whe send a bundle here. There was some commented code in old version here
-    osc::sendBundle();
+    //osc::sendBundle();
   }
 }
 
@@ -136,10 +136,9 @@ void onAnimation(char* data){
   JSONVar _altColor  = animationData["alt"];
 
 
-// TODO(Sofian) : Works for now. Find a way to wrap all in function and pass data without to much redundency. Maybe pass pointer to json data
   if (animations::lockMutex()) {
     animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
-    animations::currentAnimation().setBaseColor(int(_baseColor[0]), int(_baseColor[1]), int(_baseColor[2])); // TODO(Etienne): Already int why casting?
+    animations::currentAnimation().setBaseColor(int(_baseColor[0]), int(_baseColor[1]), int(_baseColor[2]));
     animations::currentAnimation().setAltColor(int(_altColor[0]),  int(_altColor[1]),  int(_altColor[2]));
     animations::currentAnimation().setNoise((float)  double(animationData["noise"]));
     animations::currentAnimation().setPeriod((float) double(animationData["period"]));
