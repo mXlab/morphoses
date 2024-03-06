@@ -166,7 +166,7 @@ behaviors:
 
 sequence:
 #  - curiosity
-#  - go_to_y
+  - go_to_y
 #  - get_close_thing1
   - dance
   - immobilism

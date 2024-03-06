@@ -38,37 +38,6 @@ namespace logger
 
   bool flushConfirm = false;
 
-  void event()
-  {
-    eventCounter++;
-
-    Serial.printf("Hey, event ->%d<- is just happened\n", eventCounter);
-
-    // formating
-    char record[15];
-    snprintf(record, 15, "value: %d", eventCounter);
-
-    // the second parameter allows to prepend to the record the current timestamp
-    bool success = logFile.append(record, true);
-
-    // printing infos
-    if (success)
-    {
-      Serial.println("Record stored!");
-    }
-    else
-    {
-      if (logFile.isFull())
-      {
-        Serial.println("Record NOT stored! You had filled the available space: flush or reset the "
-                       "log before appending another record");
-      }
-      else
-      {
-        Serial.println("Something goes wrong, record NOT stored!");
-      }
-    }
-  }
 
 
   bool error(const char *message) {
@@ -105,9 +74,6 @@ namespace logger
 
     // You may need to format the flash before using it
 
-#if defined(LFS_FORMAT)
-    LittleFS.format();
-#endif
 
     if (LittleFS.begin(true))
     {
@@ -137,7 +103,7 @@ namespace logger
   void flush(){
 
     bool val = logFile.flush();
-    Serial.println(val);
+
 
     osc::send("/endLog",1);
     while(flushConfirm) {
@@ -191,41 +157,12 @@ namespace logger
     logFile.append(" ");
    }
 
-  // TODO(Etienne): Verify if can remove commented code
+
   bool sendOSC(const char *buffer, int n) {
     int index = 0;
-    Serial.println(n);
-    // Serial.println(buffer);
-    //   Serial.println(sizeof(buffer));
-    // Serial.println(n);
-    // Print a record at a time
-    // Log.errorln(buffer);
-    // Serial.println("inside send osc");
-    // OSCMessage msg("/log");
-    // msg.add(buffer);
-    // osc::send(msg);
-
-    // for(int i{0}; i<n,i++){
-
-    // }
-
-    // osc::send("/log",buffer);
-
-    // int size =strlen(&buffer[index]);
-    // Log.infoln(" index : %d, n = %d, size = %d", index, n, size);
-    // Log.infoln(&buffer[index]);
-
     while (index < n && strlen(&buffer[index]) > 0) {
       osc::send("/log", &buffer[index]);
-
       int size = strlen(&buffer[index]);
-      // Log.infoln(" index : %d, n = %d, size = %d", index, n, size);
-      // Log.infoln(&buffer[index]);
-      //  Serial.println("-------");
-      //   Serial.println(index);
-      //    Serial.println(&buffer[index]);
-      // osc::send("/log",&buffer[index]);
-      // +1, since '\0' is processed
       index += size + 1;
     }
 

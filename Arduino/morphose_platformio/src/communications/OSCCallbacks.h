@@ -27,14 +27,12 @@ void broadcast(OSCMessage& msg){
 
 void bonjour(OSCMessage& msg) {
   // Collect last part of IP address and add it to the list of destinations.
-  // byte destIP3 = osc::argIsNumber(msg, 0) ? osc::getArgAsInt(msg, 0) : udp.remoteIP()[3];
   byte destIP3 = network::udp.remoteIP()[3];
 
   char buff[32];
   sprintf(buff, "ip3: %d", destIP3);
   osc::debug(buff);
-  // TODO(Etienne) : Verify if still needed
-  //network::addDestinationIPAddress(destIP3);
+  
   osc::bundle.add("/bonjour").add(morphose::name).add(destIP3);
   osc::sendBundle();
 }

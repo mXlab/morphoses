@@ -17,10 +17,7 @@
 
 namespace network {
 
-    //  IP address registry
-    // byte destIPs[MAX_DEST_IPS];
 
-    // IPAddress ipList[MAX_DEST_IPS];
     int numActiveIPs = 0, lastAddedIPIndex = 0;
 
      IPAddress pcIP{192, 168, 0, 100};
@@ -38,47 +35,12 @@ namespace network {
 
 
     //  ROUTER SSID AND PSWRD
-    // const char *ssid = "SM-A520W1739";
-    // const char *pswd = "osvu6368";
     const char *ssid = "Morphoses";
     const char *pswd = "BouleQuiRoule";
 
     int outgoingPort = 8000 + ROBOT_ID;
     const int incomingPort = 8000;
 
-
-  
-//     void addDestinationIPAddress(byte ip3) {
-//   // Determine if the address we want to add is already registered.
-
-
-//   bool ipExists = false;
-//   for (int i = 0; i < numActiveIPs; i++) {
-//     // if the last byte matches
-//     if (destIPs[i] == ip3) {
-//       ipExists = true;
-//       break;
-//     }
-//   }
-
-//   if (!ipExists) {
-//     //  if it doesn't exist, we add it
-//     numActiveIPs = min(numActiveIPs+1, MAX_DEST_IPS);   // cap at max length
-
-//     // if we overflow, we go back to position 1
-//     // position 0 is reserved for the ML system's IP address
-//     lastAddedIPIndex = (++lastAddedIPIndex - 1) % MAX_DEST_IPS + 1;    // loop between 1 and MAX_DEST_IPS
-
-//     destIPs[lastAddedIPIndex] = ip3;
-
-//     //  log for verification
-//     #if defined(DEBUG_MODE)
-//       Serial.print("NEW DEST. IP ADDED: ");
-//       Serial.println(ip3);
-
-//     #endif
-//   }
-// }
 
     void initialize(uint8_t maxTry) {
         Log.warningln("Initializing network interface");
@@ -109,7 +71,7 @@ namespace network {
              WiFi.setAutoReconnect(true);
 
 
-        // TODO(Etienne): See with Sofian if static ip on esp is preferred
+
         // Configures static IP address
         if (!WiFi.config(mcuIP, gateway, subnet)) {
             Log.errorln("STA Failed to configure");

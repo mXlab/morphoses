@@ -6,6 +6,7 @@
 #include "communications/osc.h"
 #include "Morphose.h"
 #include "Utils.h"
+#include "Logger.h"
 
 namespace imus {
 
@@ -28,6 +29,7 @@ namespace imus {
       // Try to connect.
       boolean isOk = begin(i2cAddress());
       if (!isOk) {
+        logger::error("Cant initialize imus");
         osc::debug("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
         utils::blinkIndicatorLed(1000, 0.1);
         // Connected: initialize.
@@ -50,7 +52,6 @@ namespace imus {
       bool available = dataAvailable();
 
       // Send data over OSC.
-      // if (available && osc::sendOSC) {  // flag that determines to send or not should be internal to class
       if (available) {
         oscBundle("/quat").add(getQuatI()).add(getQuatJ()).add(getQuatK()).add(getQuatReal());
         oscBundle("/rot").add((float)degrees(getRoll())).add((float)degrees(getPitch())).add((float)degrees(getYaw()));
@@ -58,24 +59,7 @@ namespace imus {
         oscBundle("/mag").add(getMagX()).add(getMagY()).add(getMagZ());
       }
 
-     // TODO(Etienne) : Old comment Verify if we keep
-    //  // Verify if accuracy is okay, otherwise try to re-calibrate.
-    //  if (getMagAccuracy() <= IMU_LOW_ACCURACY) {
-    //    recalibrationMode = true;
-    //
-    //    while (getMagAccuracy() < IMU_HIGH_ACCURACY) {
-    //      bndl.add("/error").add(boardName).add("accuracy").add(getMagAccuracy());
-    //      sendOscBundle();
-    //
-    //      setMotorsPower(true);
-    //      setMotorsSpeed(1);
-    //
-    //      setMotorsSteer(1);
-    //      delay(10000UL);
-    //      setMotorsSteer(-1);
-    //      delay(10000UL);
-    //    }
-    //  }
+  
       return available;
     }
 
@@ -178,7 +162,6 @@ void process() {
   imuMain.process();
   imuSide.process();
 
-  //osc::sendBundle(); // TODO(Etienne): Verify with Sofian why we are sending right away
 }
 
 float getHeading() {

@@ -65,7 +65,7 @@ namespace osc {
      * @param idx index of the argement to cast
      * @return uint8_t - value of the specified argument casted to uint8_t
      */
-    uint8_t castItemFromIndexToInt(OSCMessage &msg, int idx); // TODO(Etienne) : REmove because never used
+    uint8_t castItemFromIndexToInt(OSCMessage &msg, int idx); 
 
     /**
      * @brief cast the specified argument of the osc message to uint16_t and returns it
@@ -74,7 +74,7 @@ namespace osc {
      * @param idx index of the argement to cast
      * @return uint16_t - value of the specified argument casted to uint16_t
      */
-    uint16_t castItemFromIndexToInt16(OSCMessage &msg, int idx); // TODO(Etienne) : REmove because never used
+    uint16_t castItemFromIndexToInt16(OSCMessage &msg, int idx); 
 
     /**
      * @brief cast the specified argument of the osc message to float and returns it
@@ -83,7 +83,7 @@ namespace osc {
      * @param idx index of the argement to cast
      * @return float - value of the specified argument casted to float
      */
-    float castItemFromIndexToFloat(OSCMessage &msg, int idx); // TODO(Etienne) : REmove because never used
+    float castItemFromIndexToFloat(OSCMessage &msg, int idx);
 
     /// Smart-converts argument from message to integer.
     bool getArgAsBool(OSCMessage& msg, int index);
