@@ -20,11 +20,11 @@ namespace network {
 
     int numActiveIPs = 0, lastAddedIPIndex = 0;
 
-     IPAddress pcIP{192, 168, 0, 100};
-     IPAddress mcuIP{192, 168, 0, ROBOT_ID};
-     IPAddress broadcast{192, 168, 0, 255};
+     IPAddress pcIP{NETWORK_IP_0, NETWORK_IP_1, NETWORK_IP_2, PC_IP_3};
+     IPAddress mcuIP{NETWORK_IP_0, NETWORK_IP_1, NETWORK_IP_2, ROBOT_IP_3};
+     IPAddress broadcast{NETWORK_IP_0, NETWORK_IP_1, NETWORK_IP_2, 255};
      IPAddress subnet(255, 255, 255, 0);
-     IPAddress gateway(192, 168, 0, 1);
+     IPAddress gateway(NETWORK_IP_0, NETWORK_IP_1, NETWORK_IP_2, 1);
      WiFiUDP udp{};
 
 
@@ -35,11 +35,11 @@ namespace network {
 
 
     //  ROUTER SSID AND PSWRD
-    const char *ssid = "Morphoses";
-    const char *pswd = "BouleQuiRoule";
+    const char *ssid = WIFI_SSID;
+    const char *pswd = WIFI_PASSWORD;
 
-    int outgoingPort = 8000 + ROBOT_ID;
-    const int incomingPort = 8000;
+    int outgoingPort = REMOTE_PORT;
+    const int incomingPort = LOCAL_PORT;
 
 
     void initialize(uint8_t maxTry) {

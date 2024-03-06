@@ -28,9 +28,6 @@
 *.out
 *.app
 
-# Other
-MorphosesConfig.h
-
 # Unity ignore specs ############################################
 [Ll]ibrary/
 [Tt]emp/
@@ -158,6 +155,5 @@ Documents/
 .ipynb_*
 
 # Custom
-Config.h
 Js
 
