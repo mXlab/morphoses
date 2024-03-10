@@ -1,6 +1,7 @@
 #ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_MORPHOSE_H_
 #define ARDUINO_MORPHOSE_PLATFORMIO_SRC_MORPHOSE_H_
 
+#include "Config.h"
 #include <VectorXf.h>
 
 class IPAddress;
