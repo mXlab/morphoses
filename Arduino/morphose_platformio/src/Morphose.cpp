@@ -29,9 +29,6 @@ namespace morphose {
     pq::Smoother avgPositionY(AVG_POSITION_TIME_WINDOW);
     Vec2f avgPosition;
 
-
-
-
     void initialize(IPAddress ip) {
         setID(ip[3]);
         setName(id);
@@ -92,6 +89,9 @@ namespace morphose {
         updateLocation();
 
         if(sendRate.hasPassed(STREAM_INTERVAL, true)){
+            imus::process();
+            morphose::navigation::process();
+
             if(stream){
                 sendData();
                 // Send OSC bundle.
@@ -102,8 +102,7 @@ namespace morphose {
     }
 
     void sendData() {
-        imus::process();
-        morphose::navigation::process();
+        imus::sendData();
         morphose::navigation::sendInfo();
         motors::sendEngineInfo();
     }
@@ -252,9 +251,6 @@ namespace navigation {
         osc::bundle.add("/velocity").add(getVelocity().x).add(getVelocity().y);
         osc::bundle.add("/heading-quality").add(getVelocityQuality());
         }
-
-
- 
 
     }  // namespace navigation
 
