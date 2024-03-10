@@ -23,10 +23,17 @@ void blinkIndicatorLed(unsigned long period, float pulseProportion, int nBlinks)
   }
 }
 
-int getAngleDifference(int firstAngle, int secondAngle)
-{
-  return ((((secondAngle - firstAngle) % 360) + 540) % 360) - 180;
+// int getAngleDifference(int firstAngle, int secondAngle)
+// {
+//   return ((((secondAngle - firstAngle) % 360) + 540) % 360) - 180;
+// }
+
+float getAngleDifference(float firstAngle, float secondAngle) {
+  float diff = radians(firstAngle) - radians(secondAngle);
+  float diffAngle = atan2(sin(diff), cos(diff));
+  return degrees(diffAngle);
 }
+
 
 float wrapAngle180(float angle) {
   while (angle >  180) angle -= 360;
