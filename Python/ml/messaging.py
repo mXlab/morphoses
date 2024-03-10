@@ -150,6 +150,8 @@ class Messaging:
 
             osc_helper.map("/main/quat",  self.receive_quaternion, (name, True))
             osc_helper.map("/side/quat",  self.receive_quaternion, (name, False))
+            osc_helper.map("/main/data",  self.receive_rotation_data, (name, True))
+            osc_helper.map("/side/data",  self.receive_rotation_data, (name, False))
             osc_helper.map("/main/accur", self.receive_accuracy,   (name, True))
             osc_helper.map("/side/accur", self.receive_accuracy,   (name, False))
             osc_helper.map("/battery",    self.receive_battery,     name)
@@ -199,6 +201,13 @@ class Messaging:
     def terminate(self):
         osc_terminate()
         self.mqtt.terminate()
+
+    def receive_rotation_data(self, data, args):
+        name, imu_is_main = args
+        if imu_is_main:
+            self.world.store_rotation_data_main(name, data)
+        else:
+            self.world.store_rotation_data_side(name, data)
 
     def receive_quaternion(self, quat, args):
         name, imu_is_main = args

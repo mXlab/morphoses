@@ -73,12 +73,13 @@ class Manager:
         return self.current_agents
     
     def behavior_begin(self):
+        print("Calling function behavior_begin")
         title = self.sequence_current_behavior()['title']
+        self.world.send_info("all", "/begin", title)
         for a in self.current_agents.values():
             print("** Begin agent {} **".format(a.get_name()))
             a.begin()
         
-        self.world.send_info("all", "/begin", title)
         self.world.sleep(10)
 
     def behavior_end(self):

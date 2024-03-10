@@ -16,6 +16,7 @@ class Data:
                  auto_scale_delta=True,
                  is_angle=False,
                  smoothing=0.0,
+                 force_delta=False,
                  default=None):
         self.value = self.prev_value = self.stored_value = default
         self.delta_value = 0
@@ -38,12 +39,13 @@ class Data:
         self.stored_time = None
         self.prev_time = None
         self.smoothing = np.clip(smoothing, 0.0, 1.0)
+        self.force_delta = force_delta
 
     def is_valid(self):
         return self.value is not None
 
     # Temporarily store value at time t (in seconds).
-    def store(self, value, t):
+    def store(self, value, t, delta=None):
         if self.stored_time is None:
             self.stored_value = value
         else:
@@ -55,6 +57,9 @@ class Data:
         if self.auto_scale:
             self.min_value = min(self.min_value, self.stored_value)
             self.max_value = max(self.max_value, self.stored_value)
+        
+        if self.force_delta and delta is not None:
+            self.delta_value = delta
 
     # Update values based on stored value.
     def update(self):
@@ -84,14 +89,16 @@ class Data:
         # Swap prev and current values.
         self.prev_value = self.value
         self.value = value
-        if interval > 0:
-            if self.is_angle:
-                delta_value = dist_angles(math.radians(value), math.radians(self.prev_value))
+        if not self.force_delta:
+            if interval > 0:
+                if self.is_angle:
+                    delta_value = dist_angles(math.radians(value), math.radians(self.prev_value))
+                else:
+                    delta_value = value - self.prev_value
+                self.delta_value = delta_value / interval
             else:
-                delta_value = value - self.prev_value
-            self.delta_value = delta_value / interval
-        else:
-            self.delta_value = 0
+                self.delta_value = 0
+        # Autoscale.
         if self.auto_scale_delta:
             self.max_change_per_second = max(self.max_change_per_second, abs(self.delta_value))
 
@@ -120,12 +127,13 @@ class EntityData:
                 return False
         return True
 
-    def store(self, label, value, t):
+    def store(self, label, value, t, delta=None):
         if isinstance(label, list):
             for i in range(len(label)):
-                self.store(label[i], value[i], t)
+                di = None if delta is None else delta[i]
+                self.store(label[i], value[i], t, delta=di)
         else:
-            self.data[label].store(value, t)
+            self.data[label].store(value, t, delta=delta)
 
     def update(self):
         # Update data.
@@ -194,26 +202,26 @@ class RobotData(EntityData):
                       max_value=boundaries['y_max'], smoothing=0.1)
 
         self.add_group('quaternion_side', ['qx', 'qy', 'qz', 'qw'])
-        self.add_data('qx')
-        self.add_data('qy')
-        self.add_data('qz')
-        self.add_data('qw')
+        self.add_data('qx', force_delta=True)
+        self.add_data('qy', force_delta=True)
+        self.add_data('qz', force_delta=True)
+        self.add_data('qw', force_delta=True)
 
         self.add_group('rotation_side', ['rx', 'ry', 'rz'])
-        self.add_data('rx', is_angle=True)
-        self.add_data('ry', is_angle=True)
-        self.add_data('rz', is_angle=True)
+        self.add_data('rx', is_angle=True, force_delta=True)
+        self.add_data('ry', is_angle=True, force_delta=True)
+        self.add_data('rz', is_angle=True, force_delta=True)
 
         self.add_group('quaternion_main', ['mqx', 'mqy', 'mqz', 'mqw'])
-        self.add_data('mqx')
-        self.add_data('mqy')
-        self.add_data('mqz')
-        self.add_data('mqw')
+        self.add_data('mqx', force_delta=True)
+        self.add_data('mqy', force_delta=True)
+        self.add_data('mqz', force_delta=True)
+        self.add_data('mqw', force_delta=True)
 
         self.add_group('rotation_main', ['mrx', 'mry', 'mrz'])
-        self.add_data('mrx', is_angle=True)
-        self.add_data('mry', is_angle=True)
-        self.add_data('mrz', is_angle=True)
+        self.add_data('mrx', is_angle=True, force_delta=True)
+        self.add_data('mry', is_angle=True, force_delta=True)
+        self.add_data('mrz', is_angle=True, force_delta=True)
 
         self.add_group('motors', ['speed', 'steer'])
         self.add_data('speed', min_value=-1, max_value=1, max_change_per_second=2, auto_scale=False,
@@ -265,15 +273,30 @@ class RobotData(EntityData):
     def store_position(self, position, t):
         self.store(['x', 'y'], position, t)
 
-    def store_quaternion_side(self, quat, t):
-        self.store(['qx', 'qy', 'qz', 'qw'], quat, t)
-        rx, ry, rz = quaternion_to_euler(quat[0], quat[1], quat[2], quat[3])
-        self.store(['rx', 'ry', 'rz'], [rx, ry, rz], t)
+    def extract_data(self, data, zOffset=0):
+        if (zOffset != 0):
+            data[10] = wrap_angle_180(data[10] + zOffset)
+        return data[0:4], data[4:8], data[8:11], data[11:14]
 
-    def store_quaternion_main(self, quat, t, zOffset):
-        self.store(['mqx', 'mqy', 'mqz', 'mqw'], quat, t)
-        rx, ry, rz = quaternion_to_euler(quat[0], quat[1], quat[2], quat[3], zOffset)
-        self.store(['mrx', 'mry', 'mrz'], [rx, ry, rz], t)
+    def store_rotation_data_side(self, data, t):
+        quat, dQuat, rot, dRot = self.extract_data(data)
+        self.store(['qx', 'qy', 'qz', 'qw'], quat, t, delta=dQuat)
+        self.store(['rx', 'ry', 'rz'], rot, t, delta=dRot)
+        
+    def store_rotation_data_main(self, data, t, zOffset=0):
+        quat, dQuat, rot, dRot = self.extract_data(data, zOffset)
+        self.store(['mqx', 'mqy', 'mqz', 'mqw'], quat, t, delta=dQuat)
+        self.store(['mrx', 'mry', 'mrz'], rot, t, delta=dRot)        
+
+    # def store_quaternion_side(self, quat, t):
+    #     self.store(['qx', 'qy', 'qz', 'qw'], quat, t)
+    #     rx, ry, rz = quaternion_to_euler(quat[0], quat[1], quat[2], quat[3])
+    #     self.store(['rx', 'ry', 'rz'], [rx, ry, rz], t)
+
+    # def store_quaternion_main(self, quat, t, zOffset):
+    #     self.store(['mqx', 'mqy', 'mqz', 'mqw'], quat, t)
+    #     rx, ry, rz = quaternion_to_euler(quat[0], quat[1], quat[2], quat[3], zOffset)
+    #     self.store(['mrx', 'mry', 'mrz'], [rx, ry, rz], t)
 
     def store_action(self, action, t):
         # If this is the first action, just store it.
@@ -607,6 +630,9 @@ class World:
         self.update()
 
     def step(self):
+        print("===== debug =====")
+        print(self.get('robot1', ['d_mrx', 'd_mry', 'd_mrz'], True))
+        print(self.get('robot1', ['d_mrx', 'd_mry', 'd_mrz'], False))
         self.messaging.loop()
         self.update()
         self.debug()
@@ -666,12 +692,19 @@ class World:
             for name in self.entities:
                 entity.store_polar(name, self.entities[name], self.close_dist, t)
 
-    def store_quaternion_side(self, entity_name, quat):
-        self.entities[entity_name].store_quaternion_side(quat, self.get_time())
+    # def store_quaternion_side(self, entity_name, quat):
+    #     self.entities[entity_name].store_quaternion_side(quat, self.get_time())
 
-    def store_quaternion_main(self, entity_name, quat):
+    # def store_quaternion_main(self, entity_name, quat):
+    #     # Correct euler yaw with room heading offset.
+    #     self.entities[entity_name].store_quaternion_main(quat, self.get_time(), -self.room_heading)
+
+    def store_rotation_data_side(self, entity_name, data):
+        self.entities[entity_name].store_rotation_data_side(data, self.get_time())
+
+    def store_rotation_data_main(self, entity_name, data):
         # Correct euler yaw with room heading offset.
-        self.entities[entity_name].store_quaternion_main(quat, self.get_time(), -self.room_heading)
+        self.entities[entity_name].store_rotation_data_main(data, self.get_time(), -self.room_heading)
 
     def send_info(self, entity_name, address, args=[]):
         self.messaging.send_info("/{}{}".format(entity_name, address), args)
