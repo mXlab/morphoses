@@ -79,11 +79,11 @@ void stream(OSCMessage& msg) {
     
     if (stream) {
       osc::debug("Starting stream");
-      morphose::stream = 1;
+      morphose::stream = true;
 
     }else{
       osc::debug("Stopping stream");
-      morphose::stream = 0;
+      morphose::stream = false;
 
     } 
   }
