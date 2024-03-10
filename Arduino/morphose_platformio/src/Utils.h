@@ -22,12 +22,13 @@ float getAngleDifference(float firstAngle, float secondAngle);
 // Wraps an angle in degrees to be in [-180, 180].
 float wrapAngle180(float angle);
 
+// Wraps an angle in degrees to be in [0, 360].
+float wrapAngle360(float angle); 
 
 // Remaps normalised value in [-1, 1] to [midPoint-maxRange, midPoint+maxRange].
 int safeRemapNorm(float unitVal, int maxRange, int midPoint = 0);
 
 
-float wrapAngle360(float angle); 
 
 
 
