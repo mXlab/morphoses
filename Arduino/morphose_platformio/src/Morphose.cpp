@@ -21,7 +21,7 @@ namespace morphose {
     int id;
     char name[16];
     int outgoingPort;
-    bool stream = true;
+    bool stream = false;
     Chrono sendRate{true};
 
     Vec2f currPosition;
