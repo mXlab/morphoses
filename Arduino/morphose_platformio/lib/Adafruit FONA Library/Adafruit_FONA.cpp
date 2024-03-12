@@ -2440,6 +2440,7 @@ uint8_t Adafruit_FONA::readline(uint16_t timeout, bool multiline) {
   uint16_t replyidx = 0;
 
   while (timeout--) {
+    Serial.println("inside readline");
     if (replyidx >= 254) {
       // DEBUG_PRINTLN(F("SPACE"));
       break;

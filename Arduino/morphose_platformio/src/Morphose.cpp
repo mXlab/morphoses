@@ -83,6 +83,7 @@ namespace morphose {
 
     void updateLocation() {
     // Update average positioning.
+    osc::debug("Updating position");
     avgPositionX.put(currPosition.x);
     avgPositionY.put(currPosition.y);
     avgPosition.set(avgPositionX.get(), avgPositionY.get());
@@ -102,6 +103,7 @@ namespace morphose {
     }
 
     void sendData() {
+        osc::debug("Sending data");
         imus::process();
         morphose::navigation::process();
         morphose::navigation::sendInfo();
@@ -292,6 +294,7 @@ namespace energy {
                 //Serial.println("Checking energy");
             #endif
             // Read battery voltage.
+            osc::debug("Checking voltage");
             float batteryVoltage = motors::getBatteryVoltage();
             
             // Low voltage: Launch safety procedure.

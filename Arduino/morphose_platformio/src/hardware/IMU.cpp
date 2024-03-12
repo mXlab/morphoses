@@ -119,9 +119,11 @@ void initialize() {
      
 
   if (!imuMain.isInitialized()) {
+    
     osc::debug("Main imu not initialized");
     imuMain.init();
   }
+
   if (!imuSide.isInitialized()) {
     osc::debug("Side imu not initialized");
     imuSide.init();
@@ -130,12 +132,14 @@ void initialize() {
 }
 
 void beginCalibration() {
+  osc::debug("Begin calibration");
   imuMain.calibrateBegin();
   imuSide.calibrateBegin();
   osc::sendBundle();
 }
 
 void endCalibration() {
+  osc::debug("End calibration");
   imuMain.calibrateEnd();
   imuSide.calibrateEnd();
   osc::sendBundle();
@@ -148,17 +152,20 @@ void saveCalibration() {
 }
 
 void sleep() {
+  osc::debug("imus Sleeping");
   imuMain.modeSleep();
   imuSide.modeSleep();
 }
 
 void wake() {
+  osc::debug("imus Waking");
   imuMain.modeOn();
   imuSide.modeOn();
 }
 
 
 void process() {
+  osc::debug("imus Process");
   imuMain.process();
   imuSide.process();
 
