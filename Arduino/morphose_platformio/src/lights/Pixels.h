@@ -2,12 +2,16 @@
 #define ARDUINO_MORPHOSE_PLATFORMIO_SRC_LIGHTS_PIXELS_H_
 
 // #include <Globals.h>
+#include <FastLED.h>
+// using this hack i found online to support RGBW
+#include "FastLED_RGBW.h"
 
 namespace pixels {
 
 #define NUM_PIXELS 32
 #define NUM_PIXELS_PER_BLOCK 8
-#define PIXELS_TYPE (NEO_GRBW + NEO_KHZ800)
+#define LED_TYPE    WS2813
+#define COLOR_ORDER RGB
 
 enum Region {
   ALL = 0,
