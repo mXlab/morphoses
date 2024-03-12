@@ -17,7 +17,6 @@ namespace pixels {
   // Sets one pixel.
   void set(int i, int r, int g, int b, int w) {
     pixels.setPixelColor(i, r, g, b, w);
-
   }
 
   // // Sets all pixels.

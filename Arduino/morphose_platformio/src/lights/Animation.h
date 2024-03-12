@@ -6,6 +6,8 @@
 #include "pq_trig8.h"
 
 #define COLOR_DEBUGGING true
+#define DEBUG_COLOR_A 0
+#define DEBUG_COLOR_B 1
 
 namespace animations {
 
@@ -75,7 +77,8 @@ void unlockMutex();
 void initialize();
 
 // use with COLOR_DEBUGGING
-void setDebugColor(int r, int g, int b, int w);
+// i use DEBUG_COLOR_A and DEBUG_COLOR_B
+void setDebugColor(int i, int r, int g, int b, int w);
 // Update animation.
 void update();
 

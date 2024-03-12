@@ -8,6 +8,7 @@
 #include "Morphose.h"
 
 
+
 namespace mqtt {
 // MQTT settings.
 const char* broker{"192.168.0.200"};
@@ -54,22 +55,23 @@ void initialize() {
 
 void connect() {
   Log.infoln("Connecting to MQTT... ");
+  animations::setDebugColor(DEBUG_COLOR_B, 10,0,0,0);
   int8_t error = mqtt.connect();
   if (error) {    // error detected
     char errorStr[64];
     strncpy_P(errorStr, (PGM_P)mqtt.connectErrorString(error), 64);
     Log.errorln(errorStr);
 
-
     // Send error
     osc::bundle.add("/error").add("mqtt-connect").add(errorStr);
     osc::sendBundle();
     mqtt.disconnect();
-    
+    animations::setDebugColor(DEBUG_COLOR_B, 0,200,0,0);
   } else {
       osc::bundle.add("/ready").add("mqtt-connect");
       osc::sendBundle();
     Serial.println("MQTT Connected!");
+    animations::setDebugColor(DEBUG_COLOR_B, 0,10,0,0);
   }
 }
 
@@ -80,6 +82,7 @@ void update() {
 
     // Stop if already connected.
   if (!mqtt.connected()) {
+      osc::debug("connecting to MQTT");
       connect();
   }
 
@@ -104,6 +107,8 @@ void update() {
   // ping the server to keep the mqtt connection alive
   // NOT required if you are publishing once every KEEPALIVE seconds
   if (!mqtt.ping()) {
+    osc::debug("no ping disconnecting MQTT");
+    animations::setDebugColor(DEBUG_COLOR_B, 0,0,0,100);
     mqtt.disconnect();
   }
 }

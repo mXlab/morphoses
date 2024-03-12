@@ -118,7 +118,7 @@ void setup() {
   osc::debug("LEDS initialized");
  animations::initialize();
   osc::debug(" Animation initialized");
-  animations::setDebugColor(0,0,200,0);
+  animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
 
   imus::initialize();
   osc::debug(" IMU initialized");

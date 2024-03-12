@@ -7,9 +7,9 @@
 #include "Morphose.h"
 #include "Utils.h"
 #include "Logger.h"
+#include "lights/Animation.h"
 
 namespace imus {
-
 
   const char* MorphosesIMU::name() const { return _isMain ? "main" : "side"; }
 
@@ -173,12 +173,12 @@ void initialize() {
     
   if (!imuMain.isInitialized()) {
     osc::debug("Main imu not initialized");
-    Serial.println("Main imu not initialized");
+    animations::setDebugColor(DEBUG_COLOR_A,255,0,0,0);
     imuMain.init();
   }
   if (!imuSide.isInitialized()) {
     osc::debug("Side imu not initialized");
-    Serial.println("Side imu not initialized");
+    animations::setDebugColor(DEBUG_COLOR_A,10,0,0,0);
     imuSide.init();
   }
 
@@ -214,8 +214,10 @@ void wake() {
 
 
 void process() {
+  animations::setDebugColor(DEBUG_COLOR_A,0,50,0,0);
   imuMain.process();
   imuSide.process();
+  animations::setDebugColor(DEBUG_COLOR_A,0,0,100,0);
 }
 
 void sendData() {
