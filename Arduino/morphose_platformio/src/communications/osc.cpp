@@ -189,7 +189,7 @@ boolean argIsNumber(OSCMessage& msg, int index) {
                     case INVALID_OSC:
                         
                         Log.errorln("OSC MESSAGE ERROR : INVALID_OSC");
-                        logger::error("OSC MESSAGE ERROR : INVALID_OSC");
+                        //logger::error("OSC MESSAGE ERROR : INVALID_OSC");
                         
                         break;
 

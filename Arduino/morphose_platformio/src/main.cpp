@@ -96,10 +96,10 @@ void setup() {
   Plaquette.begin();
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
-  Log.infoln(" Morphose - 2023 - 7");
+  Log.infoln(" Morphose - 2023 - 8");
   Wire.begin();
   
-  logger::initialize();
+  //logger::initialize();
 
   network::initialize();
   delay(1000);
@@ -136,8 +136,12 @@ void setup() {
   morphose::sayHello();
   osc::debug("---------------- End of setup ----------------");
 
+<<<<<<< HEAD
   logger::info("Morphose initialization ok");
 
+=======
+  //logger::info("Morphose initialization ok");
+>>>>>>> 1a71b2698ff1e240decff9204911f5f706f9d222
 }
 
 void checkMemory() {
@@ -154,29 +158,36 @@ void checkMemory() {
     char buff[128];
     sprintf(buff, "Heap: %d allocated, %d free", memInfo.total_allocated_bytes, memInfo.total_free_bytes);
     osc::debug(buff);    
+<<<<<<< HEAD
 
     lastAllocated = currentAllocated;
   }
+=======
+    lastAllocated = currentAllocated;
+  }
+
+  
+>>>>>>> 1a71b2698ff1e240decff9204911f5f706f9d222
 }
 
 void loop() {
 
-  logger::update();
-  logger::info("logger::update ok");
+ // logger::update();
+  //logger::info("logger::update ok");
   // // Update OTA.
   // updateOTA();
 
-  imus::initialize();
-  logger::info("imus::initialize ok");
+ // imus::initialize();
+//  logger::info("imus::initialize ok");
 
   mqtt::update();
-  logger::info("mqtt::update ok");
+//  logger::info("mqtt::update ok");
 
   morphose::update();
-  logger::info("morphose::update ok");
+//  logger::info("morphose::update ok");
 
   osc::update();
-  logger::info("osc::update ok");
+//  logger::info("osc::update ok");
 
   checkMemory();
 }

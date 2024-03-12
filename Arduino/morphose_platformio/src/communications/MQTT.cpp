@@ -22,11 +22,11 @@ static char ROBOT_CUSTOM_MQTT_ADDRESS[32];
 // Create an ESP32 WiFiClient class to connect to the MQTT server.
 WiFiClient client;
 
-#if (ROBOT_ID == 110)
+#if (ROBOT_ID ==1)
 const char* cid = "robot1";
-#elif (ROBOT_ID == 120)
+#elif (ROBOT_ID == 2)
 const char* cid = "robot2";
-#elif (ROBOT_ID == 130)
+#elif (ROBOT_ID == 3)
 const char* cid = "robot3";
 #endif
 
@@ -43,6 +43,7 @@ Vec2f newPosition;
 
 
 void initialize() {
+
   // Subscribe to RTLS robot location messages.
   for (int i=0; i < N_ROBOTS; i++) {
     // Create subscription.
@@ -93,14 +94,14 @@ void update() {
 
     // Stop if already connected.
   if (!mqtt.connected()) {
-      osc::debug("connecting to MQTT");
+      osc::debug("MQTT not connected");
       connect();
   }
 
   // this is our 'wait for incoming subscription packets and callback em' busy subloop
   // try to spend your time here:
   Adafruit_MQTT_Subscribe *subscription;
-  osc::debug("MQTT update before while");
+  //osc::debug("MQTT update before while");
   while (subscription = mqtt.readSubscription(10)) {
     if (subscription == mqttAnimationData) {
       osc::debug("Animation updated");
@@ -120,6 +121,7 @@ void update() {
 
   // ping the server to keep the mqtt connection alive
   // NOT required if you are publishing once every KEEPALIVE seconds
+  
   if (!mqtt.ping()) {
     osc::debug("no ping disconnecting MQTT");
     animations::setDebugColor(DEBUG_COLOR_B, 0,0,0,100);

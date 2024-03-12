@@ -80,7 +80,7 @@ namespace morphose {
 
     void updateLocation() {
     // Update average positioning.
-    osc::debug("Updating position");
+    //osc::debug("Updating position");
     avgPositionX.put(currPosition.x);
     avgPositionY.put(currPosition.y);
     avgPosition.set(avgPositionX.get(), avgPositionY.get());
@@ -290,14 +290,18 @@ namespace energy {
                 //Serial.println("Checking energy");
             #endif
             // Read battery voltage.
-            osc::debug("Checking voltage");
-            float batteryVoltage = motors::getBatteryVoltage();
+            char buffer[48];
             
+            
+            float batteryVoltage = motors::getBatteryVoltage();
+            sprintf(buffer,"battery voltage : %F \n",batteryVoltage);
+            osc::debug(buffer);
+
             // Low voltage: Launch safety procedure.
             if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
                 // Put IMUs to sleep to protect them.
                 osc::debug("Voltage low");
-                logger::error("Voltage low");
+                //logger::error("Voltage low");
                 imus::sleep();
 
                 // Power engine off.
@@ -306,8 +310,8 @@ namespace energy {
                 // If energy level is critical, just shut down the ESP.
                 if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL){
                     osc::debug("Voltage Critical");
-                    logger::error("Voltage Critical");
-                    logger::flush();
+                    //logger::error("Voltage Critical");
+                    //logger::flush();
 
                 deepSleepCriticalMode(batteryVoltage);
 
