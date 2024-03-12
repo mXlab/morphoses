@@ -663,21 +663,21 @@ class World:
             # Ask for data.
             self.messaging.send(robot_name, "/get/data", 1)
 
-            # Send info.
-            if robot.group_is_valid('position'):
-                self.send_info(robot_name, "/pos", robot.get_position())
-            if robot.group_is_valid('quaternion_side'):
-                self.send_info(robot_name, "/side/quat", robot.get_quaternion_side(standardized=False))
-            if robot.group_is_valid('rotation_side'):
-                self.send_info(robot_name, "/side/rot", robot.get_rotation_side(standardized=False))
-            if robot.group_is_valid('quaternion_main'):
-                self.send_info(robot_name, "/main/quat", robot.get_quaternion_main(standardized=False))
-            if robot.group_is_valid('rotation_main'):
-                self.send_info(robot_name, "/main/rot", robot.get_rotation_main(standardized=False))
-            if robot.is_valid('speed'):
-                self.send_info(robot_name, "/speed", robot.get_value('speed', standardized=False))
-            if robot.is_valid('steer'):
-                self.send_info(robot_name, "/steer", robot.get_value('steer', standardized=False))
+            # # Send info.
+            # if robot.group_is_valid('position'):
+            #     self.send_info(robot_name, "/pos", robot.get_position())
+            # if robot.group_is_valid('quaternion_side'):
+            #     self.send_info(robot_name, "/side/quat", robot.get_quaternion_side(standardized=False))
+            # if robot.group_is_valid('rotation_side'):
+            #     self.send_info(robot_name, "/side/rot", robot.get_rotation_side(standardized=False))
+            # if robot.group_is_valid('quaternion_main'):
+            #     self.send_info(robot_name, "/main/quat", robot.get_quaternion_main(standardized=False))
+            # if robot.group_is_valid('rotation_main'):
+            #     self.send_info(robot_name, "/main/rot", robot.get_rotation_main(standardized=False))
+            # if robot.is_valid('speed'):
+            #     self.send_info(robot_name, "/speed", robot.get_value('speed', standardized=False))
+            # if robot.is_valid('steer'):
+            #     self.send_info(robot_name, "/steer", robot.get_value('steer', standardized=False))
 
     def get_time(self):
         return time.time() - self.start_time

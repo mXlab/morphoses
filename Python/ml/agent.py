@@ -145,7 +145,7 @@ class Agent:
     def begin(self):
         while not self.state_is_ready():
             self.world.update()
-            self.world.sleep(0.1)
+            self.world.sleep(1.0) # Wait - don't wait for less than that pls
 
         self.prev_state = self.get_state()
         self.prev_action = None

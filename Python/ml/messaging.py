@@ -155,6 +155,9 @@ class Messaging:
             osc_helper.map("/main/accur", self.receive_accuracy,   (name, True))
             osc_helper.map("/side/accur", self.receive_accuracy,   (name, False))
             osc_helper.map("/battery",    self.receive_battery,     name)
+            osc_helper.map("/debug",      self.receive_debug,       (name, "debug"))
+            osc_helper.map("/error",      self.receive_debug,       (name, "error"))
+            osc_helper.map("/ready",      self.receive_debug,       (name, "ready"))
 
             self.osc_robots[name] = osc_helper
 
@@ -224,12 +227,24 @@ class Messaging:
     def receive_battery(self, battery, name):
         self.world.send_info(name, "/battery", battery)
 
+    def receive_debug(self, message, args):
+        name, type = args
+        print(">>>>>>[{}] *** !!! {}: [{}] !!! ***".format(name, type, message))
+
     def set_behavior(self, args, extra):
         robot_name, behavior_name = args
         print("*** CHANGING BEHAVIOR: {} => {}".format(robot_name, behavior_name))
         self.manager.set_current_agent(robot_name, behavior_name)
 
     def send_animation(self, robot_name, animation):
+        animation = {
+            "base": [255, 255, 255, 255],
+            "alt": [0, 0, 0, 0],
+            "period": 4,
+            "noise": 0.1,
+            "region": 0,
+            "type": 0
+        }
         self.mqtt.publish_animation(robot_name, animation)
 
 def interrupt(signup, frame):

@@ -137,6 +137,7 @@ void setup() {
   osc::debug("---------------- End of setup ----------------");
 
   logger::info("Morphose initialization ok");
+
 }
 
 void checkMemory() {
@@ -153,9 +154,9 @@ void checkMemory() {
     char buff[128];
     sprintf(buff, "Heap: %d allocated, %d free", memInfo.total_allocated_bytes, memInfo.total_free_bytes);
     osc::debug(buff);    
-  }
 
-  lastAllocated = currentAllocated;
+    lastAllocated = currentAllocated;
+  }
 }
 
 void loop() {
@@ -179,4 +180,3 @@ void loop() {
 
   checkMemory();
 }
-
