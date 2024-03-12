@@ -173,10 +173,12 @@ void initialize() {
     
   if (!imuMain.isInitialized()) {
     osc::debug("Main imu not initialized");
+    Serial.println("Main imu not initialized");
     imuMain.init();
   }
   if (!imuSide.isInitialized()) {
     osc::debug("Side imu not initialized");
+    Serial.println("Side imu not initialized");
     imuSide.init();
   }
 
