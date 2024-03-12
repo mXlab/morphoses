@@ -5,6 +5,8 @@
 #include "lights/Pixels.h"
 #include "pq_trig8.h"
 
+#define COLOR_DEBUGGING true
+
 namespace animations {
 
 // Enum to specify the type of animation
@@ -72,6 +74,8 @@ void unlockMutex();
 // Initialize animation.
 void initialize();
 
+// use with COLOR_DEBUGGING
+void setDebugColor(int r, int g, int b, int w);
 // Update animation.
 void update();
 

@@ -8,7 +8,7 @@ SemaphoreHandle_t animationMutex = NULL;
 // Current and previous animations.
 Animation current;
 Animation previous;
-
+int debugColor[4];
 
 pq::Timer transitionTimer(1.0f);
 
@@ -85,6 +85,13 @@ void beginTransition() {
   transitionTimer.start();
 }
 
+void setDebugColor(int r, int g, int b, int w){
+    debugColor[0] = r;
+    debugColor[1] = g;
+    debugColor[2] = b;
+    debugColor[3] = w;
+}
+
 bool lockMutex() {
   return (xSemaphoreTake (animationMutex, portMAX_DELAY));
 }
@@ -121,8 +128,18 @@ void update() {
     }
 
     // Set pixel.
-    pixels::set(i, color.r(), color.g(), color.b());
-
+    if(COLOR_DEBUGGING == false){
+        pixels::set(i, color.r(), color.g(), color.b());
+    }
+    else {
+        pixels::set(
+            i,
+            debugColor[0],
+            debugColor[1],
+            debugColor[2],
+            debugColor[3]
+        );
+    }
   }
 }
 
