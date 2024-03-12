@@ -168,7 +168,7 @@ namespace network {
     void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
        
         Log.warningln("Disconnected from WiFi %d", info.wifi_sta_disconnected.reason);
-        logger::error("Lost wifi connection");
+        //logger::error("Lost wifi connection");
     }
 
     void WiFiGotIP(WiFiEvent_t event, WiFiEventInfo_t info) {

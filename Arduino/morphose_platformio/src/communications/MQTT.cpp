@@ -22,11 +22,11 @@ static char ROBOT_CUSTOM_MQTT_ADDRESS[32];
 // Create an ESP32 WiFiClient class to connect to the MQTT server.
 WiFiClient client;
 
-#if (ROBOT_ID == 110)
-const char* cid = "robot1";
-#elif (ROBOT_ID == 120)
-const char* cid = "robot2";
-#elif (ROBOT_ID == 130)
+#if (ROBOT_ID ==1)
+const char* cid = "robot3";
+#elif (ROBOT_ID == 2)
+const char* cid = "robot3";
+#elif (ROBOT_ID == 3)
 const char* cid = "robot3";
 #endif
 
@@ -93,7 +93,7 @@ void update() {
 
     // Stop if already connected.
   if (!mqtt.connected()) {
-      osc::debug("connecting to MQTT");
+      osc::debug("MQTT not connected");
       connect();
   }
 
