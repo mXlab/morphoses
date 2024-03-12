@@ -659,7 +659,11 @@ class World:
 
         for robot_name in self.robots:
             robot = self.entities[robot_name]
+            
+            # Ask for data.
             self.messaging.send(robot_name, "/get/data", 1)
+
+            # Send info.
             if robot.group_is_valid('position'):
                 self.send_info(robot_name, "/pos", robot.get_position())
             if robot.group_is_valid('quaternion_side'):
