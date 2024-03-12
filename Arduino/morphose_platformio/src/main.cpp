@@ -139,15 +139,44 @@ void setup() {
   logger::info("Morphose initialization ok");
 }
 
+void checkMemory() {
+  static size_t lastAllocated = 0;
+
+  // Get heap info.
+  multi_heap_info_t memInfo;
+  heap_caps_get_info(&memInfo, MALLOC_CAP_8BIT); 
+
+  // Check if allocated memory increased.
+  size_t currentAllocated = memInfo.total_allocated_bytes;
+  if (currentAllocated > lastAllocated + 32) { // If memory usage increased by more than 32 bytes.
+    // Print heap info.
+    char buff[128];
+    sprintf(buff, "Heap: %d allocated, %d free", memInfo.total_allocated_bytes, memInfo.total_free_bytes);
+    osc::debug(buff);    
+  }
+
+  lastAllocated = currentAllocated;
+}
 
 void loop() {
+
   logger::update();
+  logger::info("logger::update ok");
   // // Update OTA.
   // updateOTA();
-  imus::initialize();
-  mqtt::update();
-  morphose::update();
-  osc::update();
 
+  imus::initialize();
+  logger::info("imus::initialize ok");
+
+  mqtt::update();
+  logger::info("mqtt::update ok");
+
+  morphose::update();
+  logger::info("morphose::update ok");
+
+  osc::update();
+  logger::info("osc::update ok");
+
+  checkMemory();
 }
 

@@ -6,6 +6,7 @@
 #include "lights/Animation.h"
 #include "lights/Pixels.h"
 #include "Morphose.h"
+#include "Logger.h"
 
 
 namespace mqtt {
@@ -21,8 +22,17 @@ static char ROBOT_CUSTOM_MQTT_ADDRESS[32];
 // Create an ESP32 WiFiClient class to connect to the MQTT server.
 WiFiClient client;
 
+#if (ROBOT_ID == 110)
+const char* cid = "robot1";
+#elif (ROBOT_ID == 120)
+const char* cid = "robot2";
+#elif (ROBOT_ID == 130)
+const char* cid = "robot3";
+#endif
+
 // Setup the MQTT client class by passing in the WiFi client and MQTT server and login details.
-Adafruit_MQTT_Client mqtt(&client, broker, brokerPort);
+//Adafruit_MQTT_Client mqtt(&client, broker, brokerPort);
+Adafruit_MQTT_Client mqtt(&client, broker, brokerPort,cid,"","");
 
 // Setup a feed called 'location' for subscribing to current location.
 Adafruit_MQTT_Subscribe* mqttRobotLocations[N_ROBOTS];
@@ -53,12 +63,13 @@ void initialize() {
 
 
 void connect() {
-  Log.infoln("Connecting to MQTT... ");
+  osc::debug("Connecting to MQTT...");
   int8_t error = mqtt.connect();
+
   if (error) {    // error detected
     char errorStr[64];
     strncpy_P(errorStr, (PGM_P)mqtt.connectErrorString(error), 64);
-    Log.errorln(errorStr);
+    Serial.println(errorStr);
 
 
     // Send error
@@ -69,7 +80,7 @@ void connect() {
   } else {
       osc::bundle.add("/ready").add("mqtt-connect");
       osc::sendBundle();
-    Serial.println("MQTT Connected!");
+    osc::debug("MQTT Connected!");
   }
 }
 
@@ -80,20 +91,23 @@ void update() {
 
     // Stop if already connected.
   if (!mqtt.connected()) {
+      osc::debug("MQTT not connected");
       connect();
   }
 
   // this is our 'wait for incoming subscription packets and callback em' busy subloop
   // try to spend your time here:
   Adafruit_MQTT_Subscribe *subscription;
+  osc::debug("MQTT update before while");
   while (subscription = mqtt.readSubscription(10)) {
     if (subscription == mqttAnimationData) {
-      Log.infoln("Animation updated");
+      osc::debug("Animation updated");
      onAnimation((char *)mqttAnimationData->lastread);
     } else {
       for (int i=0; i < N_ROBOTS; i++) {
         if (subscription == mqttRobotLocations[i]) {
-            //Log.infoln("Location %d updated", i+1);
+            //Log.infoln("Location %d updated", i+1);()
+            osc::debug("Location updated");
             onLocation(i, (char *)mqttRobotLocations[i]->lastread);
             break;
         }
@@ -101,9 +115,12 @@ void update() {
     }
   }
 
+
   // ping the server to keep the mqtt connection alive
   // NOT required if you are publishing once every KEEPALIVE seconds
   if (!mqtt.ping()) {
+    logger::info("ping() failed");
+    osc::debug("ping() failed");
     mqtt.disconnect();
   }
 }
