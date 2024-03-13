@@ -88,8 +88,10 @@ namespace imus {
     void MorphosesIMU::sendData() {
         // Debugging info //////////////////////////////////////////
 
-        JsonArray quatData = morphose::json::deviceData["quat"].to<JsonArray>();
-        JsonArray dQuatData = morphose::json::deviceData["d-quat"].to<JsonArray>();
+        // Add quaternion.
+        JsonObject imuJson = morphose::json::deviceData.createNestedObject(name());
+        JsonArray quatData = imuJson["quat"].to<JsonArray>();
+        JsonArray dQuatData = imuJson["d-quat"].to<JsonArray>();
         // Add quaternion.
         for (int i=0; i<4; i++) {
             quatData.add(_quat[i].value());
@@ -97,15 +99,15 @@ namespace imus {
         }
     
         // Add rotation.
-        JsonArray rotData = morphose::json::deviceData["rot"].to<JsonArray>();
-        JsonArray dRotData = morphose::json::deviceData["d-rot"].to<JsonArray>();
+        JsonArray rotData = imuJson["rot"].to<JsonArray>();
+        JsonArray dRotData = imuJson["d-rot"].to<JsonArray>();
         for (int i=0; i<3; i++) {
             rotData.add(_rot[i].value());
             dRotData.add(_rot[i].delta());
         }
 
         // Add magnetometer.
-        JsonArray magData = morphose::json::deviceData["mag"].to<JsonArray>();
+        JsonArray magData = imuJson["mag"].to<JsonArray>();
         magData.add(getMagX());
         magData.add(getMagY());
         magData.add(getMagZ());
@@ -121,8 +123,8 @@ namespace imus {
         // for (int i=0; i<3; i++) msgFull.add(_rot[i].delta());   // delta rotation
 
         // Add accuracy.
-        morphose::json::deviceData["accur-mag"] = getMagAccuracy();
-        morphose::json::deviceData["accur-quat"] = degrees(getQuatRadianAccuracy());
+        imuJson["accur-mag"] = getMagAccuracy();
+        imuJson["accur-quat"] = degrees(getQuatRadianAccuracy());
     }
 
     void MorphosesIMU::calibrateBegin() {
