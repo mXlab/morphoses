@@ -1,8 +1,8 @@
 // #ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_MQTT_H_
 // #define ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_MQTT_H_
 
-// #include <Adafruit_MQTT.h>
-// #include <Adafruit_MQTT_Client.h>
+// // #include <Adafruit_MQTT.h>
+// // #include <Adafruit_MQTT_Client.h>
 // #include <Arduino_JSON.h>
 // #include <VectorXf.h>
 // #include <WiFi.h>

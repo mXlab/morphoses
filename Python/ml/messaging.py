@@ -150,6 +150,8 @@ class Messaging:
 
             osc_helper.map("/main/quat",  self.receive_quaternion, (name, True))
             osc_helper.map("/side/quat",  self.receive_quaternion, (name, False))
+            osc_helper.map("/main/data",  self.receive_rotation_data, (name, True))
+            osc_helper.map("/side/data",  self.receive_rotation_data, (name, False))
             osc_helper.map("/main/accur", self.receive_accuracy,   (name, True))
             osc_helper.map("/side/accur", self.receive_accuracy,   (name, False))
             osc_helper.map("/battery",    self.receive_battery,     name)
@@ -157,8 +159,8 @@ class Messaging:
             self.osc_robots[name] = osc_helper
 
         # Local info logging client.
-        self.info_client = udp_client.SimpleUDPClient("localhost", 8001)
-        # self.info_client = udp_client.SimpleUDPClient("192.168.0.180", 8001)
+        # self.info_client = udp_client.SimpleUDPClient("localhost", 8001)
+        self.info_client = udp_client.SimpleUDPClient("192.168.0.255", 8001, allow_broadcast=True)
 
         control_interface_settings = settings['control_interface']
         self.osc_control_interface = OscHelper("control-interface", control_interface_settings['ip'], control_interface_settings['osc_send_port'], control_interface_settings['osc_recv_port'])
@@ -180,7 +182,7 @@ class Messaging:
     def send_bundle(self, robot_name, messages):
         self.osc_robots[robot_name].send_bundle(messages)
 
-    def send_info(self, address, args):
+    def send_info(self, address, args=[]):
         self.info_client.send_message(address, args)
 
     def dispatch(self, address, src_info, data):
@@ -199,6 +201,13 @@ class Messaging:
     def terminate(self):
         osc_terminate()
         self.mqtt.terminate()
+
+    def receive_rotation_data(self, data, args):
+        name, imu_is_main = args
+        if imu_is_main:
+            self.world.store_rotation_data_main(name, data)
+        else:
+            self.world.store_rotation_data_side(name, data)
 
     def receive_quaternion(self, quat, args):
         name, imu_is_main = args

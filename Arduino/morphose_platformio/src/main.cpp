@@ -67,7 +67,7 @@
 #include <PlaquetteLib.h>
 using namespace pq;
 
-#include "communications/asyncMQTT.h"
+#include "communications/asyncMqtt.h"
 #include "communications/Network.h"
 #include "communications/osc.h"
 #include "communications/OTA.h"

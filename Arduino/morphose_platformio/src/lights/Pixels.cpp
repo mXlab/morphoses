@@ -1,5 +1,4 @@
 #include "Pixels.h"
-#include <Adafruit_NeoPixel.h>
 
 // Which pin on the Arduino is connected to the NeoPixels.
 #define PIXELS_PIN 13
@@ -7,17 +6,25 @@
 namespace pixels {
 
   // The neopixel strip instance.
-  Adafruit_NeoPixel pixels(NUM_PIXELS, PIXELS_PIN, PIXELS_TYPE);
-
+  // Adafruit_NeoPixel pixels(NUM_PIXELS, PIXELS_PIN, PIXELS_TYPE);
+  CRGBW leds[NUM_PIXELS];
+  CRGB *ledsRGB = (CRGB *) &leds[0];
   void initialize() {
     // INITIALIZE NeoPixel strip object (REQUIRED)
-    pixels.begin();
+    // pixels.begin();
+    FastLED.addLeds<LED_TYPE, PIXELS_PIN, COLOR_ORDER>(ledsRGB, getRGBWsize(NUM_PIXELS));
+    for(int i = 0 ; i < NUM_PIXELS; i++){
+      leds[i] = CRGBW(0,0,0,100);
+    }
+    FastLED.show();
+    delay(500);
+    FastLED.clear();
+    FastLED.show();
   }
 
   // Sets one pixel.
   void set(int i, int r, int g, int b, int w) {
-    pixels.setPixelColor(i, r, g, b, w);
-
+    leds[i] = CRGBW(r,g,b,w);
   }
 
   // // Sets all pixels.
@@ -36,15 +43,15 @@ namespace pixels {
   // }
 
   void clear() {
-    pixels.clear();
+    FastLED.clear();
   }
 
   int numPixels() {
-    return pixels.numPixels();
+    return NUM_PIXELS;
   }
 
   void display() {
-    pixels.show();
+    FastLED.show();
   }
 
 struct PixelIterator {
@@ -55,14 +62,13 @@ struct PixelIterator {
     // Constructor.
     PixelIterator(Region r = ALL) : region(r) {
       nextPixel = 0;
-      int nPixels = pixels.numPixels();
+      int nPixels = NUM_PIXELS;
       if (region == TOP) {
         nPixels = nPixels * 3 / 4;
       } else if (region == BOTTOM) {
         nextPixel = nPixels * 3 / 4;
         nPixels /= 4;
       }
-
       endPixel = nextPixel + nPixels;
     }
 
@@ -83,7 +89,7 @@ struct PixelIterator {
   bool nextPixelWrite(int r, int g, int b, int w) {
     // Set pixel color for next pixel in region.
     if (currentRegionIterator.hasNext()) {
-      pixels.setPixelColor(currentRegionIterator.next(), pixels.Color(r, g, b, w));
+      leds[currentRegionIterator.next()] = CRGBW(r, g, b, w);
       return true;
     } else {
       return false;
@@ -91,21 +97,21 @@ struct PixelIterator {
   }
 
   void endPixelWrite() {
-    pixels.show();
+    FastLED.show();
   }
 
   bool insideRegion(int i, Region region) {
     // Verify index is in range.
-    if (i < 0 || i >= pixels.numPixels())
+    if (i < 0 || i >= NUM_PIXELS)
       return false;
 
     // Verify if index is in region.
     if (region == ALL)
       return true;
     else if (region == TOP)
-      return (i < pixels.numPixels() * 3 / 4);
+      return (i < NUM_PIXELS * 3 / 4);
     else
-      return (i >= pixels.numPixels() * 3 / 4);
+      return (i >= NUM_PIXELS * 3 / 4);
   }
 
   // Sets pixels in a given region.
@@ -114,12 +120,12 @@ struct PixelIterator {
     PixelIterator it(region);
     while (it.hasNext()) {
       // Set pixel color for each pixel in region.
-      pixels.setPixelColor(it.next(), pixels.Color(r, g, b, w));
+      leds[it.next()] = CRGBW(r, g, b, w);
     }
 
   //  portDISABLE_INTERRUPTS();
     // Send the updated pixel colors to the hardware.
-    pixels.show();
+    FastLED.show();
   //  portENABLE_INTERRUPTS();
   }
 

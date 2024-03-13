@@ -107,6 +107,9 @@ namespace morphose {
         updateLocation();
 
         if(sendRate.hasPassed(STREAM_INTERVAL, true)){
+            imus::process();
+            morphose::navigation::process();
+
             if(stream){
                 sendData();
                 // Send OSC bundle.
@@ -268,9 +271,6 @@ namespace navigation {
         osc::bundle.add("/velocity").add(getVelocity().x).add(getVelocity().y);
         osc::bundle.add("/heading-quality").add(getVelocityQuality());
         }
-
-
- 
 
     }  // namespace navigation
 

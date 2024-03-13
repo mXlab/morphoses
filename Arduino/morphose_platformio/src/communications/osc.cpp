@@ -138,30 +138,25 @@ boolean argIsNumber(OSCMessage& msg, int index) {
         // Tried to wrap this in a class and in a namespace and it makes the mcu crash for unknown reasons
         OSCMessage msg;
         uint16_t size = network::udp.parsePacket();
-
         if (size > 0) {
+            if(DEBUG_MODE) {
+                Serial.print("Received UDP packet of size ");
+                Serial.println(size);
+                Serial.print("From : ");
+                Serial.print(network::udp.remoteIP());
+                Serial.print(", port : ");
+                Serial.println(network::udp.remotePort());
+            }
 
             while (size--) {
                 msg.fill(network::udp.read());
             }
-
-            if (DEBUG_MODE) {
-                // Serial.print("Received packet of size ");
-                // Serial.println(size);
-                // Serial.print("From : ");
-                // Serial.print(network::udp.remoteIP());
-                // Serial.print(", port : ");
-                // Serial.println(network::udp.remotePort());
-                // Serial.println(F("OSC message received:"));
-                // msg.send(Serial);
-                // Serial.println(" ");
-            }
-
-            
-
+         
             if (!msg.hasError()) {
                 if (DEBUG_MODE){
-                    Serial.println("no errors in packet"); 
+                    Serial.println(F("OSC message received:"));
+                    msg.send(Serial);
+                    Serial.println(" ");
                 } 
                 Serial.println("Message received");
                 bundle.add("/received").add(morphose::name).add(network::udp.remoteIP()[3]);
