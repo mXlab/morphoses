@@ -9,7 +9,7 @@ void updateOTA() {
 
 void initOTA(const char* hostname = 0) {
   // Port defaults to 3232
-  // ArduinoOTA.setPort(3232);
+   ArduinoOTA.setPort(3232);
 
   // Hostname defaults to esp3232-[MAC]
   if (hostname)

@@ -33,7 +33,7 @@ namespace network {
 
      IPAddress broadcast{192, 168, 0, 255};
      IPAddress subnet(255, 255, 255, 0);
-     IPAddress gateway(NETWORK_IP_0, NETWORK_IP_1, NETWORK_IP_2, 1);
+     IPAddress gateway(192, 168, 0, 1);
      WiFiUDP udp{};
 
 

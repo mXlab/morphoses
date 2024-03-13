@@ -115,13 +115,13 @@ void setup() {
   sprintf(buff,"Osc broadcast state: %d\n",  osc::isBroadcasting());
 
   osc::debug(buff);
-  //motors::initialize();
+  motors::initialize();
   osc::debug("Motors initialized");
 
-  //morphose::energy::check();
+  morphose::energy::check();
   osc::debug("Energy initialized");
 
-  //pixels::initialize();
+  pixels::initialize();
   osc::debug("LEDS initialized");
 
  animations::initialize();
@@ -129,8 +129,8 @@ void setup() {
   osc::debug(" Animation initialized");
   animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
 
-  // imus::initialize();
-  // osc::debug(" IMU initialized");
+  imus::initialize();
+  osc::debug(" IMU initialized");
 
 
 
@@ -180,10 +180,10 @@ void loop() {
 //  logger::info("mqtt::update ok");
 
   morphose::update();
-//  logger::info("morphose::update ok");
+// logger::info("morphose::update ok");
 
   osc::update();
-//  logger::info("osc::update ok");
+// logger::info("osc::update ok");
 
   checkMemory();
 }
