@@ -3,7 +3,9 @@
 #include <SparkFun_BNO080_Arduino_Library.h>
 #include <Chrono.h>
 
+
 #include "communications/osc.h"
+#include "communications/asyncMqtt.h"
 #include "Morphose.h"
 #include "Utils.h"
 #include "Logger.h"
@@ -35,7 +37,7 @@ namespace imus {
       boolean isOk = begin(i2cAddress());
       if (!isOk) {
         //logger::error("Cant initialize imus");
-        osc::debug("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
+        mqtt::debug("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
 //        utils::blinkIndicatorLed(1000, 0.1);
       } else {
         // Increase I2C data rate to 400kHz.
@@ -44,12 +46,13 @@ namespace imus {
         _enableSensors();
         // Mark as initialied.
         _initialized = true;
-         osc::debug("BNO080 initialized");
+         mqtt::debug("BNO080 initialized");
       }
 
       // Add details and send.
-      oscBundle(isOk ? "/ready" : "/error").add(morphose::name).add("i2c");
-      osc::sendBundle();
+      mqtt::debug(name());
+      mqtt::debug(isOk ? "is ready" : " error");
+      mqtt::debug(isOk ? "is ready" : " error");
     }
 
     boolean MorphosesIMU::process() {
@@ -69,10 +72,6 @@ namespace imus {
         _quat[2].add(getQuatK());
         _quat[3].add(getQuatReal());
 
-        // oscBundle("/quat").add(getQuatI()).add(getQuatJ()).add(getQuatK()).add(getQuatReal());
-        // oscBundle("/rot").add((float)degrees(getRoll())).add((float)degrees(getPitch())).add((float)degrees(getYaw()));
-        // oscBundle("/accur").add(getMagAccuracy()).add(degrees(getQuatRadianAccuracy()));
-        // oscBundle("/mag").add(getMagX()).add(getMagY()).add(getMagZ());
       }
       else {
         // Just step.
@@ -85,51 +84,58 @@ namespace imus {
       return available;
     }
 
-    void MorphosesIMU::sendData() {
+    void MorphosesIMU::collectData() {
         // Debugging info //////////////////////////////////////////
 
         // Add quaternion.
-        OSCMessage& msgQuat = oscBundle("/quat");
-        OSCMessage& msgDeltaQuat = oscBundle("/d-quat");
+        JsonObject imuJson = morphose::json::deviceData.createNestedObject(name());
+        JsonArray quatData = imuJson["quat"].to<JsonArray>();
+        JsonArray dQuatData = imuJson["d-quat"].to<JsonArray>();
+        // Add quaternion.
         for (int i=0; i<4; i++) {
-          msgQuat.add(_quat[i].value());
-          msgDeltaQuat.add(_quat[i].delta());
+            quatData.add(_quat[i].value());
+            dQuatData.add(_quat[i].delta());
         }
-
+    
         // Add rotation.
-        OSCMessage& msgRot = oscBundle("/rot");
-        OSCMessage& msgDeltaRot = oscBundle("/d-rot");
+        JsonArray rotData = imuJson["rot"].to<JsonArray>();
+        JsonArray dRotData = imuJson["d-rot"].to<JsonArray>();
         for (int i=0; i<3; i++) {
-          msgRot.add(_rot[i].value());
-          msgDeltaRot.add(_rot[i].delta());
+            rotData.add(_rot[i].value());
+            dRotData.add(_rot[i].delta());
         }
 
         // Add magnetometer.
-        oscBundle("/mag").add(getMagX()).add(getMagY()).add(getMagZ());
+        JsonArray magData = imuJson["mag"].to<JsonArray>();
+        magData.add(getMagX());
+        magData.add(getMagY());
+        magData.add(getMagZ());
 
         // Useful info ////////////////////////////////////////////
 
         // Add full data bundle.
-        OSCMessage& msgFull = oscBundle("/data");
-        for (int i=0; i<4; i++) msgFull.add(_quat[i].value()); // quaternion
-        for (int i=0; i<4; i++) msgFull.add(_quat[i].delta()); // delta quaternion
-        for (int i=0; i<3; i++) msgFull.add(_rot[i].value());   // rotation
-        for (int i=0; i<3; i++) msgFull.add(_rot[i].delta());   // delta rotation
+        // MQTT_JSON refactor, still needed?
+        // OSCMessage& msgFull = oscBundle("/data");
+        // for (int i=0; i<4; i++) msgFull.add(_quat[i].value()); // quaternion
+        // for (int i=0; i<4; i++) msgFull.add(_quat[i].delta()); // delta quaternion
+        // for (int i=0; i<3; i++) msgFull.add(_rot[i].value());   // rotation
+        // for (int i=0; i<3; i++) msgFull.add(_rot[i].delta());   // delta rotation
 
         // Add accuracy.
-        oscBundle("/accur").add(getMagAccuracy()).add(degrees(getQuatRadianAccuracy()));
+        imuJson["accur-mag"] = getMagAccuracy();
+        imuJson["accur-quat"] = degrees(getQuatRadianAccuracy());
     }
 
     void MorphosesIMU::calibrateBegin() {
       calibrateAll();
       _enableSensors();
-      oscBundle("/calibration-begin");
+        mqtt::debug("Calibration begin");
     }
 
     void MorphosesIMU::calibrateEnd() {
       endCalibration();
       _enableSensors();
-      oscBundle("/calibration-end");
+        mqtt::debug("Calibration end");
     }
 
     void MorphosesIMU::calibrateSave() {
@@ -146,7 +152,7 @@ namespace imus {
       }
 
       // Send feedback.
-      oscBundle(isSaved ? "/calibration-save-done" : "/calibration-save-error");
+      mqtt::debug(isSaved ? "/calibration-save-done" : "/calibration-save-error");
     }
 
     void MorphosesIMU::tare(float currentHeading) {
@@ -173,63 +179,65 @@ void initialize() {
     
   if (!imuMain.isInitialized()) {
     
-    osc::debug("Main imu not initialized");
+    mqtt::debug("Main imu not initialized");
+
     animations::setDebugColor(DEBUG_COLOR_A,255,0,0,0);
+
     imuMain.init();
   }
 
   if (!imuSide.isInitialized()) {
-    osc::debug("Side imu not initialized");
+    mqtt::debug("Side imu not initialized");
+
     animations::setDebugColor(DEBUG_COLOR_A,10,0,0,0);
+
     imuSide.init();
   }
 
 }
 
 void beginCalibration() {
-  osc::debug("Begin calibration");
+  mqtt::debug("Begin calibration");
   imuMain.calibrateBegin();
   imuSide.calibrateBegin();
-  osc::sendBundle();
 }
 
 void endCalibration() {
-  osc::debug("End calibration");
+  mqtt::debug("End calibration");
   imuMain.calibrateEnd();
   imuSide.calibrateEnd();
-  osc::sendBundle();
 }
 
 void saveCalibration() {
   imuMain.calibrateSave();
   imuSide.calibrateSave();
-  osc::sendBundle();
 }
 
 void sleep() {
-  osc::debug("imus Sleeping");
+  mqtt::debug("imus Sleeping");
   imuMain.modeSleep();
   imuSide.modeSleep();
 }
 
 void wake() {
-  osc::debug("imus Waking");
+  mqtt::debug("imus Waking");
   imuMain.modeOn();
   imuSide.modeOn();
 }
 
 
 void process() {
-  osc::debug("imus Process");
+  mqtt::debug("imus Process");
+
   animations::setDebugColor(DEBUG_COLOR_A,0,50,0,0);
   imuMain.process();
   imuSide.process();
   animations::setDebugColor(DEBUG_COLOR_A,0,0,100,0);
 }
 
-void sendData() {
-  imuMain.sendData();
-  imuSide.sendData();
+void collectData() {
+  imuMain.collectData();
+  imuSide.collectData();
 }
 
 float getHeading() {
