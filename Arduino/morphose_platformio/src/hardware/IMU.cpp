@@ -7,9 +7,9 @@
 #include "Morphose.h"
 #include "Utils.h"
 #include "Logger.h"
+#include "lights/Animation.h"
 
 namespace imus {
-
 
   const char* MorphosesIMU::name() const { return _isMain ? "main" : "side"; }
 
@@ -34,7 +34,7 @@ namespace imus {
       // Try to connect.
       boolean isOk = begin(i2cAddress());
       if (!isOk) {
-        logger::error("Cant initialize imus");
+        //logger::error("Cant initialize imus");
         osc::debug("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
 //        utils::blinkIndicatorLed(1000, 0.1);
       } else {
@@ -177,12 +177,19 @@ MorphosesIMU imuSide(false);
 void initialize() {
     
   if (!imuMain.isInitialized()) {
+    
     osc::debug("Main imu not initialized");
+
+    animations::setDebugColor(DEBUG_COLOR_A,255,0,0,0);
+
     imuMain.init();
   }
 
   if (!imuSide.isInitialized()) {
     osc::debug("Side imu not initialized");
+
+    animations::setDebugColor(DEBUG_COLOR_A,10,0,0,0);
+
     imuSide.init();
   }
 
@@ -220,8 +227,12 @@ void wake() {
 
 void process() {
   osc::debug("imus Process");
+
+  animations::setDebugColor(DEBUG_COLOR_A,0,50,0,0);
+
   imuMain.process();
   imuSide.process();
+  animations::setDebugColor(DEBUG_COLOR_A,0,0,100,0);
 }
 
 void sendData() {

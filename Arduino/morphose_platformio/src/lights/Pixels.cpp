@@ -24,7 +24,9 @@ namespace pixels {
 
   // Sets one pixel.
   void set(int i, int r, int g, int b, int w) {
+
     leds[i] = CRGBW(r,g,b,w);
+
   }
 
   // // Sets all pixels.

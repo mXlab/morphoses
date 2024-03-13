@@ -8,7 +8,8 @@ SemaphoreHandle_t animationMutex = NULL;
 // Current and previous animations.
 Animation current;
 Animation previous;
-
+#define DEBUG_COLOR_COUNT 2
+int debugColor[DEBUG_COLOR_COUNT][4];
 
 pq::Timer transitionTimer(1.0f);
 
@@ -85,6 +86,13 @@ void beginTransition() {
   transitionTimer.start();
 }
 
+void setDebugColor(int i, int r, int g, int b, int w){
+    debugColor[i][0] = r;
+    debugColor[i][1] = g;
+    debugColor[i][2] = b;
+    debugColor[i][3] = w;
+}
+
 bool lockMutex() {
   return (xSemaphoreTake (animationMutex, portMAX_DELAY));
 }
@@ -121,8 +129,19 @@ void update() {
     }
 
     // Set pixel.
-    pixels::set(i, color.r(), color.g(), color.b());
-
+    // use first 8 pixels for debugging.
+    if(i >= NUM_PIXELS_PER_BLOCK || COLOR_DEBUGGING == false){
+        pixels::set(i, color.r(), color.g(), color.b());
+    }
+    else {
+        pixels::set(
+            i,
+            debugColor[i<5][0],
+            debugColor[i<5][1],
+            debugColor[i<5][2],
+            debugColor[i<5][3]
+        );
+    }
   }
 }
 

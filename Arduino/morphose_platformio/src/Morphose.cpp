@@ -105,7 +105,7 @@ namespace json {
 
     void updateLocation() {
     // Update average positioning.
-    // osc::debug("Updating position");
+
     avgPositionX.put(currPosition.x);
     avgPositionY.put(currPosition.y);
     avgPosition.set(avgPositionX.get(), avgPositionY.get());
@@ -128,9 +128,11 @@ namespace json {
         }
     }
     void sendData() {
+
         static char jsonString[1024];
         //osc::debug("Sending data");
         imus::process();
+
         imus::sendData();
         morphose::navigation::process();
         morphose::navigation::sendInfo();
@@ -332,9 +334,11 @@ namespace energy {
                 //Serial.println("Checking energy");
             #endif
             // Read battery voltage.
-            // osc::debug("Checking voltage");
+
             float batteryVoltage = motors::getBatteryVoltage();
-            
+            sprintf(buffer,"battery voltage : %F \n",batteryVoltage);
+            osc::debug(buffer);
+
             // Low voltage: Launch safety procedure.
             if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
                 // Put IMUs to sleep to protect them.
@@ -349,6 +353,7 @@ namespace energy {
                 if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL){
                     osc::debug("Voltage Critical");
                     //logger::error("Voltage Critical");
+
 
                 deepSleepCriticalMode(batteryVoltage);
 

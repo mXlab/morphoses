@@ -2,11 +2,13 @@
 
 // #include <ArduinoLog.h>
 
+
 // #include "communications/osc.h"
 // #include "lights/Animation.h"
 // #include "lights/Pixels.h"
 // #include "Morphose.h"
 // #include "Logger.h"
+
 
 
 // namespace mqtt {
@@ -22,13 +24,19 @@
 // // Create an ESP32 WiFiClient class to connect to the MQTT server.
 // WiFiClient client;
 
-// #if (ROBOT_ID == 110)
-// const char* cid = "robot1";
-// #elif (ROBOT_ID == 120)
-// const char* cid = "robot2";
-// #elif (ROBOT_ID == 130)
-// const char* cid = "robot3";
-// #endif
+
+//#if (ROBOT_ID ==1)
+//const char* cid = "robot1";
+//#elif (ROBOT_ID == 2)
+//const char* cid = "robot2";
+//#elif (ROBOT_ID == 3)
+//const char* cid = "robot3";
+//#endif
+
+// Setup the MQTT client class by passing in the WiFi client and MQTT server and login details.
+//Adafruit_MQTT_Client mqtt(&client, broker, brokerPort);
+//Adafruit_MQTT_Client mqtt(&client, broker, brokerPort,cid,"","");
+
 
 // // Setup the MQTT client class by passing in the WiFi client and MQTT server and login details.
 // //Adafruit_MQTT_Client mqtt(&client, broker, brokerPort);
@@ -66,72 +74,6 @@
 //   osc::debug("Connecting to MQTT...");
 //   int8_t error = mqtt.connect();
 
-//   if (error) {    // error detected
-//     char errorStr[64];
-//     strncpy_P(errorStr, (PGM_P)mqtt.connectErrorString(error), 64);
-//     Serial.println(errorStr);
-
-
-//     // Send error
-//     osc::bundle.add("/error").add("mqtt-connect").add(errorStr);
-//     osc::sendBundle();
-//     mqtt.disconnect();
-    
-//   } else {
-//       osc::bundle.add("/ready").add("mqtt-connect");
-//       osc::sendBundle();
-//     osc::debug("MQTT Connected!");
-//   }
-// }
-
-// void update() {
-//   // Ensure the connection to the MQTT server is alive (this will make the first
-//   // connection and automatically reconnect when disconnected).  See the MQTT_connect
-//   // function definition further below.
-
-//     // Stop if already connected.
-//   if (!mqtt.connected()) {
-//       osc::debug("MQTT not connected");
-//       connect();
-//   }
-
-//   // this is our 'wait for incoming subscription packets and callback em' busy subloop
-//   // try to spend your time here:
-//   Adafruit_MQTT_Subscribe *subscription;
-//   // osc::debug("MQTT update before while");
-//   while (subscription = mqtt.readSubscription(10)) {
-//     if (subscription == mqttAnimationData) {
-//     //  osc::debug("Animation updated");
-//      onAnimation((char *)mqttAnimationData->lastread);
-//     } else {
-//       for (int i=0; i < N_ROBOTS; i++) {
-//         if (subscription == mqttRobotLocations[i]) {
-//             //Log.infoln("Location %d updated", i+1);()
-//             // osc::debug("Location updated");
-//             onLocation(i, (char *)mqttRobotLocations[i]->lastread);
-//             break;
-//         }
-//       }
-//     }
-//   }
-
-
-//   // ping the server to keep the mqtt connection alive
-//   // NOT required if you are publishing once every KEEPALIVE seconds
-//   if (!mqtt.ping()) {
-//     logger::info("ping() failed");
-//     osc::debug("ping() failed");
-//     mqtt.disconnect();
-//   }
-// }
-
-// void onLocation(int robot, char* data) {
-//   // Parse location.
-//   JSONVar location = JSON.parse(data);
-//   JSONVar position = location["position"];
-//   if ((int)position["quality"] > 50) {
-//     // Set current position.
-//     newPosition = Vec2f((float)double(position["x"]), (float)double(position["y"]));  // weird way to do this
     
 //     // buffer all robot positions
 //     robotPositions[robot].set(newPosition);
