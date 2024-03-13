@@ -3,6 +3,7 @@
 
 #include "Config.h"
 #include <VectorXf.h>
+#include <Arduino_JSON.h>
 
 class IPAddress;
 
@@ -33,6 +34,11 @@ namespace morphose {
     void setCurrentPosition(Vec2f newPosition);
 
     void sendData();
+
+namespace json {
+    extern JSONVar deviceData;
+}
+
 
 namespace navigation {
         void start();

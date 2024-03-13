@@ -89,47 +89,47 @@ namespace imus {
         // Debugging info //////////////////////////////////////////
 
         // Add quaternion.
-        OSCMessage& msgQuat = oscBundle("/quat");
-        OSCMessage& msgDeltaQuat = oscBundle("/d-quat");
         for (int i=0; i<4; i++) {
-          msgQuat.add(_quat[i].value());
-          msgDeltaQuat.add(_quat[i].delta());
+            morphose::json::deviceData["/quat"][i] = _quat[i].value();
+            morphose::json::deviceData["/d-quat"][i] = _quat[i].delta();
         }
 
         // Add rotation.
-        OSCMessage& msgRot = oscBundle("/rot");
-        OSCMessage& msgDeltaRot = oscBundle("/d-rot");
         for (int i=0; i<3; i++) {
-          msgRot.add(_rot[i].value());
-          msgDeltaRot.add(_rot[i].delta());
+            morphose::json::deviceData["/rot"][i] = _rot[i].value();
+            morphose::json::deviceData["/d-rot"][i] = _rot[i].delta();
         }
 
         // Add magnetometer.
-        oscBundle("/mag").add(getMagX()).add(getMagY()).add(getMagZ());
+        morphose::json::deviceData["/mag"][0] = getMagX();
+        morphose::json::deviceData["/mag"][1] = getMagY();
+        morphose::json::deviceData["/mag"][2] = getMagZ();
 
         // Useful info ////////////////////////////////////////////
 
         // Add full data bundle.
-        OSCMessage& msgFull = oscBundle("/data");
-        for (int i=0; i<4; i++) msgFull.add(_quat[i].value()); // quaternion
-        for (int i=0; i<4; i++) msgFull.add(_quat[i].delta()); // delta quaternion
-        for (int i=0; i<3; i++) msgFull.add(_rot[i].value());   // rotation
-        for (int i=0; i<3; i++) msgFull.add(_rot[i].delta());   // delta rotation
+        // MQTT_JSON refactor, still needed?
+        // OSCMessage& msgFull = oscBundle("/data");
+        // for (int i=0; i<4; i++) msgFull.add(_quat[i].value()); // quaternion
+        // for (int i=0; i<4; i++) msgFull.add(_quat[i].delta()); // delta quaternion
+        // for (int i=0; i<3; i++) msgFull.add(_rot[i].value());   // rotation
+        // for (int i=0; i<3; i++) msgFull.add(_rot[i].delta());   // delta rotation
 
         // Add accuracy.
-        oscBundle("/accur").add(getMagAccuracy()).add(degrees(getQuatRadianAccuracy()));
+        morphose::json::deviceData["/accur/mag"] = getMagAccuracy();
+        morphose::json::deviceData["/accur/quat"] = degrees(getQuatRadianAccuracy());
     }
 
     void MorphosesIMU::calibrateBegin() {
       calibrateAll();
       _enableSensors();
-      oscBundle("/calibration-begin");
+        osc::debug("Calibration begin");
     }
 
     void MorphosesIMU::calibrateEnd() {
       endCalibration();
       _enableSensors();
-      oscBundle("/calibration-end");
+        osc::debug("Calibration end");
     }
 
     void MorphosesIMU::calibrateSave() {
@@ -146,7 +146,7 @@ namespace imus {
       }
 
       // Send feedback.
-      oscBundle(isSaved ? "/calibration-save-done" : "/calibration-save-error");
+      osc::debug(isSaved ? "/calibration-save-done" : "/calibration-save-error");
     }
 
     void MorphosesIMU::tare(float currentHeading) {
@@ -172,15 +172,12 @@ MorphosesIMU imuSide(false);
 void initialize() {
     
   if (!imuMain.isInitialized()) {
-    
     osc::debug("Main imu not initialized");
-    Serial.println("Main imu not initialized");
     imuMain.init();
   }
 
   if (!imuSide.isInitialized()) {
     osc::debug("Side imu not initialized");
-    Serial.println("Side imu not initialized");
     imuSide.init();
   }
 
@@ -190,20 +187,17 @@ void beginCalibration() {
   osc::debug("Begin calibration");
   imuMain.calibrateBegin();
   imuSide.calibrateBegin();
-  osc::sendBundle();
 }
 
 void endCalibration() {
   osc::debug("End calibration");
   imuMain.calibrateEnd();
   imuSide.calibrateEnd();
-  osc::sendBundle();
 }
 
 void saveCalibration() {
   imuMain.calibrateSave();
   imuSide.calibrateSave();
-  osc::sendBundle();
 }
 
 void sleep() {

@@ -11,8 +11,11 @@
 #include "hardware/Engine.h"
 #include "communications/Network.h"
 #include "communications/osc.h"
+#include "communications/asyncMqtt.h"
+
 #include "Utils.h"
 #include "Logger.h"
+
 
 #define AVG_POSITION_TIME_WINDOW 0.2f
 
@@ -42,7 +45,9 @@ namespace morphose {
     pq::Smoother avgPositionY(AVG_POSITION_TIME_WINDOW);
     Vec2f avgPosition;
 
-
+namespace json {
+    JSONVar deviceData;
+}
 
 
     void initialize() {
@@ -72,7 +77,6 @@ namespace morphose {
 
     void sayHello() {
         bool lastState = osc::isBroadcasting();
-
         osc::setBroadcast(true);
         osc::bundle.add("/bonjour").add(name);
         osc::sendBundle();
@@ -113,7 +117,8 @@ namespace morphose {
             if(stream){
                 sendData();
                 // Send OSC bundle.
-                osc::sendBundle();
+                // osc::sendBundle();
+                // publish JSON data
             }
             energy::check();  // Energy checkpoint to prevent damage when low
         }
@@ -125,6 +130,9 @@ namespace morphose {
         morphose::navigation::process();
         morphose::navigation::sendInfo();
         motors::sendEngineInfo();
+        // not ideal? should use static buffer
+        auto jsonString = JSON.stringify(json::deviceData);
+        mqtt::client.publish(name, 0, true, jsonString);
     }
 
 namespace navigation {
@@ -267,9 +275,13 @@ namespace navigation {
         }
 
         void sendInfo() {
-        osc::bundle.add("/heading").add(imus::getHeading());
-        osc::bundle.add("/velocity").add(getVelocity().x).add(getVelocity().y);
-        osc::bundle.add("/heading-quality").add(getVelocityQuality());
+            json::deviceData["/heading"] = imus::getHeading();
+            json::deviceData["/velocity/x"] = getVelocity().x;
+            json::deviceData["/velocity/y"] = getVelocity().y;
+            json::deviceData["/heading-quality"] = getVelocityQuality();
+        // osc::bundle.add("/heading").add(imus::getHeading());
+        // osc::bundle.add("/velocity").add(getVelocity().x).add(getVelocity().y);
+        // osc::bundle.add("/heading-quality").add(getVelocityQuality());
         }
 
     }  // namespace navigation
@@ -284,8 +296,9 @@ namespace energy {
         // RTC_DATA_ATTR float   savedBatteryVoltage = -1;
 
         void deepSleepLowMode(float batteryVoltage) {
-            osc::bundle.add("/error").add("battery-low").add(batteryVoltage);
-            osc::sendBundle();
+            // osc::bundle.add("/error").add("battery-low").add(batteryVoltage);
+            // osc::sendBundle();
+            osc::debug("Battery low");
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
             // Wakeup every 10 seconds.
             esp_sleep_enable_timer_wakeup(ENERGY_VOLTAGE_LOW_WAKEUP_TIME * 1000000UL);
@@ -295,8 +308,10 @@ namespace energy {
         }
 
         void deepSleepCriticalMode(float batteryVoltage) {
-            osc::bundle.add("/error").add("battery-critical").add(batteryVoltage);
-            osc::sendBundle();
+            // osc::bundle.add("/error").add("battery-critical").add(batteryVoltage);
+            // osc::sendBundle();
+            osc::debug("Battery critical");
+
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
 
             // Go to sleep forever.
