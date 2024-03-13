@@ -7,15 +7,16 @@
  */
 
 import lord_of_galaxy.timing_utils.*;
+import mqtt.*;
 
-import oscP5.*;
-import netP5.*;
+// MQTT broker.
+final String MQTT_BROKER = "192.168.0.200";
 
-// Robot name.
-String OSC_PATH_PREFIX;
-
-// OSC input port.
-final int OSC_PORT = 8002;
+// Path/topic variables.
+final String MQTT_PATH_ROOT = "morphoses";
+String MQTT_PATH_PREFIX;
+String MQTT_TOPIC_DATA;
+String MQTT_TOPIC_BEGIN;
 
 // Number of points to be plotted.
 final int N_POINTS = 100;
@@ -23,8 +24,8 @@ final int N_POINTS = 100;
 // Title screen duration (in seconds).
 final float TITLE_DURATION = 8.0;
 
-// OSC communication.
-OscP5 oscP5;
+// MQTT communication.
+MQTTClient client;
 
 // Number of values received.
 int nValuesReceived;
@@ -62,21 +63,30 @@ float HEIGHT_MAX;
 
 void setup() {
   fullScreen(P2D, 0);
+//  size(640, 480);
 //  size(1920, 1080);
   minHeight = height*0.9;
   maxHeight = height*0.1;
 
   // Ininialize.
-  oscP5 = new OscP5(this, OSC_PORT);  
+  client = new MQTTClient(this);
+  client.connect("mqtt://" + MQTT_BROKER);
+
+
   watch = new Stopwatch(this);
   values = new ArrayList<float[]>();
 
   // Read robot name.
   String robotName = loadStrings("robot_name.txt")[0];
-  OSC_PATH_PREFIX = "/" + robotName;
+   
+  // Set topics variables.
+  MQTT_PATH_PREFIX = MQTT_PATH_ROOT + "/" + robotName;
+  MQTT_TOPIC_DATA  = MQTT_PATH_PREFIX + "/info/display-data";
+  MQTT_TOPIC_BEGIN = MQTT_PATH_ROOT + "/all/info/begin";
   
+  // Load corresponding image.
   robotLogo = loadImage(robotName + "_blanc_fond_transparent.png");
-  
+
   // Smooth drawing.
   smooth();
 
@@ -183,14 +193,14 @@ float[] getY(ArrayList<float[]> array, int i) {
 }
 
 // Extract floating point values from message and return them as an array.
-float[] getValues(OscMessage msg) {
+float[] getValues(JSONArray array) {
   // Get n. values.
-  int nValues = msg.typetag().length();
-
+  int nValues = array.size();
+  
   // Extract values.
   float[] values = new float[nValues];
   for (int i=0; i<nValues; i++) {
-    values[i] = msg.get(i).floatValue();
+    values[i] = array.getFloat(i);
 
     // Compute min/max reward values.
     if (i == nValues - 1) {
@@ -226,21 +236,30 @@ void gradientLine(float x1, float y1, float x2, float y2) {
   }
 }
 
-
-// OSC event.
-void oscEvent(OscMessage msg) {
+void clientConnected() {
+  println("MQTT connected"); //<>//
   
-  // Receive information point.
-  if (msg.checkAddrPattern(OSC_PATH_PREFIX + "/info")) {
+  // Subscribe to topics.
+  client.subscribe(MQTT_TOPIC_DATA);
+  client.subscribe(MQTT_TOPIC_BEGIN);
+}
+
+void connectionLost() {
+  println("MQTT connection lost");
+}
+
+void messageReceived(String topic, byte[] payload) {
+  println("new message: " + topic + " - " + new String(payload));
+  // Receive data.
+  if (topic.equals(MQTT_TOPIC_DATA)) {
     nValuesReceived++;
     if (nValuesReceived > 5)
-      values.add(getValues(msg));
-  }
-  
-  // Begin new behavior. 
-  else if (msg.checkAddrPattern("/all/begin")) {
-    // Get title.
-    behaviorTitle = msg.get(0).stringValue();
+      values.add(getValues(parseJSONArray(new String(payload))));
+      
+   // Receive begin with title.
+  } else if (topic.equals(MQTT_TOPIC_BEGIN)) {
+        // Get title.
+    behaviorTitle = new String(payload);
     
     // Reinitialize values.
     values.clear();
