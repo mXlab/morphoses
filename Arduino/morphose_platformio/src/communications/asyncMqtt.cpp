@@ -10,8 +10,9 @@
 #include "hardware/IMU.h"
 #include "Logger.h"
 #include "Network.h"
-#include <Arduino_JSON.h>
+#include <ArduinoJson.h>
 #include <VectorXf.h>
+
 namespace mqtt {
 
 #define MQTT_HOST IPAddress(192, 168, 0, 200)
@@ -105,7 +106,7 @@ void onMqttConnect(bool sessionPresent) {
   for (int i=0; i < N_ROBOTS; i++) {
     // Create subscription.
 
-    mqttRobotLocations[i] = mqttClient.subscribe(ROBOT_RTLS_MQTT_ADDRESS[i], 2);
+    mqttRobotLocations[i] = client.subscribe(ROBOT_RTLS_MQTT_ADDRESS[i], 2);
 
 
    osc::debug(ROBOT_RTLS_MQTT_ADDRESS[i]) ;
@@ -115,15 +116,15 @@ void onMqttConnect(bool sessionPresent) {
 
 
 
-  mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[ANIMATION], 2);
-  mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[STEER], 2);
-  mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[SPEED], 2);
-  mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[POWER], 2);
-  mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[GET_DATA], 2);
-  mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[NAV], 2);
-  mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[CALIB], 2);
-  mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[STREAM], 2);
-  mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[REBOOT], 2);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[ANIMATION], 2);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[STEER], 2);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[SPEED], 2);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[POWER], 2);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[GET_DATA], 2);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[NAV], 2);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[CALIB], 2);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[STREAM], 2);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[REBOOT], 2);
 
 
   
@@ -227,9 +228,22 @@ namespace callbacks {
 void handlePosition(int robot, char* data) {
     // Parse location.
   //Serial.printf("Handle position %d\n", robot); 
+  
   Vec2f newPosition;
-  JSONVar location = JSON.parse(data);
-  JSONVar position = location["position"];
+  
+JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, data);
+
+  // Test if parsing succeeds.
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return;
+  }
+
+
+  JsonObject position = doc["location"];
+  
   if ((int)position["quality"] > 50) {
     // Set current position.
     //Serial.println("Quality > 50");
@@ -251,22 +265,32 @@ void handlePosition(int robot, char* data) {
 
 void handleAnimation(char* data){
     // Parse location.
-    JSONVar animationData = JSON.parse(data);
-    JSONVar _baseColor = animationData["base"];
-    JSONVar _altColor  = animationData["alt"];
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, data);
+
+  // Test if parsing succeeds.
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return;
+  }
+    // JSONVar animationData = JSON.parse(data);
+
+    JsonArray _baseColor = doc["base"];
+    JsonArray _altColor  = doc["alt"];
 
 
   if (animations::lockMutex()) {
     animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
     
-    animations::currentAnimation().setBaseColor(int(_baseColor[0]), int(_baseColor[1]), int(_baseColor[2]));
+    animations::currentAnimation().setBaseColor(_baseColor[0].as<int>(), _baseColor[1].as<int>(), _baseColor[2].as<int>());
 
-    animations::currentAnimation().setAltColor(int(_altColor[0]),  int(_altColor[1]),  int(_altColor[2]));
+    animations::currentAnimation().setAltColor(_altColor[0].as<int>(),  _altColor[1].as<int>(),  _altColor[2].as<int>());
 
-    animations::currentAnimation().setNoise((float)  double(animationData["noise"]));
-    animations::currentAnimation().setPeriod((float) double(animationData["period"]));
-    animations::currentAnimation().setType((animations::AnimationType)int(animationData["type"]));
-    animations::currentAnimation().setRegion((pixels::Region)int(animationData["region"]) );
+    animations::currentAnimation().setNoise(doc["noise"][0].as<float>());
+    animations::currentAnimation().setPeriod(doc["period"][0].as<float>());
+    animations::currentAnimation().setType((animations::AnimationType)doc["type"][0].as<int>());
+    animations::currentAnimation().setRegion((pixels::Region)int(doc["region"][0]) );
     animations::beginTransition();  // start transition
     animations::unlockMutex();
   }

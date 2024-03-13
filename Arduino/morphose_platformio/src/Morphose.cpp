@@ -25,20 +25,20 @@ namespace morphose {
 
     #if ROBOT_ID == 1
     int outgoingPort = 8110;
-    char* name = "robot1";
-    char* topicName = "morphoses/robot1/data";
+    const char*  name = "robot1";
+    const char* topicName = "morphoses/robot1/data";
     #elif ROBOT_ID == 2
     int outgoingPort = 8120;
-    char* name = "robot2";
-    char* topicName = "morphoses/robot2/data";
+    const char* name = "robot2";
+    const char* topicName = "morphoses/robot2/data";
     #elif ROBOT_ID == 3
     int outgoingPort = 8130;
-    char* name = "robot3";
-    char* topicName = "morphoses/robot3/data";
+    const char* name = "robot3";
+    const char* topicName = "morphoses/robot3/data";
     #elif ROBOT_ID == 4
     int outgoingPort = 8140;
-    char* name = "robot4";
-    char* topicName = "morphoses/robot4/data";
+    const char* name = "robot4";
+    const char* topicName = "morphoses/robot4/data";
     #endif
 
     bool stream = true;
@@ -336,6 +336,7 @@ namespace energy {
             // Read battery voltage.
 
             float batteryVoltage = motors::getBatteryVoltage();
+            char buffer[64];
             sprintf(buffer,"battery voltage : %F \n",batteryVoltage);
             osc::debug(buffer);
 

@@ -172,12 +172,11 @@ void loop() {
  // logger::update();
   //logger::info("logger::update ok");
   // // Update OTA.
-  // updateOTA();
+  updateOTA();
 
  // imus::initialize();
 //  logger::info("imus::initialize ok");
 
-  mqtt::update();
 //  logger::info("mqtt::update ok");
 
   morphose::update();

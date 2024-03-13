@@ -11,7 +11,7 @@ class IPAddress;
 namespace morphose {
 
     extern int id;
-    extern char* name;
+    extern const char* name;
     extern int outgoingPort;
     extern bool stream;
 
