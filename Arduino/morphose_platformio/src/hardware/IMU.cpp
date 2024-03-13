@@ -4,6 +4,7 @@
 #include <Chrono.h>
 
 #include "communications/osc.h"
+#include "communications/asyncMqtt.h"
 #include "Morphose.h"
 #include "Utils.h"
 #include "Logger.h"
@@ -35,7 +36,7 @@ namespace imus {
       boolean isOk = begin(i2cAddress());
       if (!isOk) {
         //logger::error("Cant initialize imus");
-        osc::debug("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
+        mqtt::debug("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
 //        utils::blinkIndicatorLed(1000, 0.1);
       } else {
         // Increase I2C data rate to 400kHz.
@@ -44,7 +45,7 @@ namespace imus {
         _enableSensors();
         // Mark as initialied.
         _initialized = true;
-         osc::debug("BNO080 initialized");
+         mqtt::debug("BNO080 initialized");
       }
 
       // Add details and send.
@@ -130,13 +131,13 @@ namespace imus {
     void MorphosesIMU::calibrateBegin() {
       calibrateAll();
       _enableSensors();
-        osc::debug("Calibration begin");
+        mqtt::debug("Calibration begin");
     }
 
     void MorphosesIMU::calibrateEnd() {
       endCalibration();
       _enableSensors();
-        osc::debug("Calibration end");
+        mqtt::debug("Calibration end");
     }
 
     void MorphosesIMU::calibrateSave() {
@@ -153,7 +154,7 @@ namespace imus {
       }
 
       // Send feedback.
-      osc::debug(isSaved ? "/calibration-save-done" : "/calibration-save-error");
+      mqtt::debug(isSaved ? "/calibration-save-done" : "/calibration-save-error");
     }
 
     void MorphosesIMU::tare(float currentHeading) {
@@ -180,7 +181,7 @@ void initialize() {
     
   if (!imuMain.isInitialized()) {
     
-    osc::debug("Main imu not initialized");
+    mqtt::debug("Main imu not initialized");
 
     animations::setDebugColor(DEBUG_COLOR_A,255,0,0,0);
 
@@ -188,7 +189,7 @@ void initialize() {
   }
 
   if (!imuSide.isInitialized()) {
-    osc::debug("Side imu not initialized");
+    mqtt::debug("Side imu not initialized");
 
     animations::setDebugColor(DEBUG_COLOR_A,10,0,0,0);
 
@@ -198,13 +199,13 @@ void initialize() {
 }
 
 void beginCalibration() {
-  osc::debug("Begin calibration");
+  mqtt::debug("Begin calibration");
   imuMain.calibrateBegin();
   imuSide.calibrateBegin();
 }
 
 void endCalibration() {
-  osc::debug("End calibration");
+  mqtt::debug("End calibration");
   imuMain.calibrateEnd();
   imuSide.calibrateEnd();
 }
@@ -215,20 +216,20 @@ void saveCalibration() {
 }
 
 void sleep() {
-  osc::debug("imus Sleeping");
+  mqtt::debug("imus Sleeping");
   imuMain.modeSleep();
   imuSide.modeSleep();
 }
 
 void wake() {
-  osc::debug("imus Waking");
+  mqtt::debug("imus Waking");
   imuMain.modeOn();
   imuSide.modeOn();
 }
 
 
 void process() {
-  osc::debug("imus Process");
+  mqtt::debug("imus Process");
 
   animations::setDebugColor(DEBUG_COLOR_A,0,50,0,0);
 

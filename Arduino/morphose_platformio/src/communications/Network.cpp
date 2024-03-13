@@ -10,6 +10,7 @@
 #include <Chrono.h>
 
 #include "communications/osc.h"
+#include "communications/asyncMqtt.h"
 #include "Morphose.h"
 #include "Utils.h"
 #include "Logger.h"
@@ -179,7 +180,7 @@ namespace network {
         // temp wifi debug
         char buff[64];
         sprintf(buff, "Wifi rssi : %d" , WiFi.RSSI() );
-        osc::debug(buff);
+        mqtt::debug(buff);
     }
 
      bool isConnected() {return (WiFi.status() == WL_CONNECTED);}

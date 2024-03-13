@@ -45,43 +45,49 @@ enum {
 #if (ROBOT_ID == 1)
 const  char* cid = "robot1";
 static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
-                                            "morphoses/robot1/speed",
-                                            "morphoses/robot1/power",
-                                            "morphoses/robot1/animation",
-                                            "morphoses/robot1/get/data",
-                                            "morphoses/robot1/nav",
-                                            "morphoses/robot1/calib",
-                                            "morphoses/robot1/stream",
-                                            "morphoses/robot1/reboot"};
+                                              "morphoses/robot1/speed",
+                                              "morphoses/robot1/power",
+                                              "morphoses/robot1/animation",
+                                              "morphoses/robot1/get-data",
+                                              "morphoses/robot1/nav",
+                                              "morphoses/robot1/calib",
+                                              "morphoses/robot1/stream",
+                                              "morphoses/robot1/reboot"};
+                                            
+const char* debugAddress  = "morphoses/robot1/debug";
+
 #elif (ROBOT_ID == 2)
 const char* cid = "robot2";
 static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot2/steer",
                                             "morphoses/robot2/speed",
                                             "morphoses/robot2/power",
                                             "morphoses/robot2/animation",
-                                            "morphoses/robot2/get/data",
+                                            "morphoses/robot2/get-data",
                                             "morphoses/robot2/nav",
                                             "morphoses/robot2/calib",
                                             "morphoses/robot2/stream",
                                             "morphoses/robot2/reboot"};
+const char* debugAddress  = "morphoses/robot2/debug";
 #elif (ROBOT_ID == 3)
 const char* cid = "robot3";
 static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot3/steer",
                                             "morphoses/robot3/speed",
                                             "morphoses/robot3/power",
                                             "morphoses/robot3/animation",
-                                            "morphoses/robot3/get/data",
+                                            "morphoses/robot3/get-data",
                                             "morphoses/robot3/nav",
                                             "morphoses/robot3/calib",
                                             "morphoses/robot3/stream",
                                             "morphoses/robot3/reboot"};
+
+const char* debugAddress  = "morphoses/robot3/debug";
 #elif (ROBOT_ID == 4)
 const char* cid = "robot4";
 static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
                                             "morphoses/robot1/speed",
                                             "morphoses/robot1/power",
                                             "morphoses/robot1/animation",
-                                            "morphoses/robot1/get/data",
+                                            "morphoses/robot1/get-data",
                                             "morphoses/robot1/nav",
                                             "morphoses/robot1/calib",
                                             "morphoses/robot1/stream",
@@ -94,14 +100,14 @@ uint16_t mqttRobotLocations[N_ROBOTS];
 uint16_t animId;
 
 void connectToMqtt() {
-  osc::debug("Connecting to MQTT...");
+  mqtt::debug("Connecting to MQTT...");
   client.connect();
 }
 
 void WiFiEvent(WiFiEvent_t event) {
     char buffer[64];
     sprintf(buffer,"[WiFi-event] event: %d\n", event);
-    osc::debug(buffer);
+    mqtt::debug(buffer);
 
     switch(event) {
     case SYSTEM_EVENT_STA_GOT_IP:
@@ -109,12 +115,12 @@ void WiFiEvent(WiFiEvent_t event) {
         Serial.println("IP address: ");
         Serial.println(WiFi.localIP());
         sprintf(buffer,"WiFi connected. IP address:%d.%d.%d.%d\n", WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
-        osc::debug(buffer);
+        mqtt::debug(buffer);
 
         connectToMqtt();
         break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
-        osc::debug("WiFi lost connection");
+        mqtt::debug("WiFi lost connection");
         xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
         xTimerStart(wifiReconnectTimer, 0);
         break;
@@ -124,7 +130,7 @@ void WiFiEvent(WiFiEvent_t event) {
 void onMqttConnect(bool sessionPresent) {
   char buffer[64];
   sprintf(buffer, "Connected to MQTT.\n Session present: %d\n",sessionPresent);
-  osc::debug(buffer);
+  mqtt::debug(buffer);
 
   for (int i=0; i < N_ROBOTS; i++) {
     // Create subscription.
@@ -132,9 +138,9 @@ void onMqttConnect(bool sessionPresent) {
     mqttRobotLocations[i] = client.subscribe(ROBOT_RTLS_MQTT_ADDRESS[i], 2);
 
 
-   osc::debug(ROBOT_RTLS_MQTT_ADDRESS[i]) ;
+   mqtt::debug(ROBOT_RTLS_MQTT_ADDRESS[i]) ;
    sprintf(buffer,"\nSubscribing at QoS 2, packetId: %d\n",mqttRobotLocations[i]);
-   osc::debug(buffer);
+   mqtt::debug(buffer);
   }
 
 
@@ -154,7 +160,7 @@ void onMqttConnect(bool sessionPresent) {
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
- osc::debug("Disconnected from MQTT.");
+ mqtt::debug("Disconnected from MQTT.");
 
   if (WiFi.isConnected()) {
     xTimerStart(mqttReconnectTimer, 0);
@@ -164,19 +170,19 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
 void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
   char buffer[64];
   sprintf(buffer, "Subscribe acknowledged.\n packetId: %d, qos: %d\n",packetId,qos);
-  osc::debug(buffer);
+  mqtt::debug(buffer);
 }
 
 void onMqttUnsubscribe(uint16_t packetId) {
   char buffer[64];
   sprintf(buffer, "Unsubscribe acknowledged.\n packetId: %d\n",packetId);
-  osc::debug(buffer);
+  mqtt::debug(buffer);
 }
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
   // char buffer[1024];
   // sprintf(buffer, "Message received.\n topic: %s\n payload: %s \n qos: %d\n dup: %d\n retain: %d\n len: %zu\n index: %zu\n total: %zu\n",topic,payload,properties.qos,properties.dup,properties.retain,len,index,total);
-  // osc::debug(buffer);
+  // mqtt::debug(buffer);
   
   
   if(strcmp(topic, ROBOT_RTLS_MQTT_ADDRESS[0]) == 0){
@@ -223,7 +229,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 void onMqttPublish(uint16_t packetId) {
   char buffer[64];
   sprintf(buffer, "Publish acknowledged.\n packetId: %d\n",packetId);
-  osc::debug(buffer);
+  mqtt::debug(buffer);
   
 }
 
@@ -246,6 +252,10 @@ void initialize() {
   Serial.println("-------------MQTT initialization done-------------");
 }
 
+void debug(const char *_msg) {
+  Serial.println(_msg);
+  client.publish(debugAddress, 0, true, _msg);
+}
 namespace callbacks {
   Vec2f robotPositions[N_ROBOTS];
 void handlePosition(int robot, char* data) {

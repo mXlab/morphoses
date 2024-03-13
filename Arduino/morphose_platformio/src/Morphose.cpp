@@ -130,7 +130,7 @@ namespace json {
     void sendData() {
 
         static char jsonString[1024];
-        //osc::debug("Sending data");
+        //mqtt::debug("Sending data");
         imus::process();
 
         imus::sendData();
@@ -309,7 +309,7 @@ namespace energy {
         void deepSleepLowMode(float batteryVoltage) {
             // osc::bundle.add("/error").add("battery-low").add(batteryVoltage);
             // osc::sendBundle();
-            osc::debug("Battery low");
+            mqtt::debug("Battery low");
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
             // Wakeup every 10 seconds.
             esp_sleep_enable_timer_wakeup(ENERGY_VOLTAGE_LOW_WAKEUP_TIME * 1000000UL);
@@ -321,7 +321,7 @@ namespace energy {
         void deepSleepCriticalMode(float batteryVoltage) {
             // osc::bundle.add("/error").add("battery-critical").add(batteryVoltage);
             // osc::sendBundle();
-            osc::debug("Battery critical");
+            mqtt::debug("Battery critical");
 
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
 
@@ -338,12 +338,12 @@ namespace energy {
             float batteryVoltage = motors::getBatteryVoltage();
             char buffer[64];
             sprintf(buffer,"battery voltage : %F \n",batteryVoltage);
-            osc::debug(buffer);
+            mqtt::debug(buffer);
 
             // Low voltage: Launch safety procedure.
             if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
                 // Put IMUs to sleep to protect them.
-                osc::debug("Voltage low");
+                mqtt::debug("Voltage low");
                 //logger::error("Voltage low");
                 imus::sleep();
 
@@ -352,7 +352,7 @@ namespace energy {
 
                 // If energy level is critical, just shut down the ESP.
                 if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL){
-                    osc::debug("Voltage Critical");
+                    mqtt::debug("Voltage Critical");
                     //logger::error("Voltage Critical");
 
 
