@@ -2,7 +2,7 @@
 #define ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_ASYNC_MQTT_H_
 
 #include <AsyncMqttClient.h>
-#include <Arduino_JSON.h>
+// #include <ArduinoJson.h>
 #include <VectorXf.h>
 #include <WiFi.h>
 
@@ -16,7 +16,7 @@
 namespace mqtt {
 
 void initialize();
-
+extern AsyncMqttClient client;
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
 void connect();

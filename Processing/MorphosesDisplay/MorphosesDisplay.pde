@@ -12,10 +12,10 @@ import oscP5.*;
 import netP5.*;
 
 // Robot name.
-final String OSC_PATH_PREFIX = "/robot1";
+String OSC_PATH_PREFIX;
 
 // OSC input port.
-final int OSC_PORT = 8001;
+final int OSC_PORT = 8002;
 
 // Number of points to be plotted.
 final int N_POINTS = 100;
@@ -45,15 +45,38 @@ boolean titleMode = false;
 // Title of current behavior.
 String behaviorTitle = "";
 
+PImage robotLogo;
+final int robotLogoSize = 100;
+final int robotLogoOffset = 50;
+final float robotLogoShake = 1;
+
+final color COLOR_REWARD_MAX = #00ff00;
+final color COLOR_REWARD_MIN = #ff0000;
+final color COLOR_DATA = color(255, 128);
+
+float minHeight;
+float maxHeight;
+
+float HEIGHT_MIN;
+float HEIGHT_MAX;
+
 void setup() {
-  fullScreen();
+  fullScreen(P2D, 0);
 //  size(1920, 1080);
+  minHeight = height*0.9;
+  maxHeight = height*0.1;
 
   // Ininialize.
   oscP5 = new OscP5(this, OSC_PORT);  
   watch = new Stopwatch(this);
   values = new ArrayList<float[]>();
 
+  // Read robot name.
+  String robotName = loadStrings("robot_name.txt")[0];
+  OSC_PATH_PREFIX = "/" + robotName;
+  
+  robotLogo = loadImage(robotName + "_blanc_fond_transparent.png");
+  
   // Smooth drawing.
   smooth();
 
@@ -97,13 +120,14 @@ void draw() {
           strokeWeight(1);
           float[] point = getY(values, k);
           for (int j=0; j<point.length; j++) {
-            if (j == point.length-1)
-              stroke(0, 255, 0); // Reward.
-            else
-              stroke(255, 128); // Data.
-            
-            // Draw segment.
-            line(x, point[j], prevX, prevPoint[j]);
+            // Determine color.
+            if (j == point.length-1) {
+              gradientLine(x, point[j], prevX, prevPoint[j]);
+            }
+            else {
+              stroke(COLOR_DATA);
+              line(x, point[j], prevX, prevPoint[j]);
+            }
           }
           // Update previous point.
           prevPoint = point;
@@ -112,7 +136,29 @@ void draw() {
         prevX = x;
       }
     }
+    
+    // Draw logo.
+    if (values.size() > 0) {
+      float[] lastPoint = values.get(values.size()-1);
+      tint(getColorReward(lastPoint[lastPoint.length-1]));
+    }
+    else
+      tint(getColorReward(0.5));
+    image(robotLogo, width-robotLogoSize-robotLogoOffset+random(-robotLogoShake,robotLogoShake), 
+                     robotLogoOffset+random(-robotLogoShake,robotLogoShake), 
+                     robotLogoSize, robotLogoSize);
   }
+}
+
+//float yToReward(float y) {
+//  if (minReward == maxReward)
+//    return minReward;
+//  else
+//    return map(reward, minHeight, maxHeight, minReward, maxReward);  
+//}
+
+color getColorReward(float reward) {
+  return lerpColor(COLOR_REWARD_MIN, COLOR_REWARD_MAX, reward);
 }
 
 // Returns the y coordinates of the i-th data element.
@@ -122,8 +168,6 @@ float[] getY(ArrayList<float[]> array, int i) {
   float[] ys = new float[point.length];
 
   // Map the data to the screen.
-  float minHeight = height*0.9;
-  float maxHeight = height*0.1;
   for (int j=0; j<point.length; j++) {
     if (j == point.length - 1) {
       if (minReward == maxReward)
@@ -158,6 +202,30 @@ float[] getValues(OscMessage msg) {
   // Return values.
   return values;
 }
+
+void gradientLine(float x1, float y1, float x2, float y2) {
+  // Calculate the number of steps based on the distance between the points
+  int steps = int(dist(x1, y1, x2, y2));
+  
+  for (int i = 0; i <= steps; i++) {
+    float t = map(i, 0, steps, 0, 1);
+    float x = lerp(x1, x2, t);
+    float y = lerp(y1, y2, t);
+    
+    // Map y position to a value between 0 and 1
+    float gradient = map(y, minHeight, maxHeight, 0, 1);
+    
+    // Calculate the color for the current step
+    int currentColor = lerpColor(COLOR_REWARD_MIN, COLOR_REWARD_MAX, gradient);
+    
+    // Set the stroke color
+    stroke(currentColor);
+    
+    // Draw the point
+    point(x, y);
+  }
+}
+
 
 // OSC event.
 void oscEvent(OscMessage msg) {

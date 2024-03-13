@@ -12,7 +12,7 @@
  *    your own Wifi setup.
  * 
  * 2. Install Arduino Library Dependencies: 
- *    Adafruit_NeoPixel, ArduinoOTA, Chrono, CNMAT_OSC, Dynamixel2Arduino, 
+ *    Adafruit_NeoPixel, ArduinoOTA, Chrono, CNMAT_OSC, Dynamixel2Arduino, Plaquette,
  *    SparkFun_BNO080_Arduino_Library
  *    
  * 3. ** IMPORTANT ** For uploading you need to use the board 

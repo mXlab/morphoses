@@ -17,7 +17,7 @@ namespace mqtt {
 #define MQTT_HOST IPAddress(192, 168, 0, 200)
 #define MQTT_PORT 1883
 
-AsyncMqttClient mqttClient;
+AsyncMqttClient client;
 TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
 
@@ -71,7 +71,7 @@ uint16_t animId;
 
 void connectToMqtt() {
   osc::debug("Connecting to MQTT...");
-  mqttClient.connect();
+  client.connect();
 }
 
 void WiFiEvent(WiFiEvent_t event) {
@@ -104,12 +104,16 @@ void onMqttConnect(bool sessionPresent) {
 
   for (int i=0; i < N_ROBOTS; i++) {
     // Create subscription.
+
     mqttRobotLocations[i] = mqttClient.subscribe(ROBOT_RTLS_MQTT_ADDRESS[i], 2);
+
 
    osc::debug(ROBOT_RTLS_MQTT_ADDRESS[i]) ;
    sprintf(buffer,"\nSubscribing at QoS 2, packetId: %d\n",mqttRobotLocations[i]);
    osc::debug(buffer);
   }
+
+
 
   mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[ANIMATION], 2);
   mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[STEER], 2);
@@ -120,6 +124,7 @@ void onMqttConnect(bool sessionPresent) {
   mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[CALIB], 2);
   mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[STREAM], 2);
   mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[REBOOT], 2);
+
 
   
 }
@@ -205,13 +210,13 @@ void initialize() {
 
   WiFi.onEvent(WiFiEvent);
 
-  mqttClient.onConnect(onMqttConnect);
-  mqttClient.onDisconnect(onMqttDisconnect);
-  mqttClient.onSubscribe(onMqttSubscribe);
-  mqttClient.onUnsubscribe(onMqttUnsubscribe);
-  mqttClient.onMessage(onMqttMessage);
-  mqttClient.onPublish(onMqttPublish);
-  mqttClient.setServer(MQTT_HOST, MQTT_PORT);
+  client.onConnect(onMqttConnect);
+  client.onDisconnect(onMqttDisconnect);
+  client.onSubscribe(onMqttSubscribe);
+  client.onUnsubscribe(onMqttUnsubscribe);
+  client.onMessage(onMqttMessage);
+  client.onPublish(onMqttPublish);
+  client.setServer(MQTT_HOST, MQTT_PORT);
 
   network::initialize();
   Serial.println("-------------MQTT initialization done-------------");

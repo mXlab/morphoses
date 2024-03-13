@@ -1,7 +1,9 @@
 #ifndef ARDUINO_MORPHOSE_PLATFORMIO_SRC_MORPHOSE_H_
 #define ARDUINO_MORPHOSE_PLATFORMIO_SRC_MORPHOSE_H_
 
+#include "Config.h"
 #include <VectorXf.h>
+#include <ArduinoJson.h>
 
 class IPAddress;
 
@@ -32,6 +34,11 @@ namespace morphose {
     void setCurrentPosition(Vec2f newPosition);
 
     void sendData();
+
+namespace json {
+    extern JsonDocument deviceData;
+}
+
 
 namespace navigation {
         void start();
