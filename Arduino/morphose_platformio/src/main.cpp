@@ -67,7 +67,7 @@
 #include <PlaquetteLib.h>
 using namespace pq;
 
-#include "communications/MQTT.h"
+#include "communications/asyncMQTT.h"
 #include "communications/Network.h"
 #include "communications/osc.h"
 #include "communications/OTA.h"
@@ -96,47 +96,50 @@ void setup() {
   Plaquette.begin();
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
-  Log.infoln(" Morphose - 2023 - 7");
+  Log.infoln(" Morphose - 2023 - 9 ");
   Wire.begin();
   
-  logger::initialize();
+  //logger::initialize();
 
-  network::initialize();
+  morphose::initialize();  // cannot send message before this point. Morphose needs to be initialized
+ 
+  mqtt::initialize();
+  // network::initialize();
   delay(1000);
+  osc::debug(" MQTT initialized");
+  
   osc::debug("Network initialized");
   char buff[32];
   sprintf(buff,"Osc broadcast state: %d\n",  osc::isBroadcasting());
 
   osc::debug(buff);
-  motors::initialize();
+  //motors::initialize();
   osc::debug("Motors initialized");
 
-  morphose::energy::check();
+  //morphose::energy::check();
   osc::debug("Energy initialized");
 
-  pixels::initialize();
+  //pixels::initialize();
   osc::debug("LEDS initialized");
 
- animations::initialize();
+  //animations::initialize();
   osc::debug(" Animation initialized");
 
-  imus::initialize();
-  osc::debug(" IMU initialized");
+  // imus::initialize();
+  // osc::debug(" IMU initialized");
 
-  morphose::initialize(network::mcuIP);  // cannot send message before this point. Morphose needs to be initialized
 
-  mqtt::initialize();
-  osc::debug(" MQTT initialized");
+
 
  
   // Initialize OTA.
-  // initOTA(morphose::name);
+  initOTA(morphose::name);
   osc::debug(" OTA initialized");
 
   morphose::sayHello();
   osc::debug("---------------- End of setup ----------------");
 
-  logger::info("Morphose initialization ok");
+  // logger::info("Morphose initialization ok");
 }
 
 void checkMemory() {
@@ -152,31 +155,32 @@ void checkMemory() {
     // Print heap info.
     char buff[128];
     sprintf(buff, "Heap: %d allocated, %d free", memInfo.total_allocated_bytes, memInfo.total_free_bytes);
-    osc::debug(buff);    
+    osc::debug(buff);  
+    lastAllocated = currentAllocated;  
   }
 
-  lastAllocated = currentAllocated;
+  
 }
 
 void loop() {
 
-  logger::update();
-  logger::info("logger::update ok");
+  //logger::update();
+  //logger::info("logger::update ok");
   // // Update OTA.
-  // updateOTA();
+ //updateOTA();
 
-  imus::initialize();
-  logger::info("imus::initialize ok");
+  //imus::initialize();
+  //logger::info("imus::initialize ok");
 
-  mqtt::update();
-  logger::info("mqtt::update ok");
+  //mqtt::update();
+  //logger::info("mqtt::update ok");
 
-  morphose::update();
-  logger::info("morphose::update ok");
+  //morphose::update();
+  //logger::info("morphose::update ok");
 
-  osc::update();
-  logger::info("osc::update ok");
+  //osc::update();
+  //logger::info("osc::update ok");
 
-  checkMemory();
+  //checkMemory();
 }
 

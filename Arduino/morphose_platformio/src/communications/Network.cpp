@@ -21,7 +21,16 @@ namespace network {
     int numActiveIPs = 0, lastAddedIPIndex = 0;
 
      IPAddress pcIP{192, 168, 0, 100};
-     IPAddress mcuIP{192, 168, 0, ROBOT_ID};
+    #if ROBOT_ID == 1
+     IPAddress mcuIP{192, 168, 0, 110};
+     #elif ROBOT_ID == 2
+     IPAddress mcuIP{192, 168, 0, 120};
+     #elif ROBOT_ID == 3
+     IPAddress mcuIP{192, 168, 0, 130};
+     #elif ROBOT_ID == 4
+     IPAddress mcuIP{192, 168, 0, 140};
+     #endif
+
      IPAddress broadcast{192, 168, 0, 255};
      IPAddress subnet(255, 255, 255, 0);
      IPAddress gateway(192, 168, 0, 1);
@@ -38,9 +47,26 @@ namespace network {
     const char *ssid = "Morphoses";
     const char *pswd = "BouleQuiRoule";
 
-    int outgoingPort = 8000 + ROBOT_ID;
+    int outgoingPort = 8001;
     const int incomingPort = 8000;
 
+     
+
+    bool initialize() {
+        Log.warningln("Initializing network interface");
+        Log.infoln("Trying to connect to router");
+
+       if (!configureStation()) {
+            return false;
+        }
+
+        
+        if (!connectToWiFi(ssid, pswd)) {
+            return false;}
+        initializeUDP(incomingPort);
+        showRSSI();
+        return true;
+    } 
 
     void initialize(uint8_t maxTry) {
         Log.warningln("Initializing network interface");
@@ -66,9 +92,9 @@ namespace network {
             }
             WiFi.mode(WIFI_STA);
             WiFi.setSleep(false);  // enable the wifi all the time
-            setWifiEvents();
+            //setWifiEvents();
 
-             WiFi.setAutoReconnect(true);
+            //WiFi.setAutoReconnect(true);
 
 
 
@@ -168,7 +194,7 @@ namespace network {
     void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
        
         Log.warningln("Disconnected from WiFi %d", info.wifi_sta_disconnected.reason);
-        logger::error("Lost wifi connection");
+        //logger::error("Lost wifi connection");
     }
 
     void WiFiGotIP(WiFiEvent_t event, WiFiEventInfo_t info) {
