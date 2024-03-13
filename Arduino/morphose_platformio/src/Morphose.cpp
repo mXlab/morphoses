@@ -42,6 +42,9 @@ namespace morphose {
     #endif
 
     bool stream = true;
+    bool sendDataFlag = false;
+    char jsonString[1024];
+    
     Chrono sendRate{true};
 
     Vec2f currPosition;
@@ -126,19 +129,20 @@ namespace json {
             }
             energy::check();  // Energy checkpoint to prevent damage when low
         }
+        if(sendDataFlag){
+            sendDataFlag = false;
+            json::deviceData.clear();
+            
+            imus::collectData();
+            morphose::navigation::collectData();
+            motors::collectData();
+            serializeJson(json::deviceData, jsonString);
+            // serializeJsonPretty(json::deviceData, Serial);
+            mqtt::client.publish(topicName, 0, true, jsonString);
+        }
     }
     void sendData() {
-        static char jsonString[1024];
-        //osc::debug("Sending data");
-        imus::collectData();
-        morphose::navigation::collectData();
-        motors::collectData();
-        // not ideal? should use static buffer
-        // auto jsonString = JSON.stringify(json::deviceData);
-        serializeJson(json::deviceData, jsonString);
-        // serializeJsonPretty(json::deviceData, Serial);
-        mqtt::client.publish(topicName, 0, true, jsonString);
-        json::deviceData.clear();
+        sendDataFlag = true;
     }
 
 namespace navigation {
