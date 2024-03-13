@@ -73,47 +73,56 @@ class OscHelper:
                 func(data, item['extra'])
 
 class MqttHelper:
-    def __init__(self, ip, port, world, settings):
+    def __init__(self, broker, port, world, settings):
         self.world = world
+        
         # Create client.
-        self.mqtt_client = mqtt.Client()
-        self.mqtt_client.on_connect = self.mqtt_on_connect
-        self.mqtt_client.on_message = self.mqtt_on_message
+        self.client = mqtt.Client()
+        self.broker = broker
+        self.port = port
+        self.qos = settings.get('qos', 1)
 
-        # Start client.
-        self.mqtt_client.connect(ip, port)
+        self.subscriptions = {}  # Path: callback mapping
+        print(self.broker, self.port, self.qos)
 
-        # Collect basic connection information.
-        self.rtls_nodes = {}
-        for entity in settings['robots'] + settings['things']:
-            self.rtls_nodes[entity['rtls_id']] = entity['name']
 
     # The callback for when the client receives a CONNACK response from the server.
-    def mqtt_on_connect(self, client, args, flags, rc):
+    def _onConnect(self, client, args, flags, rc):
         print("Connected with result code "+str(rc))
-
-        # Subscribing in on_connect() means that if we lose the connection and
-        # reconnect then subscriptions will be renewed.
-    #    client.subscribe("$SYS/#")
-        for node_id in self.rtls_nodes.keys():
-            client.subscribe("dwm/node/{}/uplink/location".format(node_id))
+        for topic in self.subscriptions.keys():
+            client.subscribe(topic)
 
     # The callback for when a PUBLISH message is received from the server.
-    def mqtt_on_message(self, client, userdata, msg):
-        # print(msg.topic+" "+str(msg.payload))
-        data = json.loads(msg.payload)
-        pos = data['position']
-        if (pos['quality'] > 50): # only update if quality is good
-            node_id = msg.topic[9:13]
-            if node_id in self.rtls_nodes.keys():
-                self.world.store_position(self.rtls_nodes[node_id], [float(pos['x']), float(pos['y'])])
+    def _onMessage(self, client, userdata, msg):
+        # print(f"Received message on {msg.topic}: {msg.payload.decode()}")
+        if msg.topic in self.subscriptions:
+            callback, args = self.subscriptions[msg.topic]
+            try:
+                payload = json.loads(msg.payload)  # Attempt to parse JSON payload
+            except json.JSONDecodeError:
+                payload = msg.payload.decode()  # Use raw string if not JSON
+            callback(payload, args)
 
     def begin(self):
+        # Assign client callbacks.
+        self.client.on_connect = self._onConnect
+        self.client.on_message = self._onMessage
+        # Connect to broker.
+        self.client.connect(self.broker, self.port)
         # Start threaded loop.
-        self.mqtt_client.loop_start()
+        self.client.loop_start()
 
     def terminate(self):
-        self.mqtt_client.loop_stop()
+        # Unsubscribe from all topics.
+        self.client.loop_stop()
+
+    def send(self, path, args=None):
+        message = self.json_encode(args) if isinstance(args, (dict, list)) else str(args) if args is not None else ''
+        self.client.publish(path, message, qos=self.qos)
+
+    def map(self, path, callback, args=None):
+        self.subscriptions[path] = (callback, args)
+        self.client.subscribe(path, qos=self.qos)
 
     def round_floats(self, o):
         if isinstance(o, float):
@@ -127,47 +136,15 @@ class MqttHelper:
     def json_encode(self, data):
         return json.dumps(self.round_floats(data))
 
-    def publish_animation(self, robot_name, animation):
-        self.mqtt_client.publish("morphoses/{}/animation".format(robot_name), self.json_encode(animation), 1)
-
 class Messaging:
     def __init__(self, world, settings):
         self.manager = None
         self.world = world
 
-        # Init OSC.
-        osc_startup()
-
-        # Send all paths to the dispatch() method with information.
-        osc_method("*", self.dispatch, argscheme=osm.OSCARG_ADDRESS + osm.OSCARG_SRCIDENT + osm.OSCARG_DATA)
-
-        # Create array of OscHelper objects for communicating with the robots.
-        self.osc_robots = {}
-        for robot in settings['robots']:
-            name = robot['name']
-            osc_helper = OscHelper(name, robot['ip'], robot['osc_send_port'], robot['osc_recv_port'],
-                                   settings['visualizer']['ip'], robot['osc_visualizer_send_port'])
-
-            osc_helper.map("/main/quat",  self.receive_quaternion, (name, True))
-            osc_helper.map("/side/quat",  self.receive_quaternion, (name, False))
-            osc_helper.map("/main/data",  self.receive_rotation_data, (name, True))
-            osc_helper.map("/side/data",  self.receive_rotation_data, (name, False))
-            osc_helper.map("/main/accur", self.receive_accuracy,   (name, True))
-            osc_helper.map("/side/accur", self.receive_accuracy,   (name, False))
-            osc_helper.map("/battery",    self.receive_battery,     name)
-            osc_helper.map("/debug",      self.receive_debug,       (name, "debug"))
-            osc_helper.map("/error",      self.receive_debug,       (name, "error"))
-            osc_helper.map("/ready",      self.receive_debug,       (name, "ready"))
-
-            self.osc_robots[name] = osc_helper
-
-        # Local info logging client.
-        # self.info_client = udp_client.SimpleUDPClient("localhost", 8001)
-        self.info_client = udp_client.SimpleUDPClient("192.168.0.255", 8001, allow_broadcast=True)
-
-        control_interface_settings = settings['control_interface']
-        self.osc_control_interface = OscHelper("control-interface", control_interface_settings['ip'], control_interface_settings['osc_send_port'], control_interface_settings['osc_recv_port'])
-        self.osc_control_interface.map("/morphoses/set-behavior", self.set_behavior, "")
+        # Map RTLS nodes to names.
+        self.rtls_nodes = {}
+        for entity in settings['robots'] + settings['things']:
+            self.rtls_nodes[entity['rtls_id']] = entity['name']
 
         # Init MQTT.
         try:
@@ -176,56 +153,69 @@ class Messaging:
             print("Problem with starting MQTT, please check server.")
             sys.exit()
 
+        # Init MQTT.
+        self.mqtt.begin()
+
+        # Subscribe to topics.
+
+        # Subscribe to RTLS location updates.
+        for node_id in self.rtls_nodes.keys():
+            self.mqtt.map("dwm/node/{}/uplink/location".format(node_id), self.receive_location, node_id)
+        
+        # Subscribe to robot-specific topics.
+        for robot in settings['robots']:
+            name = robot['name']
+            self.mqtt.map("morphoses/{}/data".format(name), self.receive_data, name)
+            self.mqtt.map("morphoses/debug", self.receive_debug, (name, "debug"))
+            self.mqtt.map("morphoses/error", self.receive_debug, (name, "error"))
+
     def set_manager(self, manager):
         self.manager = manager
 
     def send(self, robot_name, address, args=[]):
-        self.osc_robots[robot_name].send_message(address, args)
+        print("Sending {} {} {}".format(robot_name, address, str(args)))
+        self.mqtt.send("morphoses/{}{}".format(robot_name, address), args)
 
-    def send_bundle(self, robot_name, messages):
-        self.osc_robots[robot_name].send_bundle(messages)
+    def send_info(self, robot_name, address, args=[]):
+        self.send(robot_name, "/info{}".format(address), args)
 
-    def send_info(self, address, args=[]):
-        self.info_client.send_message(address, args)
-
-    def dispatch(self, address, src_info, data):
-        ip = src_info[0]
-        for node in self.osc_robots.values():
-            node.dispatch(address, ip, data)
-
-        self.osc_control_interface.dispatch(address, ip, data)
+    def send_debug(self, message):
+        self.mqtt.send("morphoses/debug", message)
 
     def loop(self):
-        osc_process()
+        pass
 
     def begin(self):
         self.mqtt.begin()
 
     def terminate(self):
-        osc_terminate()
         self.mqtt.terminate()
 
-    def receive_rotation_data(self, data, args):
-        name, imu_is_main = args
-        if imu_is_main:
-            self.world.store_rotation_data_main(name, data)
-        else:
-            self.world.store_rotation_data_side(name, data)
+    # Callbacks. ################################################################
+        
+    # Receive RTLS location.
+    def receive_location(self, data, node_id):
+        pos = data['position']
+        if pos['quality'] > 50 and node_id in self.rtls_nodes.keys():
+            self.world.store_position(self.rtls_nodes[node_id], [float(pos['x']), float(pos['y'])])
 
-    def receive_quaternion(self, quat, args):
-        name, imu_is_main = args
-        if imu_is_main:
-            self.world.store_quaternion_main(name, quat)
-        else:
-            self.world.store_quaternion_side(name, quat)
+    # Receive data from robot.
+    def receive_data(self, data, name):
+        print("*** Receiving data")
+        self.world.store_rotation_data_main(name, 
+                                            data['main']['quat'] + data['main']['d-quat'] +
+                                            data['main']['rot'] + data['main']['d-rot'])
+        self.world.store_rotation_data_side(name, 
+                                            data['side']['quat'] + data['side']['d-quat'] +
+                                            data['side']['rot'] + data['side']['d-rot'])
 
-    def receive_accuracy(self, accuracy, args):
-        name, imu_is_main = args
-        imu = 'main' if imu_is_main else 'side'
-        self.world.send_info(name, "/{}/accur".format(imu), accuracy)
+    # def receive_accuracy(self, accuracy, args):
+    #     name, imu_is_main = args
+    #     imu = 'main' if imu_is_main else 'side'
+    #     self.world.send_info(name, "/{}/accur".format(imu), accuracy)
 
-    def receive_battery(self, battery, name):
-        self.world.send_info(name, "/battery", battery)
+    # def receive_battery(self, battery, name):
+    #     self.world.send_info(name, "/battery", battery)
 
     def receive_debug(self, message, args):
         name, type = args
@@ -245,7 +235,7 @@ class Messaging:
             "region": 0,
             "type": 0
         }
-        self.mqtt.publish_animation(robot_name, animation)
+        self.send(robot_name, "/animation", animation)
 
 def interrupt(signup, frame):
     global my_world, stop
