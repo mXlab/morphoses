@@ -67,7 +67,7 @@
 #include <PlaquetteLib.h>
 using namespace pq;
 
-#include "communications/MQTT.h"
+#include "communications/asyncMqtt.h"
 #include "communications/Network.h"
 #include "communications/osc.h"
 #include "communications/OTA.h"
@@ -96,52 +96,54 @@ void setup() {
   Plaquette.begin();
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
-  Log.infoln(" Morphose - 2023 - 8");
+
+  Log.infoln(" Morphose - 2023 - 9 ");
+
   Wire.begin();
   
   //logger::initialize();
 
-  network::initialize();
+  morphose::initialize();  // cannot send message before this point. Morphose needs to be initialized
+ 
+  mqtt::initialize();
+  // network::initialize();
   delay(1000);
+  osc::debug(" MQTT initialized");
+  
   osc::debug("Network initialized");
   char buff[32];
   sprintf(buff,"Osc broadcast state: %d\n",  osc::isBroadcasting());
 
   osc::debug(buff);
-  motors::initialize();
+  //motors::initialize();
   osc::debug("Motors initialized");
 
-  morphose::energy::check();
+  //morphose::energy::check();
   osc::debug("Energy initialized");
 
-  pixels::initialize();
+  //pixels::initialize();
   osc::debug("LEDS initialized");
+
  animations::initialize();
+
   osc::debug(" Animation initialized");
   animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
 
-  imus::initialize();
-  osc::debug(" IMU initialized");
+  // imus::initialize();
+  // osc::debug(" IMU initialized");
 
-  morphose::initialize(network::mcuIP);  // cannot send message before this point. Morphose needs to be initialized
 
-  mqtt::initialize();
-  osc::debug(" MQTT initialized");
+
 
  
   // Initialize OTA.
-  // initOTA(morphose::name);
+  initOTA(morphose::name);
   osc::debug(" OTA initialized");
 
   morphose::sayHello();
   osc::debug("---------------- End of setup ----------------");
 
-<<<<<<< HEAD
-  logger::info("Morphose initialization ok");
 
-=======
-  //logger::info("Morphose initialization ok");
->>>>>>> 1a71b2698ff1e240decff9204911f5f706f9d222
 }
 
 void checkMemory() {
@@ -157,17 +159,12 @@ void checkMemory() {
     // Print heap info.
     char buff[128];
     sprintf(buff, "Heap: %d allocated, %d free", memInfo.total_allocated_bytes, memInfo.total_free_bytes);
-    osc::debug(buff);    
-<<<<<<< HEAD
 
-    lastAllocated = currentAllocated;
-  }
-=======
-    lastAllocated = currentAllocated;
+    osc::debug(buff);  
+    lastAllocated = currentAllocated;  
   }
 
-  
->>>>>>> 1a71b2698ff1e240decff9204911f5f706f9d222
+
 }
 
 void loop() {

@@ -88,48 +88,53 @@ namespace imus {
     void MorphosesIMU::sendData() {
         // Debugging info //////////////////////////////////////////
 
+        JsonArray quatData = morphose::json::deviceData["quat"].to<JsonArray>();
+        JsonArray dQuatData = morphose::json::deviceData["d-quat"].to<JsonArray>();
         // Add quaternion.
-        OSCMessage& msgQuat = oscBundle("/quat");
-        OSCMessage& msgDeltaQuat = oscBundle("/d-quat");
         for (int i=0; i<4; i++) {
-          msgQuat.add(_quat[i].value());
-          msgDeltaQuat.add(_quat[i].delta());
+            quatData.add(_quat[i].value());
+            dQuatData.add(_quat[i].delta());
         }
-
+    
         // Add rotation.
-        OSCMessage& msgRot = oscBundle("/rot");
-        OSCMessage& msgDeltaRot = oscBundle("/d-rot");
+        JsonArray rotData = morphose::json::deviceData["rot"].to<JsonArray>();
+        JsonArray dRotData = morphose::json::deviceData["d-rot"].to<JsonArray>();
         for (int i=0; i<3; i++) {
-          msgRot.add(_rot[i].value());
-          msgDeltaRot.add(_rot[i].delta());
+            rotData.add(_rot[i].value());
+            dRotData.add(_rot[i].delta());
         }
 
         // Add magnetometer.
-        oscBundle("/mag").add(getMagX()).add(getMagY()).add(getMagZ());
+        JsonArray magData = morphose::json::deviceData["mag"].to<JsonArray>();
+        magData.add(getMagX());
+        magData.add(getMagY());
+        magData.add(getMagZ());
 
         // Useful info ////////////////////////////////////////////
 
         // Add full data bundle.
-        OSCMessage& msgFull = oscBundle("/data");
-        for (int i=0; i<4; i++) msgFull.add(_quat[i].value()); // quaternion
-        for (int i=0; i<4; i++) msgFull.add(_quat[i].delta()); // delta quaternion
-        for (int i=0; i<3; i++) msgFull.add(_rot[i].value());   // rotation
-        for (int i=0; i<3; i++) msgFull.add(_rot[i].delta());   // delta rotation
+        // MQTT_JSON refactor, still needed?
+        // OSCMessage& msgFull = oscBundle("/data");
+        // for (int i=0; i<4; i++) msgFull.add(_quat[i].value()); // quaternion
+        // for (int i=0; i<4; i++) msgFull.add(_quat[i].delta()); // delta quaternion
+        // for (int i=0; i<3; i++) msgFull.add(_rot[i].value());   // rotation
+        // for (int i=0; i<3; i++) msgFull.add(_rot[i].delta());   // delta rotation
 
         // Add accuracy.
-        oscBundle("/accur").add(getMagAccuracy()).add(degrees(getQuatRadianAccuracy()));
+        morphose::json::deviceData["accur-mag"] = getMagAccuracy();
+        morphose::json::deviceData["accur-quat"] = degrees(getQuatRadianAccuracy());
     }
 
     void MorphosesIMU::calibrateBegin() {
       calibrateAll();
       _enableSensors();
-      oscBundle("/calibration-begin");
+        osc::debug("Calibration begin");
     }
 
     void MorphosesIMU::calibrateEnd() {
       endCalibration();
       _enableSensors();
-      oscBundle("/calibration-end");
+        osc::debug("Calibration end");
     }
 
     void MorphosesIMU::calibrateSave() {
@@ -146,7 +151,7 @@ namespace imus {
       }
 
       // Send feedback.
-      oscBundle(isSaved ? "/calibration-save-done" : "/calibration-save-error");
+      osc::debug(isSaved ? "/calibration-save-done" : "/calibration-save-error");
     }
 
     void MorphosesIMU::tare(float currentHeading) {
@@ -174,13 +179,17 @@ void initialize() {
   if (!imuMain.isInitialized()) {
     
     osc::debug("Main imu not initialized");
+
     animations::setDebugColor(DEBUG_COLOR_A,255,0,0,0);
+
     imuMain.init();
   }
 
   if (!imuSide.isInitialized()) {
     osc::debug("Side imu not initialized");
+
     animations::setDebugColor(DEBUG_COLOR_A,10,0,0,0);
+
     imuSide.init();
   }
 
@@ -190,20 +199,17 @@ void beginCalibration() {
   osc::debug("Begin calibration");
   imuMain.calibrateBegin();
   imuSide.calibrateBegin();
-  osc::sendBundle();
 }
 
 void endCalibration() {
   osc::debug("End calibration");
   imuMain.calibrateEnd();
   imuSide.calibrateEnd();
-  osc::sendBundle();
 }
 
 void saveCalibration() {
   imuMain.calibrateSave();
   imuSide.calibrateSave();
-  osc::sendBundle();
 }
 
 void sleep() {
@@ -221,7 +227,9 @@ void wake() {
 
 void process() {
   osc::debug("imus Process");
+
   animations::setDebugColor(DEBUG_COLOR_A,0,50,0,0);
+
   imuMain.process();
   imuSide.process();
   animations::setDebugColor(DEBUG_COLOR_A,0,0,100,0);

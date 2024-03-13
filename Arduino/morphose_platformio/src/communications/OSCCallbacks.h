@@ -44,6 +44,7 @@ void reboot(OSCMessage& msg) {
 }
 
 void speed(OSCMessage& msg) {
+ 
   if (osc::argIsNumber(msg, 0)) {
     float val = osc::getArgAsFloat(msg, 0);
     char buff[64];
@@ -132,25 +133,24 @@ void log(OSCMessage& msg) {
     int val =  msg.getInt(0);
     char buff[64];
     sprintf(buff, "anim region to %d",val);
-    logger::info(buff);
+    //logger::info(buff);
 }
 
 void readyToFlush(OSCMessage& msg) {
   int val =  msg.getInt(0);
   if (val) {
     osc::debug("Flush confirmed");
+
     logger::readyToFlush();
-    Serial.println(ESP.getFreeHeap());
     logger::flush();
   }
 }
 
 void endLog(OSCMessage& msg) {
-  int val =  msg.getInt(0);
-  if (val) {
+  
     osc::debug("end log confirmed");
     logger::endLog();
-  }
+  
 }
 
 }  // namespace oscCallback

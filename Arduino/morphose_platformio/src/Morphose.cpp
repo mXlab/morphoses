@@ -11,17 +11,37 @@
 #include "hardware/Engine.h"
 #include "communications/Network.h"
 #include "communications/osc.h"
+#include "communications/asyncMqtt.h"
+
 #include "Utils.h"
 #include "Logger.h"
+
 
 #define AVG_POSITION_TIME_WINDOW 0.2f
 
 namespace morphose {
 
-    int id;
-    char name[16];
-    int outgoingPort;
-    bool stream = false;
+    int id = ROBOT_ID;
+
+    #if ROBOT_ID == 1
+    int outgoingPort = 8110;
+    char* name = "robot1";
+    char* topicName = "morphoses/robot1/data";
+    #elif ROBOT_ID == 2
+    int outgoingPort = 8120;
+    char* name = "robot2";
+    char* topicName = "morphoses/robot2/data";
+    #elif ROBOT_ID == 3
+    int outgoingPort = 8130;
+    char* name = "robot3";
+    char* topicName = "morphoses/robot3/data";
+    #elif ROBOT_ID == 4
+    int outgoingPort = 8140;
+    char* name = "robot4";
+    char* topicName = "morphoses/robot4/data";
+    #endif
+
+    bool stream = true;
     Chrono sendRate{true};
 
     Vec2f currPosition;
@@ -29,33 +49,38 @@ namespace morphose {
     pq::Smoother avgPositionY(AVG_POSITION_TIME_WINDOW);
     Vec2f avgPosition;
 
-    void initialize(IPAddress ip) {
-        setID(ip[3]);
-        setName(id);
-        setOutgoingPort(id);
+namespace json {
+    JsonDocument deviceData;
+}
 
+
+    void initialize() {
+
+        Log.infoln("Robot id is set to : %d", id);
+        Log.infoln("Robot name is : %s", name);
+         network::outgoingPort = outgoingPort; // sets port in network file for desired robot port.
+        Log.infoln("Robot streaming port is : %d", network::outgoingPort);
         Log.warningln("Morphose successfully initialized");
     }
 
-    void setID(const int byte) {
-        id = (byte % 100) / 10;
-        Log.infoln("Robot id is set to : %d", id);
-    }
+    // void setID(const int byte) {
+    //     id = ROBOT_ID
+    //     Log.infoln("Robot id is set to : %d", id);
+    // }
 
-    void setName(const int id) {
-        sprintf(name, "robot%d", id);
-        Log.infoln("Robot name is : %s", name);
-    }
+    // void setName(const int id) {
+    //     sprintf(name, "robot%d", id);
+    //     Log.infoln("Robot name is : %s", name);
+    // }
 
-    void setOutgoingPort(const int id) {
-        outgoingPort = 8100 + (id*10);
-        network::outgoingPort = outgoingPort; // sets port in network file for desired robot port.
-        Log.infoln("Robot streaming port is : %d", network::outgoingPort);
-    }
+    // void setOutgoingPort(const int id) {
+    //     outgoingPort = 8100 + (id*10);
+    //     network::outgoingPort = outgoingPort; // sets port in network file for desired robot port.
+    //     Log.infoln("Robot streaming port is : %d", network::outgoingPort);
+    // }
 
     void sayHello() {
         bool lastState = osc::isBroadcasting();
-
         osc::setBroadcast(true);
         osc::bundle.add("/bonjour").add(name);
         osc::sendBundle();
@@ -80,7 +105,7 @@ namespace morphose {
 
     void updateLocation() {
     // Update average positioning.
-    //osc::debug("Updating position");
+
     avgPositionX.put(currPosition.x);
     avgPositionY.put(currPosition.y);
     avgPosition.set(avgPositionX.get(), avgPositionY.get());
@@ -88,7 +113,7 @@ namespace morphose {
 
     void update() {
         updateLocation();
-
+        
         if(sendRate.hasPassed(STREAM_INTERVAL, true)){
             imus::process();
             morphose::navigation::process();
@@ -96,17 +121,28 @@ namespace morphose {
             if(stream){
                 sendData();
                 // Send OSC bundle.
-                osc::sendBundle();
+                // osc::sendBundle();
+                // publish JSON data
             }
             energy::check();  // Energy checkpoint to prevent damage when low
         }
     }
-
     void sendData() {
-        osc::debug("Sending data");
+
+        static char jsonString[1024];
+        //osc::debug("Sending data");
+        imus::process();
+
         imus::sendData();
+        morphose::navigation::process();
         morphose::navigation::sendInfo();
         motors::sendEngineInfo();
+        // not ideal? should use static buffer
+        // auto jsonString = JSON.stringify(json::deviceData);
+        serializeJson(json::deviceData, jsonString);
+        // serializeJsonPretty(json::deviceData, Serial);
+        mqtt::client.publish(topicName, 0, true, jsonString);
+        json::deviceData.clear();
     }
 
 namespace navigation {
@@ -151,6 +187,7 @@ namespace navigation {
 
         void startHeading(float speed, float relativeHeading) {
         // Get current heading.
+        Serial.printf("Start heading %f %f\n", speed, relativeHeading);
         float currentHeading = imus::getHeading();
 
         // Set target heading.
@@ -249,9 +286,13 @@ namespace navigation {
         }
 
         void sendInfo() {
-        osc::bundle.add("/heading").add(imus::getHeading());
-        osc::bundle.add("/velocity").add(getVelocity().x).add(getVelocity().y);
-        osc::bundle.add("/heading-quality").add(getVelocityQuality());
+            json::deviceData["heading"] = imus::getHeading();
+            json::deviceData["vel-x"] = getVelocity().x;
+            json::deviceData["vel-y"] = getVelocity().y;
+            json::deviceData["heading-quality"] = getVelocityQuality();
+        // osc::bundle.add("/heading").add(imus::getHeading());
+        // osc::bundle.add("/velocity").add(getVelocity().x).add(getVelocity().y);
+        // osc::bundle.add("/heading-quality").add(getVelocityQuality());
         }
 
     }  // namespace navigation
@@ -266,8 +307,9 @@ namespace energy {
         // RTC_DATA_ATTR float   savedBatteryVoltage = -1;
 
         void deepSleepLowMode(float batteryVoltage) {
-            osc::bundle.add("/error").add("battery-low").add(batteryVoltage);
-            osc::sendBundle();
+            // osc::bundle.add("/error").add("battery-low").add(batteryVoltage);
+            // osc::sendBundle();
+            osc::debug("Battery low");
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
             // Wakeup every 10 seconds.
             esp_sleep_enable_timer_wakeup(ENERGY_VOLTAGE_LOW_WAKEUP_TIME * 1000000UL);
@@ -277,8 +319,10 @@ namespace energy {
         }
 
         void deepSleepCriticalMode(float batteryVoltage) {
-            osc::bundle.add("/error").add("battery-critical").add(batteryVoltage);
-            osc::sendBundle();
+            // osc::bundle.add("/error").add("battery-critical").add(batteryVoltage);
+            // osc::sendBundle();
+            osc::debug("Battery critical");
+
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
 
             // Go to sleep forever.
@@ -290,9 +334,7 @@ namespace energy {
                 //Serial.println("Checking energy");
             #endif
             // Read battery voltage.
-            char buffer[48];
-            
-            
+
             float batteryVoltage = motors::getBatteryVoltage();
             sprintf(buffer,"battery voltage : %F \n",batteryVoltage);
             osc::debug(buffer);
@@ -311,7 +353,7 @@ namespace energy {
                 if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL){
                     osc::debug("Voltage Critical");
                     //logger::error("Voltage Critical");
-                    //logger::flush();
+
 
                 deepSleepCriticalMode(batteryVoltage);
 
