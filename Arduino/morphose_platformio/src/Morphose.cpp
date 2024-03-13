@@ -128,15 +128,11 @@ namespace json {
         }
     }
     void sendData() {
-
         static char jsonString[1024];
         //osc::debug("Sending data");
-        imus::process();
-
-        imus::sendData();
-        morphose::navigation::process();
-        morphose::navigation::sendInfo();
-        motors::sendEngineInfo();
+        imus::collectData();
+        morphose::navigation::collectData();
+        motors::collectData();
         // not ideal? should use static buffer
         // auto jsonString = JSON.stringify(json::deviceData);
         serializeJson(json::deviceData, jsonString);
@@ -172,102 +168,102 @@ namespace navigation {
         Chrono velocityTimer;
 
         void start() {
-        // Start navigation mode.
-        navigationMode = true;
+            // Start navigation mode.
+            navigationMode = true;
 
-        // Save starting position.
-        startingPosition.set(morphose::getPosition());
-        velocityTimer.start();
+            // Save starting position.
+            startingPosition.set(morphose::getPosition());
+            velocityTimer.start();
 
-        // Reset errors.
-        cumulativeNavigationError = 0;
-        nNavigationSteps = 0;
-        velocity.set(0, 0);
+            // Reset errors.
+            cumulativeNavigationError = 0;
+            nNavigationSteps = 0;
+            velocity.set(0, 0);
         }
 
         void startHeading(float speed, float relativeHeading) {
-        // Get current heading.
-        Serial.printf("Start heading %f %f\n", speed, relativeHeading);
-        float currentHeading = imus::getHeading();
+            // Get current heading.
+            Serial.printf("Start heading %f %f\n", speed, relativeHeading);
+            float currentHeading = imus::getHeading();
 
-        // Set target heading.
-        targetHeading = - utils::wrapAngle180(currentHeading + relativeHeading);
+            // Set target heading.
+            targetHeading = - utils::wrapAngle180(currentHeading + relativeHeading);
 
-        // Set target speed.
-        targetSpeed = max(speed, 0.0f);
+            // Set target speed.
+            targetSpeed = max(speed, 0.0f);
 
-        start();
+            start();
         }
 
 
         void stepHeading() {
-        // Check correction. Positive: too much to the left; negative: too much to the right.
-        float relativeHeading = utils::wrapAngle180(targetHeading + imus::getHeading());
-        float absoluteRelativeHeading = abs(relativeHeading);
+            // Check correction. Positive: too much to the left; negative: too much to the right.
+            float relativeHeading = utils::wrapAngle180(targetHeading + imus::getHeading());
+            float absoluteRelativeHeading = abs(relativeHeading);
 
-        // Compute speed.
-        // We use a tolerance in order to force the robot to favor moving forward when it is at almost 90 degrees to avoid situations
-        // where it just moves forward and backwards forever. It will move forward  at +- (90 + HEADING_FRONT_TOLERANCE).
-        float speed = targetSpeed * (absoluteRelativeHeading < HEADING_FRONT_MAX ? +1 : -1);
+            // Compute speed.
+            // We use a tolerance in order to force the robot to favor moving forward when it is at almost 90 degrees to avoid situations
+            // where it just moves forward and backwards forever. It will move forward  at +- (90 + HEADING_FRONT_TOLERANCE).
+            float speed = targetSpeed * (absoluteRelativeHeading < HEADING_FRONT_MAX ? +1 : -1);
 
-        // Compute navigation error.
-        float navigationError = (speed > 0 ? absoluteRelativeHeading : 180 - absoluteRelativeHeading);
+            // Compute navigation error.
+            float navigationError = (speed > 0 ? absoluteRelativeHeading : 180 - absoluteRelativeHeading);
 
-        // If we are too much away from our direction, reset.
-        if (navigationError >= MAX_NAVIGATION_ERROR) {
-            start();
-        } else {
-            cumulativeNavigationError += navigationError;
-            nNavigationSteps++;
-        }
+            // If we are too much away from our direction, reset.
+            if (navigationError >= MAX_NAVIGATION_ERROR) {
+                start();
+            } else {
+                cumulativeNavigationError += navigationError;
+                nNavigationSteps++;
+            }
 
-        // Base steering in [-1, 1] according to relative heading.
-        float baseSteer = sin(radians(relativeHeading));
+            // Base steering in [-1, 1] according to relative heading.
+            float baseSteer = sin(radians(relativeHeading));
 
-        // Decompose base steer in sign and absolute value.
-        float steerSign = copysignf(1, baseSteer);
-        float steerValue = abs(baseSteer);
+            // Decompose base steer in sign and absolute value.
+            float steerSign = copysignf(1, baseSteer);
+            float steerValue = abs(baseSteer);
 
-        // Recompute steer in [-1, 1] based on clamped value.
-        float steer = steerSign * STEER_MAX * constrain(steerValue/STEER_HEADING_FRONT_MAX, 0, 1);
+            // Recompute steer in [-1, 1] based on clamped value.
+            float steer = steerSign * STEER_MAX * constrain(steerValue/STEER_HEADING_FRONT_MAX, 0, 1);
 
-        // Set speed and steer.
-        motors::setEngineSpeed(speed);
-        motors::setEngineSteer(steer);
-        }
+            // Set speed and steer.
+            motors::setEngineSpeed(speed);
+            motors::setEngineSteer(steer);
+            }
 
-        // Returns the quality of the velocity calculation from 0% to 100% ie. [0..1]
-        float getVelocityQuality() {
-        // First part of the error depends on distance moved: longer distances are more reliable.
-        float absoluteMovement = velocity.length();  // absolute distance covered
-        float movementQuality = pq::mapFloat(absoluteMovement, MIN_RELIABLE_NAVIGATION_DISTANCE, MAX_RELIABLE_NAVIGATION_DISTANCE, 0, 1);
-        movementQuality = constrain(movementQuality, 0, 1);
+            // Returns the quality of the velocity calculation from 0% to 100% ie. [0..1]
+            float getVelocityQuality() {
+            // First part of the error depends on distance moved: longer distances are more reliable.
+            float absoluteMovement = velocity.length();  // absolute distance covered
+            float movementQuality = pq::mapFloat(absoluteMovement, MIN_RELIABLE_NAVIGATION_DISTANCE, MAX_RELIABLE_NAVIGATION_DISTANCE, 0, 1);
+            movementQuality = constrain(movementQuality, 0, 1);
 
-        // Second part of the error depends on average deviation from target during navigation.
-        float navigationQuality = (nNavigationSteps > 0 ? pq::mapFloat(cumulativeNavigationError / nNavigationSteps, 0, MAX_NAVIGATION_ERROR, 1, 0) : 0);
+            // Second part of the error depends on average deviation from target during navigation.
+            float navigationQuality = (nNavigationSteps > 0 ? pq::mapFloat(cumulativeNavigationError / nNavigationSteps, 0, MAX_NAVIGATION_ERROR, 1, 0) : 0);
 
-        // Return the average of both parts.
-        return (movementQuality + navigationQuality) / 2.0f;
-        }
+            // Return the average of both parts.
+            return (movementQuality + navigationQuality) / 2.0f;
+            }
 
-        void stopHeading() {
-        // Update navigation velocity.
-        velocity = (morphose::getPosition() - startingPosition);
-        velocityHeading = REFERENCE_ORIENTATION.angle(velocity);
-        if (!motors::engineIsMovingForward()) velocityHeading = utils::wrapAngle180(velocityHeading + 180);
+            void stopHeading() {
+            // Update navigation velocity.
+            velocity = (morphose::getPosition() - startingPosition);
+            velocityHeading = REFERENCE_ORIENTATION.angle(velocity);
+            if (!motors::engineIsMovingForward()) velocityHeading = utils::wrapAngle180(velocityHeading + 180);
 
-        // Align IMU offset to velocity heading.
-        if (getVelocityQuality() >= NAVIGATION_ERROR_THRESHOLD)
-            imus::tare(velocityHeading);
+            // Align IMU offset to velocity heading.
+            if (getVelocityQuality() >= NAVIGATION_ERROR_THRESHOLD)
+                imus::tare(velocityHeading);
 
-        // Reset engine.
-        motors::setEngineSpeed(0);
-        motors::setEngineSteer(0);
+            // Reset engine.
+            motors::setEngineSpeed(0);
+            motors::setEngineSteer(0);
 
-        // Exit navigation mode.
-        navigationMode = false;
-        targetHeading = 0;
-        targetSpeed = 0;
+            // Exit navigation mode.
+            navigationMode = false;
+            targetHeading = 0;
+            targetSpeed = 0;
         }
 
         void process() {
@@ -285,14 +281,11 @@ namespace navigation {
         return velocityHeading;
         }
 
-        void sendInfo() {
+        void collectData() {
             json::deviceData["heading"] = imus::getHeading();
             json::deviceData["vel-x"] = getVelocity().x;
             json::deviceData["vel-y"] = getVelocity().y;
             json::deviceData["heading-quality"] = getVelocityQuality();
-        // osc::bundle.add("/heading").add(imus::getHeading());
-        // osc::bundle.add("/velocity").add(getVelocity().x).add(getVelocity().y);
-        // osc::bundle.add("/heading-quality").add(getVelocityQuality());
         }
 
     }  // namespace navigation

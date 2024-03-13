@@ -3,7 +3,10 @@
 #include <SparkFun_BNO080_Arduino_Library.h>
 #include <Chrono.h>
 
+
 #include "communications/osc.h"
+#include "communications/asyncMqtt.h"
+
 #include "Morphose.h"
 #include "Utils.h"
 #include "Logger.h"
@@ -48,8 +51,9 @@ namespace imus {
       }
 
       // Add details and send.
-      oscBundle(isOk ? "/ready" : "/error").add(morphose::name).add("i2c");
-      osc::sendBundle();
+      mqtt::debug(name());
+      mqtt::debug(isOk ? "is ready" : " error");
+      mqtt::debug(isOk ? "is ready" : " error");
     }
 
     boolean MorphosesIMU::process() {
@@ -69,10 +73,6 @@ namespace imus {
         _quat[2].add(getQuatK());
         _quat[3].add(getQuatReal());
 
-        // oscBundle("/quat").add(getQuatI()).add(getQuatJ()).add(getQuatK()).add(getQuatReal());
-        // oscBundle("/rot").add((float)degrees(getRoll())).add((float)degrees(getPitch())).add((float)degrees(getYaw()));
-        // oscBundle("/accur").add(getMagAccuracy()).add(degrees(getQuatRadianAccuracy()));
-        // oscBundle("/mag").add(getMagX()).add(getMagY()).add(getMagZ());
       }
       else {
         // Just step.
@@ -85,7 +85,7 @@ namespace imus {
       return available;
     }
 
-    void MorphosesIMU::sendData() {
+    void MorphosesIMU::collectData() {
         // Debugging info //////////////////////////////////////////
 
         // Add quaternion.
@@ -231,15 +231,14 @@ void process() {
   osc::debug("imus Process");
 
   animations::setDebugColor(DEBUG_COLOR_A,0,50,0,0);
-
   imuMain.process();
   imuSide.process();
   animations::setDebugColor(DEBUG_COLOR_A,0,0,100,0);
 }
 
-void sendData() {
-  imuMain.sendData();
-  imuSide.sendData();
+void collectData() {
+  imuMain.collectData();
+  imuSide.collectData();
 }
 
 float getHeading() {

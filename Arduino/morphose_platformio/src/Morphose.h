@@ -58,7 +58,7 @@ namespace navigation {
 
         float getVelocityHeading(); 
 
-        void sendInfo();
+        void collectData();
 
     }  // namespace navigation
 

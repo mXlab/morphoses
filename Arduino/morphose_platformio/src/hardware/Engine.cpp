@@ -95,13 +95,10 @@ namespace motors {
   }
 
 
-  void sendEngineInfo() {
+  void collectData() {
     morphose::json::deviceData["speed"] = getEngineSpeed();
     morphose::json::deviceData["steer"] = getEngineSteer();
     morphose::json::deviceData["battery"] = getBatteryVoltage();
-    // osc::bundle.add("/battery").add(getBatteryVoltage());
-    // osc::bundle.add("/speed").add(getEngineSpeed());
-    // osc::bundle.add("/steer").add(getEngineSteer());
   }
 
 }  // namespace motors

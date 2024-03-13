@@ -91,7 +91,7 @@ class MorphosesIMU : public BNO080 {
     boolean process();
 
     // Sends stored data as OSC.
-    void sendData();
+    void collectData();
 
     // Calibration functions.
     void calibrateBegin();
@@ -116,9 +116,8 @@ class MorphosesIMU : public BNO080 {
   void process();
   float getHeading();
   float getRawHeading();  
-  void sendData();
+  void collectData();
   void tare(float currentHeading);
-
 }  // namespace imus
 
 #endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_HARDWARE_IMU_H_

@@ -19,7 +19,7 @@ namespace motors {
   float getBatteryVoltage();
   int getEngineSpeedTemperature();  
   int getEngineSteerTemperature();  
-  void sendEngineInfo();
+  void collectData();
 
 }  // namespace motors
 #endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_HARDWARE_ENGINE_H_
