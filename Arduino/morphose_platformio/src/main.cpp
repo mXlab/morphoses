@@ -95,14 +95,13 @@ void setup() {
  
   mqtt::initialize();
   // network::initialize();
-  delay(1000);
   mqtt::debug(" MQTT initialized");
-  
   mqtt::debug("Network initialized");
+
   char buff[32];
   sprintf(buff,"Osc broadcast state: %d\n",  osc::isBroadcasting());
-
   mqtt::debug(buff);
+
   motors::initialize();
   mqtt::debug("Motors initialized");
 
@@ -120,18 +119,14 @@ void setup() {
   imus::initialize();
   mqtt::debug(" IMU initialized");
 
-
-
-
- 
   // Initialize OTA.
   initOTA(morphose::name);
   mqtt::debug(" OTA initialized");
 
-  morphose::sayHello();
+  // morphose::sayHello();
   mqtt::debug("---------------- End of setup ----------------");
 
-
+  Serial.println("End of setup");
 }
 
 void checkMemory() {
@@ -149,8 +144,8 @@ void checkMemory() {
     sprintf(buff, "Heap: %d allocated, %d free", memInfo.total_allocated_bytes, memInfo.total_free_bytes);
 
     mqtt::debug(buff);  
-    lastAllocated = currentAllocated;  
   }
+  lastAllocated = currentAllocated;  
 
 
 }
@@ -173,5 +168,5 @@ void loop() {
 //osc::update();
 // logger::info("osc::update ok");
 
-  checkMemory();
+  //checkMemory();
 }

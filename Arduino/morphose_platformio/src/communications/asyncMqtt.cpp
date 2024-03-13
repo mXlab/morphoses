@@ -108,7 +108,7 @@ void connectToMqtt() {
 void WiFiEvent(WiFiEvent_t event) {
     char buffer[64];
     sprintf(buffer,"[WiFi-event] event: %d\n", event);
-    mqtt::debug(buffer);
+    //mqtt::debug(buffer);
 
     switch(event) {
     case SYSTEM_EVENT_STA_GOT_IP:
@@ -185,8 +185,8 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   char realPayload [1024];
   memcpy(realPayload, payload, len);
   realPayload[len] = '\0';
-  sprintf(buffer, "Message received.\n topic: %s\n payload: %s \n qos: %d\n dup: %d\n retain: %d\n len: %zu\n index: %zu\n total: %zu\n",topic,realPayload,properties.qos,properties.dup,properties.retain,len,index,total);
-  mqtt::debug(buffer);
+  // sprintf(buffer, "Message received.\n topic: %s\n payload: %s \n qos: %d\n dup: %d\n retain: %d\n len: %zu\n index: %zu\n total: %zu\n",topic,realPayload,properties.qos,properties.dup,properties.retain,len,index,total);
+  // //mqtt::debug(buffer);
   
   
   if(strcmp(topic, ROBOT_RTLS_MQTT_ADDRESS[0]) == 0){
@@ -230,12 +230,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 
 }
 
-void onMqttPublish(uint16_t packetId) {
-  char buffer[64];
-  sprintf(buffer, "Publish acknowledged.\n packetId: %d\n",packetId);
-  mqtt::debug(buffer);
-  
-}
+
 
 void initialize() {
 
@@ -249,7 +244,6 @@ void initialize() {
   client.onSubscribe(onMqttSubscribe);
   client.onUnsubscribe(onMqttUnsubscribe);
   client.onMessage(onMqttMessage);
-  client.onPublish(onMqttPublish);
   client.setServer(MQTT_HOST, MQTT_PORT);
 
   network::initialize();
@@ -258,7 +252,7 @@ void initialize() {
 
 void debug(const char *_msg) {
   Serial.println(_msg);
-  client.publish(debugAddress, 1, true, _msg);
+  // client.publish(debugAddress, 1, true, _msg);
 }
 namespace callbacks {
   Vec2f robotPositions[N_ROBOTS];
@@ -271,7 +265,7 @@ JsonDocument doc;
 
   // Test if parsing succeeds.
   if (error) {
-    char buffer[64];
+    char buffer[128];
     sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
     mqtt::debug(buffer);
     return;
@@ -302,7 +296,7 @@ void handleAnimation(char* data){
 
   // Test if parsing succeeds.
   if (error) {
-    char buffer[64];
+    char buffer[128];
     sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
     mqtt::debug(buffer);
     return;
@@ -332,20 +326,21 @@ void handleAnimation(char* data){
 
 
 void handleSteer(char* payload){
-  Serial.println(payload);
+  // Serial.println(payload);
     const float val = atof(payload);
-    char buffer[32];
-    sprintf(buffer,"Set steer to %.2F\n", val);
-    mqtt::debug(buffer);
+    // char buffer[32];
+    // sprintf(buffer,"Set steer to %.2F\n", val);
+    // mqtt::debug(buffer);
+
     motors::setEngineSteer(val);
   }
 
   
 void handleSpeed(char* payload){
     const float val = atof(payload);
-    char buffer[32];
-    sprintf(buffer,"Set speed to %.2F\n", val);
-    mqtt::debug(buffer);
+    // char buffer[32];
+    // sprintf(buffer,"Set speed to %.2F\n", val);
+    // mqtt::debug(buffer);
     motors::setEngineSpeed(val);
 }
 
@@ -358,7 +353,7 @@ void handlePower(char* payload){
   }
  
 void handleGetData(char* payload){
-  mqtt::debug("Get data");
+  //mqtt::debug("Get data");
   morphose::sendData();
 }  
   

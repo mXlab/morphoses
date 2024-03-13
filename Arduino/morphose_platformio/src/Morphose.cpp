@@ -41,7 +41,7 @@ namespace morphose {
     const char* topicName = "morphoses/robot4/data";
     #endif
 
-    bool stream = true;
+    bool stream = false;
     bool sendDataFlag = false;
     char jsonString[1024];
     
@@ -115,11 +115,35 @@ namespace json {
     }
 
     void update() {
+        if(sendDataFlag){
+            Serial.println("inside send data flag");
+            sendDataFlag = false;
+            json::deviceData.clear();
+            Serial.println("json::deviceData cleared");
+            
+            imus::collectData();
+            Serial.println("imu::collectData done");
+            morphose::navigation::collectData();
+            Serial.println("navigation::collectData done");
+            motors::collectData();
+            Serial.println("motors::collectData done");
+            serializeJson(json::deviceData, jsonString);
+            Serial.println("serializeJson done");
+            // serializeJsonPretty(json::deviceData, Serial);
+            mqtt::client.publish(topicName, 0, true, jsonString);
+            Serial.println("mqtt::client.publish done");
+            return;
+        }
+
+
         updateLocation();
-        
+        //Serial.println("update location done");
+
         if(sendRate.hasPassed(STREAM_INTERVAL, true)){
             imus::process();
+            Serial.println("imus::process done");
             morphose::navigation::process();
+            Serial.println("morphose::navigation::process done");
 
             if(stream){
                 sendData();
@@ -128,20 +152,14 @@ namespace json {
                 // publish JSON data
             }
             energy::check();  // Energy checkpoint to prevent damage when low
+            Serial.println("energy::check done");
         }
-        if(sendDataFlag){
-            sendDataFlag = false;
-            json::deviceData.clear();
-            
-            imus::collectData();
-            morphose::navigation::collectData();
-            motors::collectData();
-            serializeJson(json::deviceData, jsonString);
-            // serializeJsonPretty(json::deviceData, Serial);
-            mqtt::client.publish(topicName, 0, true, jsonString);
-        }
+
+        
     }
+
     void sendData() {
+        Serial.println("inside sendData");
         sendDataFlag = true;
     }
 
@@ -336,7 +354,7 @@ namespace energy {
             char buffer[64];
             sprintf(buffer,"battery voltage : %F \n",batteryVoltage);
             mqtt::debug(buffer);
-
+            return;
             // Low voltage: Launch safety procedure.
             if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
                 // Put IMUs to sleep to protect them.

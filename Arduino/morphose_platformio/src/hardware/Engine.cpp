@@ -83,7 +83,8 @@ namespace motors {
   float engineIsMovingForward() { return (currentSpeed >= 0); }
 
   float getBatteryVoltage() {
-    return dxl.readControlTableItem(PRESENT_INPUT_VOLTAGE, DXL_ID_SPEED) / 10.0f;
+    int voltage = dxl.readControlTableItem(PRESENT_INPUT_VOLTAGE, DXL_ID_SPEED);
+    return (voltage / 10.0f);
   }
 
   int getEngineSpeedTemperature() {
