@@ -146,15 +146,15 @@ boolean argIsNumber(OSCMessage& msg, int index) {
             }
 
             if (DEBUG_MODE) {
-                Serial.print("Received packet of size ");
-                Serial.println(size);
-                Serial.print("From : ");
-                Serial.print(network::udp.remoteIP());
-                Serial.print(", port : ");
-                Serial.println(network::udp.remotePort());
-                Serial.println(F("OSC message received:"));
-                msg.send(Serial);
-                Serial.println(" ");
+                // Serial.print("Received packet of size ");
+                // Serial.println(size);
+                // Serial.print("From : ");
+                // Serial.print(network::udp.remoteIP());
+                // Serial.print(", port : ");
+                // Serial.println(network::udp.remotePort());
+                // Serial.println(F("OSC message received:"));
+                // msg.send(Serial);
+                // Serial.println(" ");
             }
 
             
@@ -194,7 +194,7 @@ boolean argIsNumber(OSCMessage& msg, int index) {
                     case INVALID_OSC:
                         
                         Log.errorln("OSC MESSAGE ERROR : INVALID_OSC");
-                        logger::error("OSC MESSAGE ERROR : INVALID_OSC");
+                        //logger::error("OSC MESSAGE ERROR : INVALID_OSC");
                         
                         break;
 
