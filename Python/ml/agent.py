@@ -202,6 +202,7 @@ class Agent:
 
         # Get current state.
         state = self.get_state()
+        print("State: {}".format(state))
 
         r = 0
 
@@ -330,7 +331,7 @@ class Agent:
         self.iter += 1
 
     def step_recenter(self):
-        self.world.set_color(self, [0, 0, 255])
+        # self.world.set_color(self, [0, 0, 255])
 
         self.world.send_info(self.get_name(), "/position", [self.world.get(self, 'x', standardized=False), self.world.get(self, 'y', standardized=False)])
 

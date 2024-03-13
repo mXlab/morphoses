@@ -284,6 +284,7 @@ class RobotData(EntityData):
         self.store(['rx', 'ry', 'rz'], rot, t, delta=dRot)
         
     def store_rotation_data_main(self, data, t, zOffset=0):
+        print("store_rotation_data_main: {} {}".format(str(data), t))
         quat, dQuat, rot, dRot = self.extract_data(data, zOffset)
         self.store(['mqx', 'mqy', 'mqz', 'mqw'], quat, t, delta=dQuat)
         self.store(['mrx', 'mry', 'mrz'], rot, t, delta=dRot)        
@@ -574,32 +575,32 @@ class World:
         # Broadcast as OSC.
         name = self.agent_as_name(agent)
         info = state[0].tolist() + [reward]
-        self.send_info(name, "/info", info)
+        self.messaging.send_info(name, "/display-data", info)
 
-    def set_animation_period(self, agent, period):
-        name = self.agent_as_name(agent)
-        self.messaging.send(name, "/animation/period", period)
+    # def set_animation_period(self, agent, period):
+    #     name = self.agent_as_name(agent)
+    #     self.messaging.send(name, "/animation/period", period)
 
-    def set_animation_noise(self, agent, noise):
-        name = self.agent_as_name(agent)
-        self.messaging.send(name, "/animation/noise", [noise, 0])
+    # def set_animation_noise(self, agent, noise):
+    #     name = self.agent_as_name(agent)
+    #     self.messaging.send(name, "/animation/noise", [noise, 0])
 
-    def set_alt_color(self, agent, rgb):
-        name = self.agent_as_name(agent)
-        self.messaging.send(name, "/animation/to", rgb)
+    # def set_alt_color(self, agent, rgb):
+    #     name = self.agent_as_name(agent)
+    #     self.messaging.send(name, "/animation/to", rgb)
 
-    def set_color(self, agent, rgb):
-        name = self.agent_as_name(agent)
-        entity = self.entities[name]
-        if entity.get_version() >= 3:
-            self.messaging.send(name, "/animation/region", 2)
-            self.messaging.send(name, "/animation/from", rgb)
-            # self.messaging.send(name, "/rgb-region", [2] + rgb)
-            # self.messaging.send(name, "/rgb", rgb)
-        else:
-            self.messaging.send(name, "/red", rgb[0])
-            self.messaging.send(name, "/green", rgb[1])
-            self.messaging.send(name, "/blue", rgb[2])
+    # def set_color(self, agent, rgb):
+    #     name = self.agent_as_name(agent)
+    #     entity = self.entities[name]
+    #     if entity.get_version() >= 3:
+    #         self.messaging.send(name, "/animation/region", 2)
+    #         self.messaging.send(name, "/animation/from", rgb)
+    #         # self.messaging.send(name, "/rgb-region", [2] + rgb)
+    #         # self.messaging.send(name, "/rgb", rgb)
+    #     else:
+    #         self.messaging.send(name, "/red", rgb[0])
+    #         self.messaging.send(name, "/green", rgb[1])
+    #         self.messaging.send(name, "/blue", rgb[2])
 
     def is_inside_boundaries(self, agent, use_recenter_offset=True):
         if (not self.is_valid(agent, 'x') or not self.is_valid(agent, 'y')):
@@ -620,7 +621,7 @@ class World:
         for robot in self.robots:
             self.set_motors(robot, 0, 0)
             self.entities[robot].store_action(0, self.get_time())
-            self.set_color(robot, [0, 255, 255])
+            # self.set_color(robot, [0, 255, 255])
             self.messaging.send(robot, "/power", 1)
             self.messaging.send(robot, "/stream", 0)
             #self.messaging.send(robot, "/stream", 1, board_name='imu')
@@ -646,7 +647,7 @@ class World:
     def terminate(self):
         for robot in self.robots:
             self.set_motors(robot, 0, 0)
-            self.set_color(robot, [0, 0, 0])
+            # self.set_color(robot, [0, 0, 0])
             # self.messaging.send(robot, "/power", 0)
             # self.messaging.send(robot, "/stream", 0)
             # self.messaging.send(robot, "/stream", 0, board_name='imu')
@@ -661,7 +662,7 @@ class World:
             robot = self.entities[robot_name]
             
             # Ask for data.
-            self.messaging.send(robot_name, "/get/data", 1)
+            self.messaging.send(robot_name, "/get-data", 1)
 
             # # Send info.
             # if robot.group_is_valid('position'):
@@ -710,14 +711,15 @@ class World:
         # Correct euler yaw with room heading offset.
         self.entities[entity_name].store_rotation_data_main(data, self.get_time(), -self.room_heading)
 
-    def send_info(self, entity_name, address, args=[]):
-        self.messaging.send_info("/{}{}".format(entity_name, address), args)
-
     def debug(self):
         import json
-        self.messaging.send_info("/data", str(self.entities))
+        self.messaging.send_debug(str(self.entities))
+
+    def send_info(self, robot_name, address, args=[]):
+        self.messaging.send_info(robot_name, address, args)
 
     def send_data(self):
         return
         # for robot_name in self.robots:
         #     self.messaging.send_info("/{}/pos".format(robot_name), [self.get(robot_name, 'x'), self.get(robot_name, 'y')])
+

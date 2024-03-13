@@ -84,7 +84,7 @@ class Manager:
 
     def behavior_end(self):
         title = self.sequence_current_behavior()['title']
-        self.world.send_info("all", "/end", title)
+        # self.world.send_info("all", "/end", title)
     
     def begin(self):
         print("** Begin **")
