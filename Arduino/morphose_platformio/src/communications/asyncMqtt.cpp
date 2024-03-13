@@ -180,47 +180,50 @@ void onMqttUnsubscribe(uint16_t packetId) {
 }
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
-  // char buffer[1024];
-  // sprintf(buffer, "Message received.\n topic: %s\n payload: %s \n qos: %d\n dup: %d\n retain: %d\n len: %zu\n index: %zu\n total: %zu\n",topic,payload,properties.qos,properties.dup,properties.retain,len,index,total);
-  // mqtt::debug(buffer);
+  char buffer[1024];
+  char realPayload [1024];
+  memcpy(realPayload, payload, len);
+  realPayload[len] = '\0';
+  sprintf(buffer, "Message received.\n topic: %s\n payload: %s \n qos: %d\n dup: %d\n retain: %d\n len: %zu\n index: %zu\n total: %zu\n",topic,realPayload,properties.qos,properties.dup,properties.retain,len,index,total);
+  mqtt::debug(buffer);
   
   
   if(strcmp(topic, ROBOT_RTLS_MQTT_ADDRESS[0]) == 0){
     //Serial.println("Position robot1");
-    callbacks::handlePosition(1, payload);
+    callbacks::handlePosition(1, realPayload);
   }else if(strcmp(topic, ROBOT_RTLS_MQTT_ADDRESS[1]) == 0){
     //Serial.println("Position robot2");
-    callbacks::handlePosition(2, payload);
+    callbacks::handlePosition(2, realPayload);
   }else if(strcmp(topic, ROBOT_RTLS_MQTT_ADDRESS[2]) == 0){
     //Serial.println("Position robot3");
-    callbacks::handlePosition(3, payload);
+    callbacks::handlePosition(3, realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[ANIMATION]) == 0){
     //Serial.println("animation");
-    callbacks::handleAnimation(payload);
+    callbacks::handleAnimation(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[STEER]) == 0){
     Serial.println("steer");
-    callbacks::handleSteer(payload);
+    callbacks::handleSteer(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[SPEED]) == 0){
     Serial.println("speed");
-    callbacks::handleSpeed(payload);
+    callbacks::handleSpeed(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[POWER]) == 0){
     Serial.println("power");
-    callbacks::handlePower(payload);
+    callbacks::handlePower(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[GET_DATA]) == 0){
     Serial.println("get data");
-    callbacks::handleGetData(payload);    
+    callbacks::handleGetData(realPayload);    
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[NAV]) == 0){
     Serial.println("nav");
-    callbacks::handleNav(payload);
+    callbacks::handleNav(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[CALIB]) == 0){
     Serial.println("calib");
-    callbacks::handleCalib(payload);
+    callbacks::handleCalib(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[STREAM]) == 0){
     Serial.println("stream");
-    callbacks::handleStream(payload);
+    callbacks::handleStream(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[REBOOT]) == 0){
     Serial.println("reboot");
-    callbacks::handleReboot(payload);
+    callbacks::handleReboot(realPayload);
   }
   
 
