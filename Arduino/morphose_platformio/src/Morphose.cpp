@@ -185,6 +185,7 @@ namespace navigation {
 
         void startHeading(float speed, float relativeHeading) {
         // Get current heading.
+        Serial.printf("Start heading %f %f\n", speed, relativeHeading);
         float currentHeading = imus::getHeading();
 
         // Set target heading.

@@ -21,8 +21,19 @@ extern AsyncMqttClient client;
 // Should be called in the loop function and it will take care if connecting.
 void connect();
 void update();
-void onLocation(int robot, char* data);
-void onAnimation(char* data);
+namespace callbacks {
+    void handlePosition(int robot, char* data);
+void handleAnimation(char* data);
+void handleSteer(char* payload);
+void handleSpeed(char* payload);
+void handlePower(char* payload);
+void handleGetData(char* payload);
+void handleNav(char* payload);
+void handleCalib(char* payload);
+void handleStream(char* payload);
+void handleReboot(char* payload);
+}
+
 
 }   // namespace mqtt
 
