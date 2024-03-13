@@ -3,7 +3,7 @@
 
 #include "Config.h"
 #include <VectorXf.h>
-#include <Arduino_JSON.h>
+#include <ArduinoJson.h>
 
 class IPAddress;
 
@@ -36,7 +36,7 @@ namespace morphose {
     void sendData();
 
 namespace json {
-    extern JSONVar deviceData;
+    extern JsonDocument deviceData;
 }
 
 

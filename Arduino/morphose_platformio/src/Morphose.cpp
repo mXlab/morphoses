@@ -26,15 +26,19 @@ namespace morphose {
     #if ROBOT_ID == 1
     int outgoingPort = 8110;
     char* name = "robot1";
+    char* topicName = "morphoses/robot1/data";
     #elif ROBOT_ID == 2
     int outgoingPort = 8120;
     char* name = "robot2";
+    char* topicName = "morphoses/robot2/data";
     #elif ROBOT_ID == 3
     int outgoingPort = 8130;
     char* name = "robot3";
+    char* topicName = "morphoses/robot3/data";
     #elif ROBOT_ID == 4
     int outgoingPort = 8140;
     char* name = "robot4";
+    char* topicName = "morphoses/robot4/data";
     #endif
 
     bool stream = true;
@@ -46,7 +50,7 @@ namespace morphose {
     Vec2f avgPosition;
 
 namespace json {
-    JSONVar deviceData;
+    JsonDocument deviceData;
 }
 
 
@@ -109,7 +113,7 @@ namespace json {
 
     void update() {
         updateLocation();
-
+        
         if(sendRate.hasPassed(STREAM_INTERVAL, true)){
             imus::process();
             morphose::navigation::process();
@@ -123,16 +127,20 @@ namespace json {
             energy::check();  // Energy checkpoint to prevent damage when low
         }
     }
-
     void sendData() {
+        static char jsonString[1024];
         //osc::debug("Sending data");
         imus::process();
+        imus::sendData();
         morphose::navigation::process();
         morphose::navigation::sendInfo();
         motors::sendEngineInfo();
         // not ideal? should use static buffer
-        auto jsonString = JSON.stringify(json::deviceData);
-        mqtt::client.publish(name, 0, true, jsonString);
+        // auto jsonString = JSON.stringify(json::deviceData);
+        serializeJson(json::deviceData, jsonString);
+        // serializeJsonPretty(json::deviceData, Serial);
+        mqtt::client.publish(topicName, 0, true, jsonString);
+        json::deviceData.clear();
     }
 
 namespace navigation {
@@ -275,10 +283,10 @@ namespace navigation {
         }
 
         void sendInfo() {
-            json::deviceData["/heading"] = imus::getHeading();
-            json::deviceData["/velocity/x"] = getVelocity().x;
-            json::deviceData["/velocity/y"] = getVelocity().y;
-            json::deviceData["/heading-quality"] = getVelocityQuality();
+            json::deviceData["heading"] = imus::getHeading();
+            json::deviceData["vel-x"] = getVelocity().x;
+            json::deviceData["vel-y"] = getVelocity().y;
+            json::deviceData["heading-quality"] = getVelocityQuality();
         // osc::bundle.add("/heading").add(imus::getHeading());
         // osc::bundle.add("/velocity").add(getVelocity().x).add(getVelocity().y);
         // osc::bundle.add("/heading-quality").add(getVelocityQuality());

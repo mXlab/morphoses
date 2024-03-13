@@ -2,7 +2,7 @@
 #define ARDUINO_MORPHOSE_PLATFORMIO_SRC_COMMUNICATIONS_ASYNC_MQTT_H_
 
 #include <AsyncMqttClient.h>
-#include <Arduino_JSON.h>
+// #include <ArduinoJson.h>
 #include <VectorXf.h>
 #include <WiFi.h>
 

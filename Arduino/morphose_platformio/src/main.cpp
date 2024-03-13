@@ -164,23 +164,23 @@ void checkMemory() {
 
 void loop() {
 
-  //logger::update();
-  //logger::info("logger::update ok");
-  // // Update OTA.
- //updateOTA();
+  logger::update();
+  logger::info("logger::update ok");
+  // Update OTA.
+  updateOTA();
 
-  //imus::initialize();
-  //logger::info("imus::initialize ok");
+  imus::initialize();
+  logger::info("imus::initialize ok");
 
-  //mqtt::update();
-  //logger::info("mqtt::update ok");
+  // mqtt::update();
+  // logger::info("mqtt::update ok");
 
-  //morphose::update();
-  //logger::info("morphose::update ok");
+  morphose::update();
+  logger::info("morphose::update ok");
 
-  //osc::update();
-  //logger::info("osc::update ok");
+  osc::update();
+  logger::info("osc::update ok");
 
-  //checkMemory();
+  checkMemory();
 }
 

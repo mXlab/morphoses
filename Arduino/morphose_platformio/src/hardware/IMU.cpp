@@ -88,22 +88,27 @@ namespace imus {
     void MorphosesIMU::sendData() {
         // Debugging info //////////////////////////////////////////
 
+        JsonArray quatData = morphose::json::deviceData["quat"].to<JsonArray>();
+        JsonArray dQuatData = morphose::json::deviceData["d-quat"].to<JsonArray>();
         // Add quaternion.
         for (int i=0; i<4; i++) {
-            morphose::json::deviceData["/quat"][i] = _quat[i].value();
-            morphose::json::deviceData["/d-quat"][i] = _quat[i].delta();
+            quatData.add(_quat[i].value());
+            dQuatData.add(_quat[i].delta());
         }
-
+    
         // Add rotation.
+        JsonArray rotData = morphose::json::deviceData["rot"].to<JsonArray>();
+        JsonArray dRotData = morphose::json::deviceData["d-rot"].to<JsonArray>();
         for (int i=0; i<3; i++) {
-            morphose::json::deviceData["/rot"][i] = _rot[i].value();
-            morphose::json::deviceData["/d-rot"][i] = _rot[i].delta();
+            rotData.add(_rot[i].value());
+            dRotData.add(_rot[i].delta());
         }
 
         // Add magnetometer.
-        morphose::json::deviceData["/mag"][0] = getMagX();
-        morphose::json::deviceData["/mag"][1] = getMagY();
-        morphose::json::deviceData["/mag"][2] = getMagZ();
+        JsonArray magData = morphose::json::deviceData["mag"].to<JsonArray>();
+        magData.add(getMagX());
+        magData.add(getMagY());
+        magData.add(getMagZ());
 
         // Useful info ////////////////////////////////////////////
 
@@ -116,8 +121,8 @@ namespace imus {
         // for (int i=0; i<3; i++) msgFull.add(_rot[i].delta());   // delta rotation
 
         // Add accuracy.
-        morphose::json::deviceData["/accur/mag"] = getMagAccuracy();
-        morphose::json::deviceData["/accur/quat"] = degrees(getQuatRadianAccuracy());
+        morphose::json::deviceData["accur-mag"] = getMagAccuracy();
+        morphose::json::deviceData["accur-quat"] = degrees(getQuatRadianAccuracy());
     }
 
     void MorphosesIMU::calibrateBegin() {

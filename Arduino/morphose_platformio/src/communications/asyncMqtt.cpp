@@ -17,7 +17,7 @@ namespace mqtt {
 #define MQTT_HOST IPAddress(192, 168, 0, 200)
 #define MQTT_PORT 1883
 
-AsyncMqttClient mqttClient;
+AsyncMqttClient client;
 TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
 
@@ -43,7 +43,7 @@ uint16_t animId;
 
 void connectToMqtt() {
   osc::debug("Connecting to MQTT...");
-  mqttClient.connect();
+  client.connect();
 }
 
 void WiFiEvent(WiFiEvent_t event) {
@@ -77,7 +77,7 @@ void onMqttConnect(bool sessionPresent) {
   for (int i=0; i < N_ROBOTS; i++) {
     // Create subscription.
     sprintf(ROBOT_RTLS_MQTT_ADDRESS[i], "dwm/node/%s/uplink/location", ROBOT_RTLS_IDS[i]);
-    mqttRobotLocations[i] = mqttClient.subscribe(ROBOT_RTLS_MQTT_ADDRESS[i], 2);
+    mqttRobotLocations[i] = client.subscribe(ROBOT_RTLS_MQTT_ADDRESS[i], 2);
 
    osc::debug(ROBOT_RTLS_MQTT_ADDRESS[i]) ;
    sprintf(buffer,"\nSubscribing at QoS 2, packetId: %d\n",mqttRobotLocations[i]);
@@ -85,7 +85,7 @@ void onMqttConnect(bool sessionPresent) {
   }
 
   sprintf(ROBOT_CUSTOM_MQTT_ADDRESS, "morphoses/robot1/animation", morphose::name);
-  animId = mqttClient.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS, 2);
+  animId = client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS, 2);
   osc::debug(ROBOT_CUSTOM_MQTT_ADDRESS) ;
   sprintf(buffer,"\nSubscribing at QoS 2, packetId: %d\n",animId);
    osc::debug(buffer);
@@ -133,13 +133,13 @@ void initialize() {
 
   WiFi.onEvent(WiFiEvent);
 
-  mqttClient.onConnect(onMqttConnect);
-  mqttClient.onDisconnect(onMqttDisconnect);
-  mqttClient.onSubscribe(onMqttSubscribe);
-  mqttClient.onUnsubscribe(onMqttUnsubscribe);
-  mqttClient.onMessage(onMqttMessage);
-  mqttClient.onPublish(onMqttPublish);
-  mqttClient.setServer(MQTT_HOST, MQTT_PORT);
+  client.onConnect(onMqttConnect);
+  client.onDisconnect(onMqttDisconnect);
+  client.onSubscribe(onMqttSubscribe);
+  client.onUnsubscribe(onMqttUnsubscribe);
+  client.onMessage(onMqttMessage);
+  client.onPublish(onMqttPublish);
+  client.setServer(MQTT_HOST, MQTT_PORT);
 
   network::initialize();
   Serial.println("-------------MQTT initialization done-------------");
