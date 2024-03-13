@@ -9,11 +9,11 @@ class IPAddress;
 namespace morphose {
 
     extern int id;
-    extern char name[16];
+    extern char* name;
     extern int outgoingPort;
     extern bool stream;
 
-    void initialize(IPAddress ip);
+    void initialize();
 
     void update();
 

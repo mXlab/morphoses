@@ -18,9 +18,22 @@
 
 namespace morphose {
 
-    int id;
-    char name[16];
-    int outgoingPort;
+    int id = ROBOT_ID;
+
+    #if ROBOT_ID == 1
+    int outgoingPort = 8110;
+    char* name = "robot1";
+    #elif ROBOT_ID == 2
+    int outgoingPort = 8120;
+    char* name = "robot2";
+    #elif ROBOT_ID == 3
+    int outgoingPort = 8130;
+    char* name = "robot3";
+    #elif ROBOT_ID == 4
+    int outgoingPort = 8140;
+    char* name = "robot4";
+    #endif
+
     bool stream = true;
     Chrono sendRate{true};
 
@@ -32,29 +45,30 @@ namespace morphose {
 
 
 
-    void initialize(IPAddress ip) {
-        setID(ip[3]);
-        setName(id);
-        setOutgoingPort(id);
+    void initialize() {
 
+        Log.infoln("Robot id is set to : %d", id);
+        Log.infoln("Robot name is : %s", name);
+         network::outgoingPort = outgoingPort; // sets port in network file for desired robot port.
+        Log.infoln("Robot streaming port is : %d", network::outgoingPort);
         Log.warningln("Morphose successfully initialized");
     }
 
-    void setID(const int byte) {
-        id = (byte % 100) / 10;
-        Log.infoln("Robot id is set to : %d", id);
-    }
+    // void setID(const int byte) {
+    //     id = ROBOT_ID
+    //     Log.infoln("Robot id is set to : %d", id);
+    // }
 
-    void setName(const int id) {
-        sprintf(name, "robot%d", id);
-        Log.infoln("Robot name is : %s", name);
-    }
+    // void setName(const int id) {
+    //     sprintf(name, "robot%d", id);
+    //     Log.infoln("Robot name is : %s", name);
+    // }
 
-    void setOutgoingPort(const int id) {
-        outgoingPort = 8100 + (id*10);
-        network::outgoingPort = outgoingPort; // sets port in network file for desired robot port.
-        Log.infoln("Robot streaming port is : %d", network::outgoingPort);
-    }
+    // void setOutgoingPort(const int id) {
+    //     outgoingPort = 8100 + (id*10);
+    //     network::outgoingPort = outgoingPort; // sets port in network file for desired robot port.
+    //     Log.infoln("Robot streaming port is : %d", network::outgoingPort);
+    // }
 
     void sayHello() {
         bool lastState = osc::isBroadcasting();
@@ -83,7 +97,7 @@ namespace morphose {
 
     void updateLocation() {
     // Update average positioning.
-    osc::debug("Updating position");
+    // osc::debug("Updating position");
     avgPositionX.put(currPosition.x);
     avgPositionY.put(currPosition.y);
     avgPosition.set(avgPositionX.get(), avgPositionY.get());
@@ -103,7 +117,7 @@ namespace morphose {
     }
 
     void sendData() {
-        osc::debug("Sending data");
+        //osc::debug("Sending data");
         imus::process();
         morphose::navigation::process();
         morphose::navigation::sendInfo();
@@ -294,14 +308,14 @@ namespace energy {
                 //Serial.println("Checking energy");
             #endif
             // Read battery voltage.
-            osc::debug("Checking voltage");
+            // osc::debug("Checking voltage");
             float batteryVoltage = motors::getBatteryVoltage();
             
             // Low voltage: Launch safety procedure.
             if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
                 // Put IMUs to sleep to protect them.
                 osc::debug("Voltage low");
-                logger::error("Voltage low");
+                //logger::error("Voltage low");
                 imus::sleep();
 
                 // Power engine off.
@@ -310,8 +324,7 @@ namespace energy {
                 // If energy level is critical, just shut down the ESP.
                 if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL){
                     osc::debug("Voltage Critical");
-                    logger::error("Voltage Critical");
-                    logger::flush();
+                    //logger::error("Voltage Critical");
 
                 deepSleepCriticalMode(batteryVoltage);
 
