@@ -44,13 +44,37 @@ enum {
 
 #if (ROBOT_ID == 1)
 const  char* cid = "robot1";
-static const char *ROBOT_CUSTOM_MQTT_ADDRESS ="morphoses/robot1";
+static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
+                                            "morphoses/robot1/speed",
+                                            "morphoses/robot1/power",
+                                            "morphoses/robot1/animation",
+                                            "morphoses/robot1/get/data",
+                                            "morphoses/robot1/nav",
+                                            "morphoses/robot1/calib",
+                                            "morphoses/robot1/stream",
+                                            "morphoses/robot1/reboot"};
 #elif (ROBOT_ID == 2)
 const char* cid = "robot2";
-static const char *ROBOT_CUSTOM_MQTT_ADDRESS ="morphoses/robot2";
+static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot2/steer",
+                                            "morphoses/robot2/speed",
+                                            "morphoses/robot2/power",
+                                            "morphoses/robot2/animation",
+                                            "morphoses/robot2/get/data",
+                                            "morphoses/robot2/nav",
+                                            "morphoses/robot2/calib",
+                                            "morphoses/robot2/stream",
+                                            "morphoses/robot2/reboot"};
 #elif (ROBOT_ID == 3)
 const char* cid = "robot3";
-static const char *ROBOT_CUSTOM_MQTT_ADDRESS ="morphoses/robot3";
+static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot3/steer",
+                                            "morphoses/robot3/speed",
+                                            "morphoses/robot3/power",
+                                            "morphoses/robot3/animation",
+                                            "morphoses/robot3/get/data",
+                                            "morphoses/robot3/nav",
+                                            "morphoses/robot3/calib",
+                                            "morphoses/robot3/stream",
+                                            "morphoses/robot3/reboot"};
 #elif (ROBOT_ID == 4)
 const char* cid = "robot4";
 static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
@@ -61,9 +85,8 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
                                             "morphoses/robot1/nav",
                                             "morphoses/robot1/calib",
                                             "morphoses/robot1/stream",
-                                            "morphoses/robot1/reboot",
+                                            "morphoses/robot1/reboot"};
 
-                                            };
 #endif
 
 
