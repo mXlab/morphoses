@@ -135,6 +135,8 @@ namespace json {
             return;
         }
 
+        motors::update();
+
 
         updateLocation();
         //Serial.println("update location done");
@@ -154,8 +156,6 @@ namespace json {
             energy::check();  // Energy checkpoint to prevent damage when low
             Serial.println("energy::check done");
         }
-
-        
     }
 
     void sendData() {
