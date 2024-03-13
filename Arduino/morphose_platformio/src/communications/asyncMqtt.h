@@ -18,8 +18,8 @@ void initialize();
 extern AsyncMqttClient client;
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
-void connect();
-void update();
+void debug(const char * msg);
+
 namespace callbacks {
     void handlePosition(int robot, char* data);
 void handleAnimation(char* data);
