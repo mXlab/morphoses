@@ -98,6 +98,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
 
 uint16_t mqttRobotLocations[N_ROBOTS];
 uint16_t animId;
+int qos = 1;
 
 void connectToMqtt() {
   mqtt::debug("Connecting to MQTT...");
@@ -135,7 +136,7 @@ void onMqttConnect(bool sessionPresent) {
   for (int i=0; i < N_ROBOTS; i++) {
     // Create subscription.
 
-    mqttRobotLocations[i] = client.subscribe(ROBOT_RTLS_MQTT_ADDRESS[i], 2);
+    mqttRobotLocations[i] = client.subscribe(ROBOT_RTLS_MQTT_ADDRESS[i], qos);
 
 
    mqtt::debug(ROBOT_RTLS_MQTT_ADDRESS[i]) ;
@@ -145,15 +146,15 @@ void onMqttConnect(bool sessionPresent) {
 
 
 
-  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[ANIMATION], 2);
-  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[STEER], 2);
-  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[SPEED], 2);
-  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[POWER], 2);
-  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[GET_DATA], 2);
-  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[NAV], 2);
-  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[CALIB], 2);
-  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[STREAM], 2);
-  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[REBOOT], 2);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[ANIMATION], qos);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[STEER], qos);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[SPEED], qos);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[POWER], qos);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[GET_DATA], qos);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[NAV], qos);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[CALIB], qos);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[STREAM], qos);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[REBOOT], qos);
 
 
   
@@ -167,9 +168,9 @@ void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
   }
 }
 
-void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
+void onMqttSubscribe(uint16_t packetId, uint8_t _qos) {
   char buffer[64];
-  sprintf(buffer, "Subscribe acknowledged.\n packetId: %d, qos: %d\n",packetId,qos);
+  sprintf(buffer, "Subscribe acknowledged.\n packetId: %d, qos: %d\n",packetId,_qos);
   mqtt::debug(buffer);
 }
 
@@ -180,47 +181,50 @@ void onMqttUnsubscribe(uint16_t packetId) {
 }
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
-  // char buffer[1024];
-  // sprintf(buffer, "Message received.\n topic: %s\n payload: %s \n qos: %d\n dup: %d\n retain: %d\n len: %zu\n index: %zu\n total: %zu\n",topic,payload,properties.qos,properties.dup,properties.retain,len,index,total);
-  // mqtt::debug(buffer);
+  char buffer[1024];
+  char realPayload [1024];
+  memcpy(realPayload, payload, len);
+  realPayload[len] = '\0';
+  sprintf(buffer, "Message received.\n topic: %s\n payload: %s \n qos: %d\n dup: %d\n retain: %d\n len: %zu\n index: %zu\n total: %zu\n",topic,realPayload,properties.qos,properties.dup,properties.retain,len,index,total);
+  mqtt::debug(buffer);
   
   
   if(strcmp(topic, ROBOT_RTLS_MQTT_ADDRESS[0]) == 0){
     //Serial.println("Position robot1");
-    callbacks::handlePosition(1, payload);
+    callbacks::handlePosition(1, realPayload);
   }else if(strcmp(topic, ROBOT_RTLS_MQTT_ADDRESS[1]) == 0){
     //Serial.println("Position robot2");
-    callbacks::handlePosition(2, payload);
+    callbacks::handlePosition(2, realPayload);
   }else if(strcmp(topic, ROBOT_RTLS_MQTT_ADDRESS[2]) == 0){
     //Serial.println("Position robot3");
-    callbacks::handlePosition(3, payload);
+    callbacks::handlePosition(3, realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[ANIMATION]) == 0){
     //Serial.println("animation");
-    callbacks::handleAnimation(payload);
+    callbacks::handleAnimation(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[STEER]) == 0){
     Serial.println("steer");
-    callbacks::handleSteer(payload);
+    callbacks::handleSteer(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[SPEED]) == 0){
     Serial.println("speed");
-    callbacks::handleSpeed(payload);
+    callbacks::handleSpeed(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[POWER]) == 0){
     Serial.println("power");
-    callbacks::handlePower(payload);
+    callbacks::handlePower(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[GET_DATA]) == 0){
     Serial.println("get data");
-    callbacks::handleGetData(payload);    
+    callbacks::handleGetData(realPayload);    
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[NAV]) == 0){
     Serial.println("nav");
-    callbacks::handleNav(payload);
+    callbacks::handleNav(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[CALIB]) == 0){
     Serial.println("calib");
-    callbacks::handleCalib(payload);
+    callbacks::handleCalib(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[STREAM]) == 0){
     Serial.println("stream");
-    callbacks::handleStream(payload);
+    callbacks::handleStream(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[REBOOT]) == 0){
     Serial.println("reboot");
-    callbacks::handleReboot(payload);
+    callbacks::handleReboot(realPayload);
   }
   
 
@@ -234,7 +238,7 @@ void onMqttPublish(uint16_t packetId) {
 }
 
 void initialize() {
-  Serial.println("-------------MQTT initialization-------------");
+
   mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
   wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(network::initialize));
 
@@ -249,19 +253,17 @@ void initialize() {
   client.setServer(MQTT_HOST, MQTT_PORT);
 
   network::initialize();
-  Serial.println("-------------MQTT initialization done-------------");
+  
 }
 
 void debug(const char *_msg) {
   Serial.println(_msg);
-  client.publish(debugAddress, 0, true, _msg);
+  client.publish(debugAddress, 1, true, _msg);
 }
 namespace callbacks {
   Vec2f robotPositions[N_ROBOTS];
 void handlePosition(int robot, char* data) {
-    // Parse location.
-  //Serial.printf("Handle position %d\n", robot); 
-  
+
   Vec2f newPosition;
   
 JsonDocument doc;
@@ -269,8 +271,9 @@ JsonDocument doc;
 
   // Test if parsing succeeds.
   if (error) {
-    Serial.print(F("deserializeJson() failed: "));
-    Serial.println(error.f_str());
+    char buffer[64];
+    sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
+    mqtt::debug(buffer);
     return;
   }
 
@@ -288,10 +291,6 @@ JsonDocument doc;
      if (robot == morphose::id) {
         morphose::setCurrentPosition(newPosition);
      }
-    
-
-    // TODO(Etienne): Verify with Sofian why whe send a bundle here. There was some commented code in old version here
-    //osc::sendBundle();
   }
 
 }
@@ -303,8 +302,9 @@ void handleAnimation(char* data){
 
   // Test if parsing succeeds.
   if (error) {
-    Serial.print(F("deserializeJson() failed: "));
-    Serial.println(error.f_str());
+    char buffer[64];
+    sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
+    mqtt::debug(buffer);
     return;
   }
     // JSONVar animationData = JSON.parse(data);
@@ -334,26 +334,31 @@ void handleAnimation(char* data){
 void handleSteer(char* payload){
   Serial.println(payload);
     const float val = atof(payload);
-    Serial.printf("Set steer to %.2F\n", val);
+    char buffer[32];
+    sprintf(buffer,"Set steer to %.2F\n", val);
+    mqtt::debug(buffer);
     motors::setEngineSteer(val);
   }
 
   
 void handleSpeed(char* payload){
-    Serial.println(payload);
     const float val = atof(payload);
-    Serial.printf("Set speed to %.2F\n", val);
+    char buffer[32];
+    sprintf(buffer,"Set speed to %.2F\n", val);
+    mqtt::debug(buffer);
     motors::setEngineSpeed(val);
 }
 
 void handlePower(char* payload){
     const int power = atoi(payload);
-    Serial.printf("Set power to %d\n", power);
+    char buffer[32];
+    sprintf(buffer,"Set power to %d\n", power);
+    mqtt::debug(buffer);
     motors::setEnginePower(power);
   }
  
 void handleGetData(char* payload){
-  Serial.println("Get data");
+  mqtt::debug("Get data");
   morphose::sendData();
 }  
   
@@ -361,11 +366,11 @@ void handleNav(char* payload){
 
   char *result = strstr(payload,"stop");
   if(result != NULL){
-    Serial.println("Stop navigation");
+    mqtt::debug("Stop navigation");
     morphose::navigation::stopHeading;
     return;
   }else{
-    Serial.println("Start navigation");
+    mqtt::debug("Start navigation");
     float speed, heading;
     sscanf(payload, "%F %F", &speed, &heading);
     //todo(add fail safe here)
@@ -377,21 +382,21 @@ void handleNav(char* payload){
 void handleCalib(char* payload){
   char *result = strstr(payload,"begin");
   if(result != NULL){
-    Serial.println("Start IMUS calibration");
+    mqtt::debug("Start IMUS calibration");
     imus::beginCalibration();
     return;
   }
 
   result = strstr(payload,"end");
   if(result != NULL){
-    Serial.println("Stop IMUS calibration");
+    mqtt::debug("Stop IMUS calibration");
     imus::endCalibration();
     return;
   }
 
   result = strstr(payload,"save");
   if(result != NULL){
-    Serial.println("Saving imus calibration");
+    mqtt::debug("Saving imus calibration");
     imus::saveCalibration();
     return;
   }
@@ -402,10 +407,10 @@ void handleStream(char* payload){
     const int stream = atoi(payload);
     
     if (stream) {
-      Serial.println("Starting stream");
+      mqtt::debug("Starting stream");
       morphose::stream = 1;
     }else{
-      Serial.println("Stopping stream");
+      mqtt::debug("Stopping stream");
       morphose::stream = 0;
     } 
   }
