@@ -354,7 +354,6 @@ namespace energy {
             char buffer[64];
             sprintf(buffer,"battery voltage : %F \n",batteryVoltage);
             mqtt::debug(buffer);
-            return;
             // Low voltage: Launch safety procedure.
             if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
                 // Put IMUs to sleep to protect them.
