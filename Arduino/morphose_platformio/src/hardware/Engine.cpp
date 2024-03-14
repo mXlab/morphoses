@@ -93,7 +93,7 @@ namespace motors {
     }
 
     void setEngineSteer(float steer) {
-        currentSteer = steer;
+        engineSteer = steer;
         newEngineData = true;
     }
 

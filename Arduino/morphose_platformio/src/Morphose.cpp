@@ -109,9 +109,9 @@ namespace json {
     void updateLocation() {
     // Update average positioning.
 
-    avgPositionX.put(currPosition.x);
-    avgPositionY.put(currPosition.y);
-    avgPosition.set(avgPositionX.get(), avgPositionY.get());
+        avgPositionX.put(currPosition.x);
+        avgPositionY.put(currPosition.y);
+        avgPosition.set(avgPositionX.get(), avgPositionY.get());
     }
 
     void update() {
@@ -136,7 +136,6 @@ namespace json {
         }
 
         motors::update();
-
 
         updateLocation();
         //Serial.println("update location done");
@@ -354,6 +353,8 @@ namespace energy {
             char buffer[64];
             sprintf(buffer,"battery voltage : %F \n",batteryVoltage);
             mqtt::debug(buffer);
+            // still crashing without this early return
+            return;
             // Low voltage: Launch safety procedure.
             if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
                 // Put IMUs to sleep to protect them.
@@ -368,15 +369,12 @@ namespace energy {
                 if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL){
                     mqtt::debug("Voltage Critical");
                     //logger::error("Voltage Critical");
-
-
-                deepSleepCriticalMode(batteryVoltage);
-
+                    deepSleepCriticalMode(batteryVoltage);
                 }
 
                 // Otherwise, sleep but wake up to show that something is wrong.
                 else{
-                deepSleepLowMode(batteryVoltage);
+                    deepSleepLowMode(batteryVoltage);
                 }
             }
         }

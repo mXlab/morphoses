@@ -111,7 +111,7 @@ void setup() {
   pixels::initialize();
   mqtt::debug("LEDS initialized");
 
- animations::initialize();
+  animations::initialize();
 
   mqtt::debug(" Animation initialized");
   animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
@@ -156,7 +156,7 @@ void loop() {
   //logger::info("logger::update ok");
   // // Update OTA.
   updateOTA();
-
+  
  // imus::initialize();
 //  logger::info("imus::initialize ok");
 
