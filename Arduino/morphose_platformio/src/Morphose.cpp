@@ -356,27 +356,27 @@ namespace energy {
             // still crashing without this early return
             return;
             // Low voltage: Launch safety procedure.
-            if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
-                // Put IMUs to sleep to protect them.
-                mqtt::debug("Voltage low");
-                //logger::error("Voltage low");
-                imus::sleep();
+            // if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
+            //     // Put IMUs to sleep to protect them.
+            //     mqtt::debug("Voltage low");
+            //     //logger::error("Voltage low");
+            //     imus::sleep();
 
-                // Power engine off.
-                motors::setEnginePower(false);
+            //     // Power engine off.
+            //     motors::setEnginePower(false);
 
-                // If energy level is critical, just shut down the ESP.
-                if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL){
-                    mqtt::debug("Voltage Critical");
-                    //logger::error("Voltage Critical");
-                    deepSleepCriticalMode(batteryVoltage);
-                }
+            //     // If energy level is critical, just shut down the ESP.
+            //     if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL){
+            //         mqtt::debug("Voltage Critical");
+            //         //logger::error("Voltage Critical");
+            //         deepSleepCriticalMode(batteryVoltage);
+            //     }
 
-                // Otherwise, sleep but wake up to show that something is wrong.
-                else{
-                    deepSleepLowMode(batteryVoltage);
-                }
-            }
+            //     // Otherwise, sleep but wake up to show that something is wrong.
+            //     else{
+            //         deepSleepLowMode(batteryVoltage);
+            //     }
+            // }
         }
     }  // namespace energy
 }  // namespace morphose

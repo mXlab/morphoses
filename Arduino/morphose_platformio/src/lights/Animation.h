@@ -5,7 +5,7 @@
 #include "lights/Pixels.h"
 #include "pq_trig8.h"
 
-#define COLOR_DEBUGGING true
+#define COLOR_DEBUGGING false
 #define DEBUG_COLOR_A 0
 #define DEBUG_COLOR_B 1
 
