@@ -362,8 +362,7 @@ void handleNav(char* payload){
   char *result = strstr(payload,"stop");
   if(result != NULL){
     mqtt::debug("Stop navigation");
-    morphose::navigation::stopHeading;
-    return;
+    morphose::navigation::stopHeading();
   }else{
     mqtt::debug("Start navigation");
     float speed, heading;
