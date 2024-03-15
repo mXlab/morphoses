@@ -258,11 +258,13 @@ void messageReceived(String topic, byte[] payload) {
       
    // Receive begin with title.
   } else if (topic.equals(MQTT_TOPIC_BEGIN)) {
-        // Get title.
+    // Get title.
     behaviorTitle = new String(payload);
     
     // Reinitialize values.
     values.clear();
+    minReward = +9999;
+    maxReward = -9999;
     
     // Switch to title mode and start timer.
     titleMode = true;
