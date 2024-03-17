@@ -202,14 +202,14 @@ def reward_simple_sync2(world, agent):
     # If you are flashing.
     if flash:
         if last_action == 1: # was already flashing
-            reward -= 10
+            reward -= 100
         else:
             if timer <= flash_tolerance:
                 reward += 100
             elif timer <= 2*flash_tolerance:
                 reward += 10
             else:
-                reward -= 10
+                reward -= 100
     
     print("** flash *** agent={} f={} steps={}({}) last={} curr={} timer={} ==> reward={}".format(agent.get_name(), flash, steps_since_flash_absolute, steps_since_flash, last_action, action, timer, reward))
 
