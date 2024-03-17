@@ -227,14 +227,14 @@ class Messaging:
         self.manager.set_current_agent(robot_name, behavior_name)
 
     def send_animation(self, robot_name, animation):
-        animation = {
-            "base": [255, 255, 255, 255],
-            "alt": [0, 0, 0, 0],
-            "period": 4,
-            "noise": 0.1,
-            "region": 0,
-            "type": 0
-        }
+        # animation = {
+        #     "base": [255, 255, 255, 255],
+        #     "alt": [0, 0, 0, 0],
+        #     "period": 4,
+        #     "noise": 0.1,
+        #     "region": 0,
+        #     "type": 0
+        # }
         self.send(robot_name, "/animation", animation)
 
 def interrupt(signup, frame):
