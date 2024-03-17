@@ -156,4 +156,9 @@ Documents/
 
 # Custom
 Js
-
+*.psd
+*.zip
+*.old
+*.bckp
+*.backup
+Config.h
