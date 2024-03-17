@@ -284,7 +284,6 @@ class RobotData(EntityData):
         self.store(['rx', 'ry', 'rz'], rot, t, delta=dRot)
         
     def store_rotation_data_main(self, data, t, zOffset=0):
-        print("store_rotation_data_main: {} {}".format(str(data), t))
         quat, dQuat, rot, dRot = self.extract_data(data, zOffset)
         self.store(['mqx', 'mqy', 'mqz', 'mqw'], quat, t, delta=dQuat)
         self.store(['mrx', 'mry', 'mrz'], rot, t, delta=dRot)        
@@ -720,4 +719,3 @@ class World:
         return
         # for robot_name in self.robots:
         #     self.messaging.send_info("/{}/pos".format(robot_name), [self.get(robot_name, 'x'), self.get(robot_name, 'y')])
-
