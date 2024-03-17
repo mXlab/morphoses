@@ -465,7 +465,7 @@ class World:
 
     def do_action(self, agent, action, action_manager):
         # Store action in entity.
-        # self.entities[agent.get_name()].store_action(action, self.get_time())
+        self.entities[agent.get_name()].store_action(action, self.get_time())
         action_manager.start_action(action)
         while action_manager.step_action():
             self.messaging.loop()
