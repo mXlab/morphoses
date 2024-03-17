@@ -318,7 +318,7 @@ class RobotData(EntityData):
             else:
                 steps_since_flash = self.get('steps_since_flash').get(False) + 1
         
-        timer_max_time = 10.0
+        timer_max_time = 15
         timer = (t % timer_max_time) / timer_max_time
 
         # Store action.
