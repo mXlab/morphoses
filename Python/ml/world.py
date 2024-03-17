@@ -493,14 +493,12 @@ class World:
 
     def start_navigation(self, agent, speed, direction):
         name = self.agent_as_name(agent)
-        entity = self.entities[name]
-        self.messaging.send(name, "/nav/start", [speed, map(direction, -1, 1, 90, -90)])
+        self.messaging.send(name, "/nav", { 'action': "start", 'speed': speed, 'heading': map(direction, -1, 1, 90, -90) })
 
     def end_navigation(self, agent):
         name = self.agent_as_name(agent)
-        entity = self.entities[name]
-        self.messaging.send(name, "/nav/stop")
-
+        self.messaging.send(name, "/nav", { 'action': "stop" })
+        
     # Stop mode: depending on success.
     def display_stop(self, agent, success):
         if success:

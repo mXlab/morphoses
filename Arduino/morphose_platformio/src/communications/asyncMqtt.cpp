@@ -260,8 +260,8 @@ void handlePosition(int robot, char* data) {
 
   Vec2f newPosition;
   
-JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, data);
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, data);
 
   // Test if parsing succeeds.
   if (error) {
@@ -359,18 +359,37 @@ void handleGetData(char* payload){
   
 void handleNav(char* payload){
 
-  char *result = strstr(payload,"stop");
+  char *result = strstr(payload, "stop");
   if(result != NULL){
     mqtt::debug("Stop navigation");
-    morphose::navigation::stopHeading;
+    morphose::navigation::stopHeading();
     return;
   }else{
-    mqtt::debug("Start navigation");
-    float speed, heading;
-    sscanf(payload, "%F %F", &speed, &heading);
-    //todo(add fail safe here)
-    morphose::navigation::startHeading(speed, heading);
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, payload);
 
+    // Test if parsing succeeds.
+    if (error) {
+      char buffer[128];
+      sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
+      mqtt::debug(buffer);
+      return;
+    }
+
+    const char* action = doc["action"].as<const char*>();
+
+    if (strcmp(action, "stop") == 0) {
+      morphose::navigation::stopHeading();      
+    }
+
+    else if (strcmp(action, "start") == 0) {
+      float speed = doc["speed"].as<float>();
+      if (doc.containsKey("heading"))
+        morphose::navigation::startHeading(speed, doc["heading"].as<float>());
+      else
+        morphose::navigation::startHeading(speed);
+    }
+    //todo(add fail safe here)
   }
 }
  
