@@ -23,6 +23,7 @@ final int N_POINTS = 100;
 
 // Title screen duration (in seconds).
 final float TITLE_DURATION = 8.0;
+final float SUBTITLE_START_TIME = TITLE_DURATION + 4.0;
 
 // MQTT communication.
 MQTTClient client;
@@ -47,26 +48,32 @@ boolean titleMode = false;
 String behaviorTitle = "";
 
 PImage robotLogo;
-final int robotLogoSize = 100;
-final int robotLogoOffset = 50;
-final float robotLogoShake = 1;
+final int ROBOT_LOGO_SIZE = 100;
+final int ROBOT_LOGO_OFFSET = 50;
+final float ROBOT_LOGO_SHAKE = 1;
+
+final int TITLE_SIZE = 48;
+final int SUBTITLE_SIZE = 32;
 
 final color COLOR_REWARD_MAX = #00ff00;
 final color COLOR_REWARD_MIN = #ff0000;
-final color COLOR_DATA = color(255, 128);
+final float LINE_WEIGHT_REWARD = 3;
+
+final color COLOR_DATA = color(255, 48);
+final float LINE_WEIGHT_DATA = 3;
 
 float minHeight;
 float maxHeight;
 
-float HEIGHT_MIN;
-float HEIGHT_MAX;
+final float BORDER_TOP    = ROBOT_LOGO_SIZE + 2*ROBOT_LOGO_OFFSET;
+final float BORDER_BOTTOM = 2*ROBOT_LOGO_OFFSET + SUBTITLE_SIZE;
 
 void setup() {
   fullScreen(P2D, 0);
 //  size(640, 480);
 //  size(1920, 1080);
-  minHeight = height*0.9;
-  maxHeight = height*0.1;
+  maxHeight = BORDER_TOP;
+  minHeight = height - BORDER_BOTTOM;
 
   // Ininialize.
   client = new MQTTClient(this);
@@ -85,14 +92,11 @@ void setup() {
   MQTT_TOPIC_BEGIN = MQTT_PATH_ROOT + "/all/info/begin";
   
   // Load corresponding image.
-  robotLogo = loadImage(robotName + "_blanc_fond_transparent.png");
+  robotLogo = loadImage(robotName + "_blanc_fond_noir.jpg");
 
-  // Smooth drawing.
+  // Image adjustements.
   smooth();
-
-  // Initialize text parameters.
-  textSize(48);
-  textAlign(CENTER, CENTER);
+  noCursor();
 }
 
 void draw() {
@@ -102,6 +106,9 @@ void draw() {
   // Title mode //////////////////////////////////////////////////////////////
   if (titleMode) {
     // Write the title.
+    fill(255);
+    textSize(TITLE_SIZE);
+    textAlign(CENTER, CENTER);
     text(behaviorTitle, width/2, height/2);
     
     // Check if the title duration has passed.
@@ -127,14 +134,16 @@ void draw() {
         int k = (values.size()-1) - i;
         if (0 <= k && k < values.size()) {
           // Draw the line segments for each part of the point.
-          strokeWeight(1);
           float[] point = getY(values, k);
           for (int j=0; j<point.length; j++) {
-            // Determine color.
+            // Reward line.
             if (j == point.length-1) {
+              strokeWeight(LINE_WEIGHT_REWARD);
               gradientLine(x, point[j], prevX, prevPoint[j]);
             }
+            // Data line.
             else {
+              strokeWeight(LINE_WEIGHT_DATA);
               stroke(COLOR_DATA);
               line(x, point[j], prevX, prevPoint[j]);
             }
@@ -148,15 +157,23 @@ void draw() {
     }
     
     // Draw logo.
-    if (values.size() > 0) {
-      float[] lastPoint = values.get(values.size()-1);
-      tint(getColorReward(lastPoint[lastPoint.length-1]));
+    //if (values.size() > 0) {
+    //  float[] lastPoint = values.get(values.size()-1);
+    //  tint(getColorReward(lastPoint[lastPoint.length-1]));
+    //}
+    //else
+    //  tint(getColorReward(0.5));
+    image(robotLogo, width-ROBOT_LOGO_SIZE-ROBOT_LOGO_OFFSET+random(-ROBOT_LOGO_SHAKE,ROBOT_LOGO_SHAKE), 
+                     ROBOT_LOGO_OFFSET+random(-ROBOT_LOGO_SHAKE,ROBOT_LOGO_SHAKE), 
+                     ROBOT_LOGO_SIZE, ROBOT_LOGO_SIZE);
+
+    // Write the title.
+    if (watch.second() >= SUBTITLE_START_TIME) {
+      textAlign(RIGHT, TOP);
+      fill(192);
+      textSize(SUBTITLE_SIZE);
+      text(behaviorTitle, width - ROBOT_LOGO_OFFSET, height - BORDER_BOTTOM + ROBOT_LOGO_OFFSET);
     }
-    else
-      tint(getColorReward(0.5));
-    image(robotLogo, width-robotLogoSize-robotLogoOffset+random(-robotLogoShake,robotLogoShake), 
-                     robotLogoOffset+random(-robotLogoShake,robotLogoShake), 
-                     robotLogoSize, robotLogoSize);
   }
 }
 
@@ -226,7 +243,7 @@ void gradientLine(float x1, float y1, float x2, float y2) {
     float gradient = map(y, minHeight, maxHeight, 0, 1);
     
     // Calculate the color for the current step
-    int currentColor = lerpColor(COLOR_REWARD_MIN, COLOR_REWARD_MAX, gradient);
+    int currentColor = lerpColor(COLOR_REWARD_MIN, COLOR_REWARD_MAX, gradient); //<>//
     
     // Set the stroke color
     stroke(currentColor);
@@ -253,12 +270,16 @@ void messageReceived(String topic, byte[] payload) {
   // Receive data.
   if (topic.equals(MQTT_TOPIC_DATA)) {
     nValuesReceived++;
-    if (nValuesReceived > 5)
+    if (nValuesReceived >= 2) // drop the first one
       values.add(getValues(parseJSONArray(new String(payload))));
       
-   // Receive begin with title.
+  // Receive begin with title.
   } else if (topic.equals(MQTT_TOPIC_BEGIN)) {
-        // Get title.
+    nValuesReceived = 0;
+    minReward = +9999;
+    maxReward = -9999;
+    
+    // Get title.
     behaviorTitle = new String(payload);
     
     // Reinitialize values.
