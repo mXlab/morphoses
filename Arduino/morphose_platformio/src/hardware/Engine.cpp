@@ -91,10 +91,10 @@ namespace motors {
 
         // motor torque is off. no need to update anything
         if(!enginePower){ 
-            Serial.println("motors off. leaving function");
+            //Serial.println("motors off. leaving function");
             return;
         }else{
-            Serial.println("motors on. continuing");
+            //Serial.println("motors on. continuing");
             if(updateEngineSteer){
                 updateEngineSteer = false;
                 dxl.setGoalPosition(DXL_ID_STEER, utils::safeRemapNorm(engineSteer, MOTORS_STEER_MAX, MOTORS_STEER_MIDDLE), UNIT_DEGREE);
@@ -131,11 +131,12 @@ namespace motors {
     float engineIsMovingForward() { return (currentSpeed >= 0); }
 
     float getBatteryVoltage() {
-        int voltage = dxl.readControlTableItem(PRESENT_INPUT_VOLTAGE, DXL_ID_SPEED);
+        int voltage = dxl.readControlTableItem(PRESENT_INPUT_VOLTAGE, DXL_ID_SPEED, 100U);
         
         if(voltage == 0){
-            
-            dxlErrorToSring(dxl.getLastLibErrCode());
+            dxlPacketErrorToString(dxl.getLastStatusPacketError());
+            dxlLibErrorToString(dxl.getLastLibErrCode());
+
         }
         // todo : maybe add fail safe if return 0
         return (voltage / 10.0f);
@@ -156,8 +157,33 @@ namespace motors {
         morphose::json::deviceData["battery"] = getBatteryVoltage();
     }
 
-
-    void dxlErrorToSring(DXLLibErrorCode_t  error){
+    void dxlPacketErrorToString(int  error){
+        switch (error)
+        {
+        case 0:
+            mqtt::debug("DXL PACKET ERROR: Result Fail");
+            break;
+        case 1:
+            mqtt::debug("DXL PACKET ERROR: Instruction Error");
+            break;
+        case 2:
+            mqtt::debug("DXL PACKET PERROR: CRC Error");
+            break;
+        case 3:
+            mqtt::debug("DXL PACKET ERROR: Data Range Error");
+            break;
+        case 4:
+            mqtt::debug("DXL PACKET ERROR: Data Length Error");
+            break;
+        case 5:
+            mqtt::debug("DXL PACKET ERROR: Data Limit Error");
+            break;
+        case 6:
+            mqtt::debug("DXL PACKET ERROR: Access Error");
+            break;
+        }
+    }
+    void dxlLibErrorToString(DXLLibErrorCode_t  error){
         switch (error)
         {
         case 0:
