@@ -63,7 +63,7 @@ using namespace pq;
 
 #include "communications/asyncMqtt.h"
 #include "communications/Network.h"
-#include "communications/osc.h"
+
 #include "communications/OTA.h"
 
 #include "hardware/Engine.h"
@@ -72,7 +72,7 @@ using namespace pq;
 #include "lights/Animation.h"
 #include "lights/Pixels.h"
 
-#include "Logger.h"
+// #include "Logger.h"
 #include "Morphose.h"
 #include "Utils.h"
 
@@ -103,8 +103,9 @@ void setup() {
 
   animations::initialize();
   mqtt::debug(" Animation initialized");
-  animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
-
+  #if defined(MORPHOSE_DEBUG)
+    animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
+  #endif
   imus::initialize();
   mqtt::debug(" IMU initialized");
 

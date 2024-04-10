@@ -43,22 +43,15 @@ namespace json {
 
 namespace navigation {
         void start();
-
         void startHeading(float speed, float relativeHeading = 0);
-
         void stepHeading();
 
         // Returns the quality of the velocity calculation from 0% to 100% ie. [0..1]
         float getVelocityQuality();
-
         void stopHeading();
-
         void process();
-
         Vec2f getVelocity();
-
         float getVelocityHeading(); 
-
         void collectData();
 
     }  // namespace navigation

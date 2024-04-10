@@ -3,7 +3,7 @@
 #include <Dynamixel2Arduino.h>
 #include <Wire.h>
 
-//#include "communications/osc.h"
+
 #include "Morphose.h"
 #include "communications/asyncMqtt.h"
 #include "Utils.h"
@@ -106,9 +106,6 @@ namespace motors {
             unlockMutex();
         }
     }
-    //todo: remove? 
-    void update() {
-    }
 
     void setEnginePower(bool on) {
         if (lockMutex()) {
@@ -195,26 +192,18 @@ namespace motors {
         }
         return temperature;
     }
-
     void collectData() {
-        Serial.println("inside collect data");
-        //if (lockMutex()) {
-            Serial.println("getEngineSpeed();");
+
+
             float speed   = getEngineSpeed();
-            Serial.println("getEngineSteer();");
             float steer   = getEngineSteer();
             float battery = getBatteryVoltage();
-            Serial.println("getBatteryVoltage();");
-            
-            //unlockMutex();
 
             morphose::json::deviceData["speed"]   = speed;
             morphose::json::deviceData["steer"]   = steer;
             morphose::json::deviceData["battery"] = battery;
-        //}
+
     }
-
-
     void dxlPacketErrorToString(int  error){
         switch (error)
         {

@@ -2,13 +2,13 @@
 
 #include <ArduinoLog.h>
 
-#include "communications/osc.h"
+
 #include "lights/Animation.h"
 #include "lights/Pixels.h"
 #include "Morphose.h"
 #include "hardware/Engine.h"
 #include "hardware/IMU.h"
-#include "Logger.h"
+
 #include "Network.h"
 #include <ArduinoJson.h>
 #include <VectorXf.h>
@@ -285,7 +285,6 @@ void handlePosition(int robot, char* data) {
   
   if ((int)position["quality"] > 50) {
     // Set current position.
-    //Serial.println("Quality > 50");
     newPosition = Vec2f((float)double(position["x"]), (float)double(position["y"]));
     
     // buffer all robot positions
@@ -335,11 +334,11 @@ void handleAnimation(char* data){
 
 
 void handleSteer(char* payload){
-  // Serial.println(payload);
     const float val = atof(payload);
-    // char buffer[32];
-    // sprintf(buffer,"Set steer to %.2F\n", val);
-    // mqtt::debug(buffer);
+
+    char buffer[32];
+    sprintf(buffer,"Set steer to %.2F\n", val);
+    mqtt::debug(buffer);
 
     motors::setEngineSteer(val);
   }
@@ -347,14 +346,17 @@ void handleSteer(char* payload){
   
 void handleSpeed(char* payload){
     const float val = atof(payload);
-    // char buffer[32];
-    // sprintf(buffer,"Set speed to %.2F\n", val);
-    // mqtt::debug(buffer);
+
+    char buffer[32];
+    sprintf(buffer,"Set speed to %.2F\n", val);
+    mqtt::debug(buffer);
+
     motors::setEngineSpeed(val);
 }
 
 void handlePower(char* payload){
     const int power = atoi(payload);
+
     char buffer[32];
     sprintf(buffer,"Set power to %d\n", power);
     mqtt::debug(buffer);
@@ -363,7 +365,6 @@ void handlePower(char* payload){
   }
  
 void handleGetData(char* payload){
-  //mqtt::debug("Get data");
   morphose::sendData();
 }  
   
