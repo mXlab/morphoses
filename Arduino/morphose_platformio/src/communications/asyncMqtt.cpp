@@ -349,6 +349,7 @@ void handlePower(char* payload){
     char buffer[32];
     sprintf(buffer,"Set power to %d\n", power);
     mqtt::debug(buffer);
+    
     motors::setEnginePower(power);
   }
  

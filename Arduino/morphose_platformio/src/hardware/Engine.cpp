@@ -3,7 +3,9 @@
 #include <Dynamixel2Arduino.h>
 #include <Wire.h>
 
-#include "communications/osc.h"
+//#include "communications/osc.h"
+#include "Morphose.h"
+#include "communications/asyncMqtt.h"
 #include "Utils.h"
 
 #define MOTORS_SPEED_MAX 70
@@ -54,6 +56,7 @@ namespace motors {
 
         enginePower = false;
 
+        // todo : verify if baudrate is too slow
         // Set Port baudrate to 57600bps for DYNAMIXEL motors.
         if (lockMutex()) {
             dxl.begin(57600);
@@ -106,7 +109,6 @@ namespace motors {
             unlockMutex();
         }
     }
-
     void setEngineSteer(float steer) {
         if (lockMutex()) {
             currentSteer = steer;
@@ -116,6 +118,7 @@ namespace motors {
         }
     }
 
+    //todo : should read from dxl instead
     float getEngineSpeed() { return currentSpeed; }
     float getEngineSteer() { return currentSteer; }
     float engineIsMovingForward() { return (currentSpeed >= 0); }
