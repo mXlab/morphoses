@@ -36,6 +36,7 @@ namespace morphose {
     void sendData();
 
 namespace json {
+
     extern JsonDocument deviceData;
 }
 

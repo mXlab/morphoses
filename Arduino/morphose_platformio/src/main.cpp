@@ -105,7 +105,7 @@ void setup() {
   motors::initialize();
   mqtt::debug("Motors initialized");
 
-  morphose::energy::check();
+  //morphose::energy::check();
   mqtt::debug("Energy initialized");
 
   pixels::initialize();

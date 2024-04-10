@@ -55,6 +55,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
                                               "morphoses/robot1/reboot"};
                                             
 const char* debugAddress  = "morphoses/robot1/debug";
+const char* temperatureAddress  = "morphoses/robot1/temperature";
 
 #elif (ROBOT_ID == 2)
 const char* cid = "robot2";
@@ -68,6 +69,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot2/steer",
                                             "morphoses/robot2/stream",
                                             "morphoses/robot2/reboot"};
 const char* debugAddress  = "morphoses/robot2/debug";
+const char* temperatureAddress  = "morphoses/robot2/temperature";
 #elif (ROBOT_ID == 3)
 const char* cid = "robot3";
 static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot3/steer",
@@ -81,6 +83,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot3/steer",
                                             "morphoses/robot3/reboot"};
 
 const char* debugAddress  = "morphoses/robot3/debug";
+const char* temperatureAddress  = "morphoses/robot3/temperature";
 #elif (ROBOT_ID == 4)
 const char* cid = "robot4";
 static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
@@ -99,6 +102,10 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
 uint16_t mqttRobotLocations[N_ROBOTS];
 uint16_t animId;
 int qos = 1;
+
+void sendTemperature(const char* msg){
+  client.publish(temperatureAddress, 1, true, msg);
+}
 
 void connectToMqtt() {
   mqtt::debug("Connecting to MQTT...");
@@ -251,8 +258,10 @@ void initialize() {
 }
 
 void debug(const char *_msg) {
+  #if defined(MORPHOSE_DEBUG)
   Serial.println(_msg);
-  // client.publish(debugAddress, 1, true, _msg);
+  #endif
+  client.publish(debugAddress, 1, true, _msg);
 }
 namespace callbacks {
   Vec2f robotPositions[N_ROBOTS];
@@ -349,7 +358,7 @@ void handlePower(char* payload){
     char buffer[32];
     sprintf(buffer,"Set power to %d\n", power);
     mqtt::debug(buffer);
-    
+
     motors::setEnginePower(power);
   }
  

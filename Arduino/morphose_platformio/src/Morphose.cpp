@@ -54,6 +54,7 @@ namespace morphose {
 
 namespace json {
     JsonDocument deviceData;
+
 }
 
 
@@ -118,20 +119,24 @@ namespace json {
         if(sendDataFlag){
             Serial.println("inside send data flag");
             sendDataFlag = false;
+
             json::deviceData.clear();
             Serial.println("json::deviceData cleared");
-            
+
             imus::collectData();
             Serial.println("imu::collectData done");
             morphose::navigation::collectData();
             Serial.println("navigation::collectData done");
+            //get data stop here.
             motors::collectData();
             Serial.println("motors::collectData done");
+
             serializeJson(json::deviceData, jsonString);
             Serial.println("serializeJson done");
             // serializeJsonPretty(json::deviceData, Serial);
             mqtt::client.publish(topicName, 0, true, jsonString);
             Serial.println("mqtt::client.publish done");
+            
             return;
         }
 
@@ -327,7 +332,7 @@ namespace energy {
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
             // Wakeup every 10 seconds.
             esp_sleep_enable_timer_wakeup(ENERGY_VOLTAGE_LOW_WAKEUP_TIME * 1000000UL);
-
+            mqtt::debug("Battery low2");
             // Go to sleep.
             esp_deep_sleep_start();
         }
