@@ -46,6 +46,7 @@ namespace morphose {
     char jsonString[1024];
     
     Chrono sendRate{true};
+    Chrono moterCheckTimer{true};
 
     Vec2f currPosition;
     pq::Smoother avgPositionX(AVG_POSITION_TIME_WINDOW);
@@ -157,6 +158,11 @@ namespace json {
                 // osc::sendBundle();
                 // publish JSON data
             }
+            
+        }
+
+        if(moterCheckTimer.hasPassed(1000, true)){
+            motor::checkTemperature();
             energy::check();  // Energy checkpoint to prevent damage when low
             Serial.println("energy::check done");
         }
@@ -332,7 +338,6 @@ namespace energy {
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
             // Wakeup every 10 seconds.
             esp_sleep_enable_timer_wakeup(ENERGY_VOLTAGE_LOW_WAKEUP_TIME * 1000000UL);
-            mqtt::debug("Battery low2");
             // Go to sleep.
             esp_deep_sleep_start();
         }
