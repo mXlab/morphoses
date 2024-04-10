@@ -10,8 +10,11 @@
 namespace motors {
 
   void initialize();
-
+  void update();
+  void checkTemperature();
   void setEnginePower(bool on);
+  void setEngineSpeedPower(bool on);
+  void setEngineSteerPower(bool on);
   void setEngineSpeed(float speed);
   void setEngineSteer(float steer);
   float getEngineSpeed();
