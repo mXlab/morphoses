@@ -39,7 +39,6 @@
 /**
  *  /communications
  *   | osc
- *   | network
  *   | mqtt
  *   | ota
  *  
@@ -94,24 +93,15 @@ void setup() {
   morphose::initialize();  // cannot send message before this point. Morphose needs to be initialized
  
   mqtt::initialize();
-  // network::initialize();
   mqtt::debug(" MQTT initialized");
-  mqtt::debug("Network initialized");
-
-  char buff[32];
-  sprintf(buff,"Osc broadcast state: %d\n",  osc::isBroadcasting());
-  mqtt::debug(buff);
 
   motors::initialize();
   mqtt::debug("Motors initialized");
-
-
 
   pixels::initialize();
   mqtt::debug("LEDS initialized");
 
   animations::initialize();
-
   mqtt::debug(" Animation initialized");
   animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
 
@@ -126,7 +116,6 @@ void setup() {
   morphose::energy::check();
   mqtt::debug("Energy initialized");
 
-  // morphose::sayHello();
   mqtt::debug("---------------- End of setup ----------------");
 
   Serial.println("End of setup");
@@ -157,19 +146,15 @@ void loop() {
 
  // logger::update();
   //logger::info("logger::update ok");
+
   // // Update OTA.
-  updateOTA();
+   updateOTA();
   
- // imus::initialize();
-//  logger::info("imus::initialize ok");
 
 //  logger::info("mqtt::update ok");
 
-  morphose::update();
+   morphose::update();
 // logger::info("morphose::update ok");
-
-//osc::update();
-// logger::info("osc::update ok");
 
   //checkMemory();
 }

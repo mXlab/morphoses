@@ -26,6 +26,7 @@ namespace motors {
   void collectData();
   void dxlLibErrorToString(DXLLibErrorCode_t  error);
   void dxlPacketErrorToString(int  error);
+  void checkTemperature();
 
 }  // namespace motors
 #endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_HARDWARE_ENGINE_H_
