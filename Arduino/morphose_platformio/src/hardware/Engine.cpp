@@ -39,7 +39,12 @@ namespace motors {
 
     float currentSpeed;
     float currentSteer;
-    bool enginePower; // todo : remove?
+
+    bool speedTemperatureCritical;
+    bool steerTemperatureCritical;
+
+    bool engineSpeedPower;
+    bool engineSteerPower;
 
     bool lockMutex() {
         return (xSemaphoreTake (dxlMutex, portMAX_DELAY));
@@ -54,7 +59,8 @@ namespace motors {
         // Create mutex.
         dxlMutex = xSemaphoreCreateMutex();
 
-        enginePower = false; // todo: remove?
+        engineSpeedPower = engineSteerPower = false;
+        speedTemperatureCritical = steerTemperatureCritical = false;
 
         // todo : verify if baudrate is too slow
         // Set Port baudrate to 57600bps for DYNAMIXEL motors.
@@ -85,8 +91,6 @@ namespace motors {
                 Serial.println("found steer motor with baud 1000000");
             }
 
-
-
             // Turn off torque when configuring items in EEPROM area
             dxl.torqueOff(DXL_ID_SPEED);
             dxl.torqueOff(DXL_ID_STEER);
@@ -110,21 +114,86 @@ namespace motors {
     void update() {
     }
 
+
+    void checkTemperature() {
+        static bool engineSpeedPowerSave = false;
+        static bool engineSteerPowerSave = false;
+
+        int speedTemperature = getEngineSpeedTemperature();
+        int steerTemperature = getEngineSteerTemperature();
+        
+        char buffer[64];
+        sprintf(buffer,"Engine Speed Temperature: %d. Engine Steering Temperature: %d", speedTemperature, steerTemperature);
+        mqtt::sendTemperature(buffer);
+
+        // High temperature: Launch safety procedure.
+
+        // Critical speed motor temperature: disable motor.
+        if (speedTemperature >= MOTOR_TEMPERATURE_CRITICAL) {
+            speedTemperatureCritical = true;
+            engineSpeedPowerSave = engineSpeedPower; // Keep trace of current power state.
+            setEngineSpeedPower(false);
+        }
+        // Speed motor has cooled down: re-enable motor.
+        else if (speedTemperatureCritical && speedTemperature <= MOTOR_TEMPERATURE_COOLDOWN) {
+            speedTemperatureCritical = false;
+            setEngineSpeedPower(engineSpeedPowerSave); // Reset engine power state.
+        }
+
+        // Critical steering motor temperature: disable motor.
+        if (steerTemperature >= MOTOR_TEMPERATURE_CRITICAL) {
+            steerTemperatureCritical = true;
+            engineSteerPowerSave = engineSteerPower; // Keep trace of current power state.
+            setEngineSteerPower(false);
+        }
+        // Steering motor has cooled down: re-enable motor.
+        else if (steerTemperatureCritical && steerTemperature <= MOTOR_TEMPERATURE_COOLDOWN) {
+            steerTemperatureCritical = false;
+            setEngineSteerPower(engineSteerPowerSave);  // Reset engine power state.
+        }
+    }
+
     void setEnginePower(bool on) {
+        setEngineSpeedPower(on);
+        setEngineSteerPower(on);
+    }
+
+    void setEngineSpeedPower(bool on) {
         if (lockMutex()) {
-            if (on) {
-                dxl.torqueOn(DXL_ID_SPEED);
-                dxl.torqueOn(DXL_ID_STEER);
-            }
-            else {
+            engineSpeedPower = on;
+
+            // Turn off.
+            if (!on)
                 dxl.torqueOff(DXL_ID_SPEED);
+            
+            // If temperature is critical, do not turn on.
+            else if (!speedTemperatureCritical)
+                dxl.torqueOn(DXL_ID_SPEED);
+
+            unlockMutex();
+        }
+    }
+
+    void setEngineSteerPower(bool on) {
+        if (lockMutex()) {
+            engineSteerPower = on;
+
+            // Turn off.
+            if (!on)
                 dxl.torqueOff(DXL_ID_STEER);
-            }
+            
+            // If temperature is critical, do not turn on.
+            else if (!steerTemperatureCritical)
+                dxl.torqueOn(DXL_ID_STEER);
+
             unlockMutex();
         }
     }
 
     void setEngineSpeed(float speed) {
+        if (speedTemperatureCritical)
+            return;
+        
         if (lockMutex()) {
             currentSpeed = speed;
             dxl.setGoalVelocity(DXL_ID_SPEED, utils::safeRemapNorm(currentSpeed, MOTORS_SPEED_MAX), UNIT_RAW);  // +n=CCW, -n=CW
@@ -132,6 +201,9 @@ namespace motors {
         }
     }
     void setEngineSteer(float steer) {
+        if (steerTemperatureCritical)
+            return;
+        
         if (lockMutex()) {
             currentSteer = steer;
             dxl.setGoalPosition(DXL_ID_STEER, utils::safeRemapNorm(currentSteer, MOTORS_STEER_MAX, MOTORS_STEER_MIDDLE), UNIT_DEGREE);
@@ -159,23 +231,6 @@ namespace motors {
         return voltage;
     }
 
-    void checkTemperature(){
-        char buffer[64];
-        int t = getEngineSpeedTemperature();
-        int t1 = getEngineSteerTemperature();
-        
-        sprintf(buffer,"Engine Speed Temperature: %d. Engine Steering Temperature: %d", t, t1);
-        mqtt::sendTemperature(buffer);
-
-        if(t > 60 || t1 > 60){
-            setEnginePower(false);
-        
-        }
-
-
-        
- 
-    }
 
 // todo : these functions could be collapsed into one if we pass motor id as a parameter
     int getEngineSpeedTemperature() {

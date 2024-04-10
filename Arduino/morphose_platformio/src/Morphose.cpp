@@ -162,7 +162,7 @@ namespace json {
         }
 
         if(moterCheckTimer.hasPassed(1000, true)){
-            motor::checkTemperature();
+            motors::checkTemperature();
             energy::check();  // Energy checkpoint to prevent damage when low
             Serial.println("energy::check done");
         }
@@ -332,58 +332,49 @@ namespace energy {
         // RTC_DATA_ATTR float   savedBatteryVoltage = -1;
 
         void deepSleepLowMode(float batteryVoltage) {
-            // osc::bundle.add("/error").add("battery-low").add(batteryVoltage);
-            // osc::sendBundle();
             mqtt::debug("Battery low");
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
-            // Wakeup every 10 seconds.
+
+            // Wakeup every ENERGY_VOLTAGE_LOW_WAKEUP_TIME seconds.
             esp_sleep_enable_timer_wakeup(ENERGY_VOLTAGE_LOW_WAKEUP_TIME * 1000000UL);
-            // Go to sleep.
-            esp_deep_sleep_start();
+            mqtt::debug("Battery low2");
+
+            // Go to sleep (light sleep mode).
+            esp_light_sleep_start();
         }
 
         void deepSleepCriticalMode(float batteryVoltage) {
-            // osc::bundle.add("/error").add("battery-critical").add(batteryVoltage);
-            // osc::sendBundle();
             mqtt::debug("Battery critical");
 
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
 
-            // Go to sleep forever.
+            // Go to sleep forever (deep sleep mode).
             esp_deep_sleep_start();
         }
 
         void check() {
-            #if defined(MORPHOSE_DEBUG)
-                //Serial.println("Checking energy");
-            #endif
             // Read battery voltage.
-
             float batteryVoltage = motors::getBatteryVoltage();
+            
             char buffer[64];
-            sprintf(buffer,"battery voltage : %F \n",batteryVoltage);
+            sprintf(buffer,"Battery voltage : %F \n",batteryVoltage);
             mqtt::debug(buffer);
-            // still crashing without this early return
-           // return;
+
             // Low voltage: Launch safety procedure.
             if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
                 // Put IMUs to sleep to protect them.
-                mqtt::debug("Voltage low");
-                //logger::error("Voltage low");
                 imus::sleep();
 
                 // Power engine off.
                 motors::setEnginePower(false);
 
                 // If energy level is critical, just shut down the ESP.
-                if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL){
-                    mqtt::debug("Voltage Critical");
-                    //logger::error("Voltage Critical");
+                if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL) {
                     deepSleepCriticalMode(batteryVoltage);
                 }
 
                 // Otherwise, sleep but wake up to show that something is wrong.
-                else{
+                else {
                     deepSleepLowMode(batteryVoltage);
                 }
             }
