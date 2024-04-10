@@ -151,6 +151,18 @@ namespace motors {
             steerTemperatureCritical = false;
             setEngineSteerPower(engineSteerPowerSave);  // Reset engine power state.
         }
+
+        // Sending debug messages.
+        if (speedTemperatureCritical) {
+            char buffer[64];
+            sprintf(buffer,"Speed motor disabled due to critical temperature: %d.", speedTemperature);
+            mqtt::debug(buffer);
+        }
+        if (steerTemperatureCritical) {
+            char buffer[64];
+            sprintf(buffer,"Steer motor disabled due to critical temperature: %d.", steerTemperature);
+            mqtt::debug(buffer);
+        }
     }
 
     void setEnginePower(bool on) {
