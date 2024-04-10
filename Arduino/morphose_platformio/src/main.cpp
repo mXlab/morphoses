@@ -105,8 +105,7 @@ void setup() {
   motors::initialize();
   mqtt::debug("Motors initialized");
 
-  //morphose::energy::check();
-  mqtt::debug("Energy initialized");
+
 
   pixels::initialize();
   mqtt::debug("LEDS initialized");
@@ -122,6 +121,10 @@ void setup() {
   // Initialize OTA.
   initOTA(morphose::name);
   mqtt::debug(" OTA initialized");
+
+
+  morphose::energy::check();
+  mqtt::debug("Energy initialized");
 
   // morphose::sayHello();
   mqtt::debug("---------------- End of setup ----------------");

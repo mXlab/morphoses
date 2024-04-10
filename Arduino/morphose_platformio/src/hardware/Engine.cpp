@@ -159,6 +159,24 @@ namespace motors {
         return voltage;
     }
 
+    void checkTemperature(){
+        char buffer[64];
+        int t = getEngineSpeedTemperature();
+        int t1 = getEngineSteerTemperature();
+        
+        sprintf(buffer,"Engine Speed Temperature: %d. Engine Steering Temperature: %d", t, t1);
+        mqtt::sendTemperature(buffer);
+
+        if(t > 60 || t1 > 60){
+            setEnginePower(false);
+        
+        }
+
+
+        
+ 
+    }
+
 // todo : these functions could be collapsed into one if we pass motor id as a parameter
     int getEngineSpeedTemperature() {
         static int temperature = 0;
