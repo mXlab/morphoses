@@ -21,6 +21,7 @@ namespace motors {
   int getEngineSpeedTemperature();  
   int getEngineSteerTemperature();  
   void collectData();
+  void dxlErrorToSring(DXLLibErrorCode_t  error);
 
 }  // namespace motors
 #endif  // ARDUINO_MORPHOSE_PLATFORMIO_SRC_HARDWARE_ENGINE_H_

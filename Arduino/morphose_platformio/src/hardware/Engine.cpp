@@ -3,7 +3,9 @@
 #include <Dynamixel2Arduino.h>
 #include <Wire.h>
 
-#include "communications/osc.h"
+//#include "communications/osc.h"
+#include "Morphose.h"
+#include "communications/asyncMqtt.h"
 #include "Utils.h"
 
 #define MOTORS_SPEED_MAX 70
@@ -36,13 +38,21 @@ namespace motors {
     float currentSteer;
     float engineSpeed;
     float engineSteer;
+
+    bool updateEnginePower = false;
     bool enginePower;
+
+    bool updateEngineSpeed = false;
+    bool updateEngineSteer = false;
+
     bool newEngineData;
 
     void initialize() {
+        //why?
         enginePower = false;
         newEngineData = false;
 
+        // todo : verify if baudrate is too slow
         // Set Port baudrate to 57600bps for DYNAMIXEL motors.
         dxl.begin(57600);
         // Set Port Protocol Version. This has to match with DYNAMIXEL protocol version.
@@ -65,8 +75,11 @@ namespace motors {
         currentSpeed = currentSteer = 0;
     }
     void update() {
-        if (newEngineData) {
-            newEngineData = false;
+        
+        // TODO : verify if only update once.
+        if (updateEnginePower) {
+            mqtt::debug("Update engine power");
+            updateEnginePower = false;
             if (enginePower) {
                 dxl.torqueOn(DXL_ID_SPEED);
                 dxl.torqueOn(DXL_ID_STEER);
@@ -74,35 +87,57 @@ namespace motors {
                 dxl.torqueOff(DXL_ID_SPEED);
                 dxl.torqueOff(DXL_ID_STEER);
             }
-
-            dxl.setGoalVelocity(DXL_ID_SPEED, utils::safeRemapNorm(engineSpeed, MOTORS_SPEED_MAX), UNIT_RAW);  // +n=CCW, -n=CW
-            currentSpeed = engineSpeed;
-            
-            dxl.setGoalPosition(DXL_ID_STEER, utils::safeRemapNorm(engineSteer, MOTORS_STEER_MAX, MOTORS_STEER_MIDDLE), UNIT_DEGREE);
-            currentSteer = engineSteer;
         }
+
+        // motor torque is off. no need to update anything
+        if(!enginePower){ 
+            Serial.println("motors off. leaving function");
+            return;
+        }else{
+            Serial.println("motors on. continuing");
+            if(updateEngineSteer){
+                updateEngineSteer = false;
+                dxl.setGoalPosition(DXL_ID_STEER, utils::safeRemapNorm(engineSteer, MOTORS_STEER_MAX, MOTORS_STEER_MIDDLE), UNIT_DEGREE);
+                currentSteer = engineSteer;
+            }
+
+            if(updateEngineSpeed){
+                updateEngineSpeed = false;
+                dxl.setGoalVelocity(DXL_ID_SPEED, utils::safeRemapNorm(engineSpeed, MOTORS_SPEED_MAX), UNIT_RAW);
+                currentSpeed = engineSpeed;
+            }
+
+        }
+
+
     }
 
     void setEnginePower(bool on) {
         enginePower = on;
-        newEngineData = true;
+        updateEnginePower = true;
     }
     void setEngineSpeed(float speed) {
         engineSpeed = speed;
-        newEngineData = true;
+        updateEngineSpeed = true;
     }
-
     void setEngineSteer(float steer) {
         engineSteer = steer;
-        newEngineData = true;
+        updateEngineSteer = true;
     }
 
+    //todo : should read from dxl instead
     float getEngineSpeed() { return currentSpeed; }
     float getEngineSteer() { return currentSteer; }
     float engineIsMovingForward() { return (currentSpeed >= 0); }
 
     float getBatteryVoltage() {
         int voltage = dxl.readControlTableItem(PRESENT_INPUT_VOLTAGE, DXL_ID_SPEED);
+        
+        if(voltage == 0){
+            
+            dxlErrorToSring(dxl.getLastLibErrCode());
+        }
+        // todo : maybe add fail safe if return 0
         return (voltage / 10.0f);
     }
 
@@ -119,6 +154,61 @@ namespace motors {
         morphose::json::deviceData["speed"] = getEngineSpeed();
         morphose::json::deviceData["steer"] = getEngineSteer();
         morphose::json::deviceData["battery"] = getBatteryVoltage();
+    }
+
+
+    void dxlErrorToSring(DXLLibErrorCode_t  error){
+        switch (error)
+        {
+        case 0:
+            mqtt::debug("DXL ERROR: DXL_LIB_OK");
+            break;
+        case 1:
+            mqtt::debug("DXL ERROR: DXL_LIB_PROCEEDING");
+            break;
+        case 2:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_NOT_SUPPORTED");
+            break;
+        case 3:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_TIMEOUT");
+            break;
+        case 4:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_INVAILD_ID");
+            break;
+        case 5:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_NOT_SUPPORT_BROADCAST");
+            break;
+        case 6:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_NULLPTR");
+            break;
+        case 7:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_LENGTH");
+            break;
+        case 8:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_INVAILD_ADDR");
+            break;
+        case 9:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_ADDR_LENGTH");
+            break;
+        case 10:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_BUFFER_OVERFLOW");
+            break;
+        case 11:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_PORT_NOT_OPEN");
+            break;
+        case 12:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_WRONG_PACKET");
+            break;
+        case 13:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_CHECK_SUM");
+            break;
+        case 14:
+            mqtt::debug("DXL ERROR: DXL_LIB_ERROR_CRC");
+            break;
+        
+        default:
+            break;
+        }
     }
 
 }  // namespace motors
