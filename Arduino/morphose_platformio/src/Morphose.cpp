@@ -6,6 +6,7 @@
 #include <VectorXf.h>
 #include <WiFi.h>
 
+#include "lights/Animation.h"
 
 #include "Utils.h"
 #include "communications/Network.h"
@@ -19,7 +20,7 @@
 namespace morphose {
 
 int id = ROBOT_ID;
-
+bool idle = false;
 #if ROBOT_ID == 1
 int outgoingPort = 8110;
 const char* name = "robot1";
@@ -94,8 +95,20 @@ void updateLocation() {
   avgPosition.set(avgPositionX.get(), avgPositionY.get());
 }
 
+void setIdle(bool state) {
+  idle = state;
+}
+
+void idleMode() {
+  animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
+}
+
 void update() {
-  if (sendDataFlag) {
+
+  if(idle){
+    idleMode();
+  }else{
+    if (sendDataFlag) {
     sendDataFlag = false;
 
     json::deviceData.clear();
@@ -132,6 +145,11 @@ void update() {
             Serial.println("energy::check done");
         }
     }
+
+  
+  }
+
+  
 
 void sendData() { sendDataFlag = true; }
 
@@ -327,10 +345,10 @@ namespace energy {
         void check() {
             // Read battery voltage.
             float batteryVoltage = motors::getBatteryVoltage();
-            
-            char buffer[64];
-            sprintf(buffer,"Battery voltage : %F \n",batteryVoltage);
-            mqtt::debug(buffer);
+            mqtt::sendBatteryVoltage(batteryVoltage);
+            // char buffer[64];
+            // sprintf(buffer,"Battery voltage : %F \n",batteryVoltage);
+            // mqtt::debug(buffer);
 
             // Low voltage: Launch safety procedure.
             if (batteryVoltage < ENERGY_VOLTAGE_LOW) {

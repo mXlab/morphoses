@@ -38,13 +38,14 @@ enum {
     NAV,
     CALIB,
     STREAM,
-    REBOOT
+    REBOOT,
+    IDLE
 };
 
 
 #if (ROBOT_ID == 1)
 const  char* cid = "robot1";
-static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
+static const char *ROBOT_CUSTOM_MQTT_ADDRESS[10] ={"morphoses/robot1/steer",
                                               "morphoses/robot1/speed",
                                               "morphoses/robot1/power",
                                               "morphoses/robot1/animation",
@@ -52,14 +53,16 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
                                               "morphoses/robot1/nav",
                                               "morphoses/robot1/calib",
                                               "morphoses/robot1/stream",
-                                              "morphoses/robot1/reboot"};
+                                              "morphoses/robot1/reboot",
+                                              "morphoses/robot1/idle"};
                                             
 const char* debugAddress  = "morphoses/robot1/debug";
 const char* temperatureAddress  = "morphoses/robot1/temperature";
+const char* batteryAddress  = "morphoses/robot1/battery";
 
 #elif (ROBOT_ID == 2)
 const char* cid = "robot2";
-static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot2/steer",
+static const char *ROBOT_CUSTOM_MQTT_ADDRESS[10] ={"morphoses/robot2/steer",
                                             "morphoses/robot2/speed",
                                             "morphoses/robot2/power",
                                             "morphoses/robot2/animation",
@@ -67,12 +70,15 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot2/steer",
                                             "morphoses/robot2/nav",
                                             "morphoses/robot2/calib",
                                             "morphoses/robot2/stream",
-                                            "morphoses/robot2/reboot"};
+                                            "morphoses/robot2/reboot",
+                                              "morphoses/robot1/idle"};
 const char* debugAddress  = "morphoses/robot2/debug";
 const char* temperatureAddress  = "morphoses/robot2/temperature";
+const char* batteryAddress  = "morphoses/robot2/battery";
+
 #elif (ROBOT_ID == 3)
 const char* cid = "robot3";
-static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot3/steer",
+static const char *ROBOT_CUSTOM_MQTT_ADDRESS[10] ={"morphoses/robot3/steer",
                                             "morphoses/robot3/speed",
                                             "morphoses/robot3/power",
                                             "morphoses/robot3/animation",
@@ -80,10 +86,13 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot3/steer",
                                             "morphoses/robot3/nav",
                                             "morphoses/robot3/calib",
                                             "morphoses/robot3/stream",
-                                            "morphoses/robot3/reboot"};
+                                            "morphoses/robot3/reboot",
+                                              "morphoses/robot1/idle"};
 
 const char* debugAddress  = "morphoses/robot3/debug";
 const char* temperatureAddress  = "morphoses/robot3/temperature";
+const char* batteryAddress  = "morphoses/robot3/battery";
+
 #elif (ROBOT_ID == 4)
 const char* cid = "robot4";
 static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
@@ -110,6 +119,12 @@ void sendTemperature(const char* msg){
 void connectToMqtt() {
   mqtt::debug("Connecting to MQTT...");
   client.connect();
+}
+
+void sendBatteryVoltage(float v){
+  char buff[16];
+            sprintf(buff, "%.2F", v);
+            mqtt::client.publish(mqtt::batteryAddress,2,true,buff);
 }
 
 void WiFiEvent(WiFiEvent_t event) {
@@ -162,6 +177,7 @@ void onMqttConnect(bool sessionPresent) {
   client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[CALIB], qos);
   client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[STREAM], qos);
   client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[REBOOT], qos);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[IDLE], qos);
 
 
   
@@ -232,6 +248,9 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[REBOOT]) == 0){
     Serial.println("reboot");
     callbacks::handleReboot(realPayload);
+  }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[IDLE]) == 0){
+    Serial.println("idle");
+    callbacks::handleIdle(realPayload);
   }
   
 
@@ -352,6 +371,16 @@ void handleSpeed(char* payload){
     mqtt::debug(buffer);
 
     motors::setEngineSpeed(val);
+}
+
+void handleIdle(char* payload){
+    const float val = atof(payload);
+
+    char buffer[32];
+    sprintf(buffer,"Set idle to %.2F\n", val);
+    mqtt::debug(buffer);
+
+    morphose::setIdle(val);
 }
 
 void handlePower(char* payload){

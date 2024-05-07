@@ -84,7 +84,7 @@ void setup() {
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 
-  Log.infoln(" Morphose - 2023 - 9 ");
+  Log.infoln(" Morphose - 2023 - 10 ");
 
   Wire.begin();
   

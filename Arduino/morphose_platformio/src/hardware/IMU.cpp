@@ -215,7 +215,7 @@ void wake() {
 
 
 void process() {
-  mqtt::debug("imus Process");
+  // mqtt::debug("imus Process");
   #if defined(MORPHOSE_DEBUG)
   animations::setDebugColor(DEBUG_COLOR_A,0,50,0,0);
   #endif
