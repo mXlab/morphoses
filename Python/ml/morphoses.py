@@ -44,5 +44,8 @@ if __name__ == "__main__":
 
     manager.begin()
 
-    while True:
+    while manager.is_running():
         manager.step()
+
+    world.terminate()
+    print("Done")

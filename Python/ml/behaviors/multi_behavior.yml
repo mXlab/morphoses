@@ -239,8 +239,8 @@ behaviors:
     reward_profile:
       - type: inv_delta_position
     stop_profile:
-      min_duration: 20
-      max_duration: 120
+      min_duration: 10
+      max_duration: 20
       high_reward_threshold: 0.7
       high_reward_duration: 15
     curiosity_weight: 0
@@ -253,16 +253,20 @@ behaviors:
     #learning_rate: 0.1
     gamma: 0.5
     epsilon: 1
-sequence:
-  - dance
-  - curiosity
-  - synchrony
-  - get_close_thing1
-  - go_to_y
-  - immobilism
-#  - test
+
+sequence:  
+  # - dance
+  # - curiosity
+  # - synchrony
+  # - get_close_thing1
+  # - go_to_y
+  # - immobilism
+  - test
 
 robots:
   - robot1
-  - robot2
-  - robot3
+#  - robot2
+#  - robot3
+
+settings:
+  repeat_sequence: false
