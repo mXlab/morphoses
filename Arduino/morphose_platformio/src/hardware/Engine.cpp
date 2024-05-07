@@ -120,7 +120,7 @@ namespace motors {
         int steerTemperature = getEngineSteerTemperature();
         
         char buffer[64];
-        sprintf(buffer,"%d %d", speedTemperature, steerTemperature);
+        sprintf(buffer,"Engine Speed Temperature: %d. Engine Steering Temperature: %d", speedTemperature, steerTemperature);
         mqtt::sendTemperature(buffer);
 
         // High temperature: Launch safety procedure.
