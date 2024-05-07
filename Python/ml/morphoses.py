@@ -26,11 +26,17 @@ if __name__ == "__main__":
     parser.add_argument("run_file", type=str, help="File containing the information to run the robots")
     parser.add_argument("--settings-file", type=str, default="settings.yml", help="File containing the common settings")
 
+    parser.add_argument("--override-robots", type=str, default=None, help="(optional) Overrides list of robots")
+
     # Parse arguments.
     args = parser.parse_args()
 
     run_settings = yaml.load(open(args.run_file, 'r'), Loader=yaml.SafeLoader)
     settings = yaml.load(open(args.settings_file, 'r'), Loader=yaml.SafeLoader)
+
+    # Override robots.
+    if args.override_robots is not None:
+        run_settings['robots'] = args.override_robots.split(',')
 
     # Create world.
     world = World(settings)
