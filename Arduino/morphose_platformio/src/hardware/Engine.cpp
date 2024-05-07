@@ -30,11 +30,11 @@ namespace motors {
     // This namespace is required to use Control table item names
     using namespace ControlTableItem;
 
-    uint32_t profile_acceleration_rolling = 30;
-    uint32_t profile_velocity_rolling = 180;
+    const uint32_t PROFILE_ACCELERATION_SPEED = 30;
+    const uint32_t PROFILE_VELOCITY_SPEED = 180;
 
-    uint32_t profile_acceleration_steering = 40;
-    uint32_t profile_velocity_steering = 150;
+    const uint32_t PROFILE_ACCELERATION_STEER = 40;
+    const uint32_t PROFILE_VELOCITY_STEER = 150;
     // ********************************************************
 
     float currentSpeed;
@@ -99,11 +99,11 @@ namespace motors {
             dxl.torqueOn(DXL_ID_SPEED);
             dxl.torqueOn(DXL_ID_STEER);
 
-            dxl.writeControlTableItem(PROFILE_ACCELERATION, DXL_ID_SPEED, profile_acceleration_rolling);
-            dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_ID_SPEED, profile_velocity_rolling);
+            dxl.writeControlTableItem(PROFILE_ACCELERATION, DXL_ID_SPEED, PROFILE_ACCELERATION_SPEED);
+            dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_ID_SPEED, PROFILE_VELOCITY_SPEED);
 
-            dxl.writeControlTableItem(PROFILE_ACCELERATION, DXL_ID_STEER, profile_acceleration_steering);
-            dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_ID_STEER, profile_velocity_steering);
+            dxl.writeControlTableItem(PROFILE_ACCELERATION, DXL_ID_STEER, PROFILE_ACCELERATION_STEER);
+            dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_ID_STEER, PROFILE_VELOCITY_STEER);
 
             currentSpeed = currentSteer = 0;
 
