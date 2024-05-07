@@ -17,6 +17,8 @@ class Manager:
 
         self.sequence = settings['sequence']
         self.sequence_current = 0
+        self.sequence_repeat = settings['settings']['repeat_sequence']
+        self.running = True
 
         self.agents = {}
         self.current_agents = {}
@@ -37,6 +39,9 @@ class Manager:
         behavior = self.sequence[self.sequence_current]
         for robot in self.robots:
             self.set_current_agent(robot, behavior, begin, reset)
+
+    def sequence_has_next(self):
+        return self.sequence_repeat or (self.sequence_current + 1) < len(self.sequence)
 
     def sequence_next(self, begin=True, reset=False):
         self.sequence_set_current(self.sequence_current + 1, begin, reset)
@@ -86,6 +91,9 @@ class Manager:
         title = self.sequence_current_behavior()['title']
         # self.world.send_info("all", "/end", title)
     
+    def is_running(self):
+        return self.running
+    
     def begin(self):
         print("** Begin **")
         self.world.begin()
@@ -132,10 +140,14 @@ class Manager:
             for a in self.current_agents.values():
                 self.world.display_idle(a) # Display idle mode.
             self.world.sleep(5) # Wait
+
             # Change behavior.
-            self.sequence_next(begin=False, reset=False)
-            self.behavior_begin()
-            self.world.sleep(1) # Wait
+            if self.sequence_has_next():
+                self.sequence_next(begin=False, reset=False)
+                self.behavior_begin()
+                self.world.sleep(1) # Wait
+            else:
+                self.running = False
 
     # Callback for threads.
     def run_step_agent(self, agent):
