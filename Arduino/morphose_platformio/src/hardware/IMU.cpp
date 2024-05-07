@@ -4,11 +4,9 @@
 #include <Chrono.h>
 
 
-#include "communications/osc.h"
 #include "communications/asyncMqtt.h"
 #include "Morphose.h"
 #include "Utils.h"
-#include "Logger.h"
 #include "lights/Animation.h"
 
 namespace imus {
@@ -16,11 +14,11 @@ namespace imus {
   const char* MorphosesIMU::name() const { return _isMain ? "main" : "side"; }
 
   // Start an IMU-specific OSC Message by calling this with appropriate sub-address. Result will be "/{main,side}/<addr>".
-  OSCMessage& MorphosesIMU::oscBundle(const char* addr) {
-    char fullAddr[32];
-    sprintf(fullAddr, "/%s%s", name(), addr);
-    return osc::bundle.add(fullAddr);
-  }
+  // OSCMessage& MorphosesIMU::oscBundle(const char* addr) {
+  //   char fullAddr[32];
+  //   sprintf(fullAddr, "/%s%s", name(), addr);
+  //   return osc::bundle.add(fullAddr);
+  // }
 
     uint8_t MorphosesIMU::i2cAddress() const { return _isMain ? 0x4B : 0x4A; }
 
@@ -111,16 +109,6 @@ namespace imus {
         magData.add(getMagY());
         magData.add(getMagZ());
 
-        // Useful info ////////////////////////////////////////////
-
-        // Add full data bundle.
-        // MQTT_JSON refactor, still needed?
-        // OSCMessage& msgFull = oscBundle("/data");
-        // for (int i=0; i<4; i++) msgFull.add(_quat[i].value()); // quaternion
-        // for (int i=0; i<4; i++) msgFull.add(_quat[i].delta()); // delta quaternion
-        // for (int i=0; i<3; i++) msgFull.add(_rot[i].value());   // rotation
-        // for (int i=0; i<3; i++) msgFull.add(_rot[i].delta());   // delta rotation
-
         // Add accuracy.
         imuJson["accur-mag"] = getMagAccuracy();
         imuJson["accur-quat"] = degrees(getQuatRadianAccuracy());
@@ -180,17 +168,17 @@ void initialize() {
   if (!imuMain.isInitialized()) {
     
     mqtt::debug("Main imu not initialized");
-
-    animations::setDebugColor(DEBUG_COLOR_A,255,0,0,0);
-
+    #if defined(MORPHOSE_DEBUG)
+      animations::setDebugColor(DEBUG_COLOR_A,255,0,0,0);
+    #endif
     imuMain.init();
   }
 
   if (!imuSide.isInitialized()) {
     mqtt::debug("Side imu not initialized");
-
-    animations::setDebugColor(DEBUG_COLOR_A,10,0,0,0);
-
+    #if defined(MORPHOSE_DEBUG)
+      animations::setDebugColor(DEBUG_COLOR_A,10,0,0,0);
+    #endif
     imuSide.init();
   }
 
@@ -228,11 +216,14 @@ void wake() {
 
 void process() {
   mqtt::debug("imus Process");
-
+  #if defined(MORPHOSE_DEBUG)
   animations::setDebugColor(DEBUG_COLOR_A,0,50,0,0);
+  #endif
   imuMain.process();
   imuSide.process();
+  #if defined(MORPHOSE_DEBUG)
   animations::setDebugColor(DEBUG_COLOR_A,0,0,100,0);
+  #endif
 }
 
 void collectData() {
