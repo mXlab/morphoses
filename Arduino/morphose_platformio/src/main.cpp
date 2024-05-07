@@ -39,7 +39,6 @@
 /**
  *  /communications
  *   | osc
- *   | network
  *   | mqtt
  *   | ota
  *  
@@ -64,7 +63,7 @@ using namespace pq;
 
 #include "communications/asyncMqtt.h"
 #include "communications/Network.h"
-#include "communications/osc.h"
+
 #include "communications/OTA.h"
 
 #include "hardware/Engine.h"
@@ -73,7 +72,7 @@ using namespace pq;
 #include "lights/Animation.h"
 #include "lights/Pixels.h"
 
-#include "Logger.h"
+// #include "Logger.h"
 #include "Morphose.h"
 #include "Utils.h"
 
@@ -94,28 +93,19 @@ void setup() {
   morphose::initialize();  // cannot send message before this point. Morphose needs to be initialized
  
   mqtt::initialize();
-  // network::initialize();
   mqtt::debug(" MQTT initialized");
-  mqtt::debug("Network initialized");
-
-  char buff[32];
-  sprintf(buff,"Osc broadcast state: %d\n",  osc::isBroadcasting());
-  mqtt::debug(buff);
 
   motors::initialize();
   mqtt::debug("Motors initialized");
-
-  morphose::energy::check();
-  mqtt::debug("Energy initialized");
 
   pixels::initialize();
   mqtt::debug("LEDS initialized");
 
   animations::initialize();
-
   mqtt::debug(" Animation initialized");
-  animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
-
+  #if defined(MORPHOSE_DEBUG)
+    animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
+  #endif
   imus::initialize();
   mqtt::debug(" IMU initialized");
 
@@ -123,7 +113,10 @@ void setup() {
   initOTA(morphose::name);
   mqtt::debug(" OTA initialized");
 
-  // morphose::sayHello();
+
+  morphose::energy::check();
+  mqtt::debug("Energy initialized");
+
   mqtt::debug("---------------- End of setup ----------------");
 
   Serial.println("End of setup");
@@ -154,19 +147,15 @@ void loop() {
 
  // logger::update();
   //logger::info("logger::update ok");
+
   // // Update OTA.
-  updateOTA();
+   updateOTA();
   
- // imus::initialize();
-//  logger::info("imus::initialize ok");
 
 //  logger::info("mqtt::update ok");
 
-  morphose::update();
+   morphose::update();
 // logger::info("morphose::update ok");
-
-//osc::update();
-// logger::info("osc::update ok");
 
   //checkMemory();
 }

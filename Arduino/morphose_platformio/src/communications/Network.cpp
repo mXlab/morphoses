@@ -6,14 +6,14 @@
  */
 #include "Network.h"
 
-#include <ArduinoLog.h>
+//#include <ArduinoLog.h>
 #include <Chrono.h>
 
-#include "communications/osc.h"
+
 #include "communications/asyncMqtt.h"
 #include "Morphose.h"
 #include "Utils.h"
-#include "Logger.h"
+
 
 
 namespace network {
@@ -54,8 +54,8 @@ namespace network {
      
 
     bool initialize() {
-        Log.warningln("Initializing network interface");
-        Log.infoln("Trying to connect to router");
+        Serial.println("Initializing network interface");
+        Serial.println("Trying to connect to router");
 
        if (!configureStation()) {
             return false;
@@ -70,13 +70,13 @@ namespace network {
     } 
 
     void initialize(uint8_t maxTry) {
-        Log.warningln("Initializing network interface");
-        Log.infoln("Trying to connect to router");
+        Serial.println("Initializing network interface");
+        Serial.println("Trying to connect to router");
 
         if (!maybeConnectToRouter(maxTry)) {
-            Log.errorln("WiFi unable to connect, Rebooting hardware.");
+            Serial.println("ERROR: WiFi unable to connect, Rebooting hardware.");
             utils::blinkIndicatorLed(100, 0.7, 20);
-           network::removeWifiEvents();
+            network::removeWifiEvents();
             ESP.restart();
         }
         initializeUDP(incomingPort);
@@ -85,23 +85,19 @@ namespace network {
 
 
     bool configureStation() {
-        Log.infoln("Network interface configuration for station mode");
+        Serial.println("Network interface configuration for station mode");
 
             // delete old config
             if (WiFi.disconnect(true, true)) {
-                Log.infoln("Successfully delete wifi config");
+                Serial.println("Successfully delete wifi config");
             }
             WiFi.mode(WIFI_STA);
             WiFi.setSleep(false);  // enable the wifi all the time
-            //setWifiEvents();
-
-            //WiFi.setAutoReconnect(true);
-
-
+            
 
         // Configures static IP address
         if (!WiFi.config(mcuIP, gateway, subnet)) {
-            Log.errorln("STA Failed to configure");
+            Serial.println("ERROR: STA Failed to configure");
             return false;
         }
         return true;
@@ -118,7 +114,7 @@ namespace network {
         while (WiFiClass::status() != WL_CONNECTED) {
             utils::blinkIndicatorLed(500);
             if (anim.hasPassed(200, true)) {
-                Log.trace(".");
+                Serial.print(".");
             }
 
             if (millis() - start_time > timeout) {
@@ -131,8 +127,8 @@ namespace network {
         Serial.println("IP: ");
         Serial.println(mcuIP);
 
-        Log.traceln(" ");
-        Log.setShowLevel(true);
+        Serial.println(" ");
+        
 
         if (WiFiClass::status() != WL_CONNECTED) {
             return false;
@@ -143,7 +139,7 @@ namespace network {
 
     void initializeUDP(const int port) {
         udp.begin(port);
-        Log.noticeln("UDP initialized on port %d", port);
+        Serial.printf("UDP initialized on port %d\n", port);
     }
 
     bool maybeConnectToRouter(uint8_t max) {
@@ -154,8 +150,8 @@ namespace network {
         }
 
         while (count < max) {
-            Log.info("Try number %d", count + 1);
-            Log.setShowLevel(false);
+            Serial.printf("Try number %d\n", count + 1);
+           
             if (!connectToWiFi(ssid, pswd)) {
                 count++;
             } else {
@@ -189,21 +185,21 @@ namespace network {
 
     void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
 
-            Log.noticeln("Connected to network.");
+            Serial.println("Connected to network.");
     }
 
     void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
        
-        Log.warningln("Disconnected from WiFi %d", info.wifi_sta_disconnected.reason);
+        Serial.printf("Disconnected from WiFi %d\n", info.wifi_sta_disconnected.reason);
         //logger::error("Lost wifi connection");
     }
 
     void WiFiGotIP(WiFiEvent_t event, WiFiEventInfo_t info) {
-        Log.noticeln("MCU IP address: [%p]", WiFi.localIP());
+        Serial.printf("MCU IP address: %d.%d.%d.%d\n", WiFi.localIP()[0],WiFi.localIP()[1],WiFi.localIP()[2],WiFi.localIP()[3]);
     }
 
     void setWifiEvents() {
-            Log.noticeln("Setting up wifi events");
+            Serial.println("Setting up wifi events");
             event_connect_id = WiFi.onEvent(WiFiStationConnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
             event_ip_id = WiFi.onEvent(WiFiGotIP, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_GOT_IP);
             event_disconnect_id = WiFi.onEvent(WiFiStationDisconnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);

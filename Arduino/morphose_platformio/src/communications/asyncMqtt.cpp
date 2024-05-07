@@ -2,13 +2,13 @@
 
 #include <ArduinoLog.h>
 
-#include "communications/osc.h"
+
 #include "lights/Animation.h"
 #include "lights/Pixels.h"
 #include "Morphose.h"
 #include "hardware/Engine.h"
 #include "hardware/IMU.h"
-#include "Logger.h"
+
 #include "Network.h"
 #include <ArduinoJson.h>
 #include <VectorXf.h>
@@ -55,6 +55,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
                                               "morphoses/robot1/reboot"};
                                             
 const char* debugAddress  = "morphoses/robot1/debug";
+const char* temperatureAddress  = "morphoses/robot1/temperature";
 
 #elif (ROBOT_ID == 2)
 const char* cid = "robot2";
@@ -68,6 +69,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot2/steer",
                                             "morphoses/robot2/stream",
                                             "morphoses/robot2/reboot"};
 const char* debugAddress  = "morphoses/robot2/debug";
+const char* temperatureAddress  = "morphoses/robot2/temperature";
 #elif (ROBOT_ID == 3)
 const char* cid = "robot3";
 static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot3/steer",
@@ -81,6 +83,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot3/steer",
                                             "morphoses/robot3/reboot"};
 
 const char* debugAddress  = "morphoses/robot3/debug";
+const char* temperatureAddress  = "morphoses/robot3/temperature";
 #elif (ROBOT_ID == 4)
 const char* cid = "robot4";
 static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
@@ -99,6 +102,10 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
 uint16_t mqttRobotLocations[N_ROBOTS];
 uint16_t animId;
 int qos = 1;
+
+void sendTemperature(const char* msg){
+  client.publish(temperatureAddress, 1, true, msg);
+}
 
 void connectToMqtt() {
   mqtt::debug("Connecting to MQTT...");
@@ -251,8 +258,10 @@ void initialize() {
 }
 
 void debug(const char *_msg) {
+  #if defined(MORPHOSE_DEBUG)
   Serial.println(_msg);
-  // client.publish(debugAddress, 1, true, _msg);
+  #endif
+  client.publish(debugAddress, 1, true, _msg);
 }
 namespace callbacks {
   Vec2f robotPositions[N_ROBOTS];
@@ -276,7 +285,6 @@ void handlePosition(int robot, char* data) {
   
   if ((int)position["quality"] > 50) {
     // Set current position.
-    //Serial.println("Quality > 50");
     newPosition = Vec2f((float)double(position["x"]), (float)double(position["y"]));
     
     // buffer all robot positions
@@ -326,11 +334,11 @@ void handleAnimation(char* data){
 
 
 void handleSteer(char* payload){
-  // Serial.println(payload);
     const float val = atof(payload);
-    // char buffer[32];
-    // sprintf(buffer,"Set steer to %.2F\n", val);
-    // mqtt::debug(buffer);
+
+    char buffer[32];
+    sprintf(buffer,"Set steer to %.2F\n", val);
+    mqtt::debug(buffer);
 
     motors::setEngineSteer(val);
   }
@@ -338,22 +346,25 @@ void handleSteer(char* payload){
   
 void handleSpeed(char* payload){
     const float val = atof(payload);
-    // char buffer[32];
-    // sprintf(buffer,"Set speed to %.2F\n", val);
-    // mqtt::debug(buffer);
+
+    char buffer[32];
+    sprintf(buffer,"Set speed to %.2F\n", val);
+    mqtt::debug(buffer);
+
     motors::setEngineSpeed(val);
 }
 
 void handlePower(char* payload){
     const int power = atoi(payload);
+
     char buffer[32];
     sprintf(buffer,"Set power to %d\n", power);
     mqtt::debug(buffer);
+
     motors::setEnginePower(power);
   }
  
 void handleGetData(char* payload){
-  //mqtt::debug("Get data");
   morphose::sendData();
 }  
   
