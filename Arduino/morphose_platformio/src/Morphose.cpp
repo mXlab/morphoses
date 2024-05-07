@@ -15,6 +15,8 @@
 #include "hardware/Engine.h"
 #include "hardware/IMU.h"
 
+#include "lights/Animation.h"
+
 #define AVG_POSITION_TIME_WINDOW 0.2f
 
 namespace morphose {
@@ -96,58 +98,79 @@ void updateLocation() {
 }
 
 void setIdle(bool state) {
+
+  
+  if (!idle && state) { // when switching to idle
+    if (animations::lockMutex()) {
+      animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
+      
+      animations::currentAnimation().setBaseColor(128, 0, 255);
+      animations::currentAnimation().setAltColor(255, 0, 128);
+      animations::currentAnimation().setNoise(0);
+      animations::currentAnimation().setPeriod(5);
+      animations::currentAnimation().setType(animations::AnimationType::FULL);
+      animations::currentAnimation().setRegion(pixels::Region::ALL);
+      animations::beginTransition();  // start transition
+      animations::unlockMutex();
+    }
+  }
+
   idle = state;
+
 }
 
 void idleMode() {
-  animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
+  // 
 }
 
 void update() {
 
   if(idle){
     idleMode();
-  }else{
+  }
+
+  else {
     if (sendDataFlag) {
-    sendDataFlag = false;
+      sendDataFlag = false;
 
-    json::deviceData.clear();
+      json::deviceData.clear();
 
-    imus::collectData();
+      imus::collectData();
 
-    morphose::navigation::collectData();
+      morphose::navigation::collectData();
 
-    // get data stop here.
-    motors::collectData();
+      // get data stop here.
+      motors::collectData();
 
-    serializeJson(json::deviceData, jsonString);
-    // serializeJsonPretty(json::deviceData, Serial);
-    mqtt::client.publish(topicName, 0, true, jsonString);
-    return;
-  }
-
-  updateLocation();
-
-  if (sendRate.hasPassed(STREAM_INTERVAL, true)) {
-    imus::process();
-    Serial.println("imus::process done");
-    morphose::navigation::process();
-    Serial.println("morphose::navigation::process done");
-
-    if (stream) {
-      sendData();
+      serializeJson(json::deviceData, jsonString);
+      // serializeJsonPretty(json::deviceData, Serial);
+      mqtt::client.publish(topicName, 0, true, jsonString);
+      return;
     }
-  }
 
-        if(moterCheckTimer.hasPassed(1000, true)){
-            motors::checkTemperature();
-            energy::check();  // Energy checkpoint to prevent damage when low
-            Serial.println("energy::check done");
-        }
+    updateLocation();
+
+    if (sendRate.hasPassed(STREAM_INTERVAL, true)) {
+      imus::process();
+      Serial.println("imus::process done");
+      morphose::navigation::process();
+      Serial.println("morphose::navigation::process done");
+
+      if (stream) {
+        sendData();
+      }
     }
+
+    if(moterCheckTimer.hasPassed(1000, true)){
+        motors::checkTemperature();
+        energy::check();  // Energy checkpoint to prevent damage when low
+        Serial.println("energy::check done");
+    }
+
+  }
 
   
-  }
+}
 
   
 
