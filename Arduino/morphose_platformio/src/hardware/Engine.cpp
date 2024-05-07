@@ -119,9 +119,7 @@ namespace motors {
         int speedTemperature = getEngineSpeedTemperature();
         int steerTemperature = getEngineSteerTemperature();
         
-        char buffer[64];
-        sprintf(buffer,"%d %d", speedTemperature, steerTemperature);
-        mqtt::sendTemperature(buffer);
+        
 
         // High temperature: Launch safety procedure.
 
@@ -160,6 +158,11 @@ namespace motors {
             sprintf(buffer,"Steer motor disabled due to critical temperature: %d.", steerTemperature);
             mqtt::debug(buffer);
         }
+
+
+        char buffer[64];
+        sprintf(buffer,"%d,%d,%d,%d", speedTemperature,speedTemperatureCritical, steerTemperature,steerTemperatureCritical);
+        mqtt::sendTemperature(buffer);
     }
 
     void setEnginePower(bool on) {
