@@ -11,7 +11,7 @@ import tilecoding.representation as rep
 
 from keras.models import Sequential
 from keras.layers import Dense, InputLayer
-from keras.utils.np_utils import to_categorical
+from tensorflow.keras.utils import to_categorical
 from keras import optimizers
 
 from chrono import Chrono
