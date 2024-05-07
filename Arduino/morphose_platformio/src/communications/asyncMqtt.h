@@ -20,9 +20,10 @@ extern AsyncMqttClient client;
 // Should be called in the loop function and it will take care if connecting.
 void debug(const char * msg);
 void sendTemperature(const char* msg);
+void sendBatteryVoltage(float v);
 
 namespace callbacks {
-    void handlePosition(int robot, char* data);
+void handlePosition(int robot, char* data);
 void handleAnimation(char* data);
 void handleSteer(char* payload);
 void handleSpeed(char* payload);
@@ -32,6 +33,7 @@ void handleNav(char* payload);
 void handleCalib(char* payload);
 void handleStream(char* payload);
 void handleReboot(char* payload);
+void handleIdle(char* payload);
 
 }
 
