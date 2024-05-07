@@ -5,13 +5,11 @@
 
 namespace pixels {
 
-  // The neopixel strip instance.
-  // Adafruit_NeoPixel pixels(NUM_PIXELS, PIXELS_PIN, PIXELS_TYPE);
+  
   CRGBW leds[NUM_PIXELS];
   CRGB *ledsRGB = (CRGB *) &leds[0];
   void initialize() {
-    // INITIALIZE NeoPixel strip object (REQUIRED)
-    // pixels.begin();
+    
     FastLED.addLeds<LED_TYPE, PIXELS_PIN, COLOR_ORDER>(ledsRGB, getRGBWsize(NUM_PIXELS));
     for(int i = 0 ; i < NUM_PIXELS; i++){
       leds[i] = CRGBW(0,0,0,100);
@@ -29,20 +27,6 @@ namespace pixels {
 
   }
 
-  // // Sets all pixels.
-  // void setAll(int r, int g, int b, int w) {
-  //   // Set all pixel colors to 'off'
-  //   pixels.clear();
-
-  //   // Write all pixels.
-  //   for (int i = 0; i < pixels.numPixels(); i++)
-  //     pixels.setPixelColor(i, pixels.Color(r, g, b, w));
-
-  // //  portDISABLE_INTERRUPTS();
-  //   // Send the updated pixel colors to the hardware.
-  //   pixels.show();
-  // //  portENABLE_INTERRUPTS();
-  // }
 
   void clear() {
     FastLED.clear();
@@ -125,10 +109,9 @@ struct PixelIterator {
       leds[it.next()] = CRGBW(r, g, b, w);
     }
 
-  //  portDISABLE_INTERRUPTS();
     // Send the updated pixel colors to the hardware.
     FastLED.show();
-  //  portENABLE_INTERRUPTS();
+
   }
 
 }  // namespace pixels

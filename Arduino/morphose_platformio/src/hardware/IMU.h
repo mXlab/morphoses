@@ -5,7 +5,7 @@
 #include <Chrono.h>
 
 #include "Utils.h"
-#include "communications/osc.h"
+
 
 namespace imus {
 
@@ -75,8 +75,8 @@ class MorphosesIMU : public BNO080 {
     // Return IMU name.
     const char* name() const;
 
-    // Start an IMU-specific OSC Message by calling this with appropriate sub-address. Result will be "/{main,side}/<addr>".
-    OSCMessage& oscBundle(const char* addr);
+    // // Start an IMU-specific OSC Message by calling this with appropriate sub-address. Result will be "/{main,side}/<addr>".
+    // OSCMessage& oscBundle(const char* addr);
 
     // Return I2C address.
     uint8_t i2cAddress() const;
