@@ -12,13 +12,9 @@ import oscP5.*;
 import netP5.*;
 
 // Robots
-
 Robot robot1;
 Robot robot2;
 Robot robot3;
-
-// Robot name.
-final String OSC_PATH_PREFIX = "/robot1";
 
 // OSC input port.
 final int OSC_PORT = 8001;
@@ -31,8 +27,8 @@ final String MQTT_BROKER = "192.168.0.200";
 
 // Path/topic variables.
 final String MQTT_PATH_ROOT = "morphoses";
-String MQTT_PATH_PREFIX;
-String MQTT_TOPIC_DATA;
+final String MQTT_PATH_SUFFIX = "/info/display-data";
+String[] MQTT_TOPIC_DATA;
 String MQTT_TOPIC_BEGIN;
 
 // Number of points to be plotted.
@@ -80,6 +76,7 @@ final color COLOR_DATA = color(255, 48);
 final float LINE_WEIGHT_DATA = 3;
 
 float speed;
+float graphPos;
 
 float minHeight;
 float maxHeight;
@@ -91,37 +88,28 @@ void setup() {
   fullScreen(P2D, 0);
 
   // Initialize.
+  graphPos = 0;
   client = new MQTTClient(this);
-  //client.connect("mqtt://" + MQTT_BROKER);
+  //  client.connect("mqtt://" + MQTT_BROKER);
   oscP5 = new OscP5(this, OSC_PORT);
 
   watch = new Stopwatch(this);
-  values = new ArrayList<float[]>();
-  
-  // NEED 3 ARRAYS FOR ALL 3 ROBOTS
-  //values1 = new ArrayList<float[]>();
-  //values2 = new ArrayList<float[]>();
-  //values3 = new ArrayList<float[]>();
 
-  
-  robot1 = new Robot("robot1", 0, width, 0, height/3);
-  robot2 = new Robot("robot2", 0, width, height/3, 2*height/3);
-  robot3 = new Robot("robot3", 0, width, 2*height/3, height);
+  robot1 = new Robot(1, 0, width, 0, (height-SUBTITLE_SIZE*3)/3);
+  robot2 = new Robot(2, 0, width, (height-SUBTITLE_SIZE*3)/3, 2*(height-SUBTITLE_SIZE*3)/3);
+  robot3 = new Robot(3, 0, width, 2*(height-SUBTITLE_SIZE*3)/3, (height-SUBTITLE_SIZE*3));
 
-
-  // Read robot name.
-  String robotName = loadStrings("robot_name.txt")[0];
   // Set topics variables.
-  MQTT_PATH_PREFIX = MQTT_PATH_ROOT + "/" + robotName;
-  MQTT_TOPIC_DATA  = MQTT_PATH_PREFIX + "/info/display-data";
+  MQTT_TOPIC_DATA  = new String[3];
+  MQTT_TOPIC_DATA[0] = MQTT_PATH_ROOT + "/" + robot1.getName() + MQTT_PATH_SUFFIX; //robot1
+  MQTT_TOPIC_DATA[1] = MQTT_PATH_ROOT + "/" + robot2.getName() + MQTT_PATH_SUFFIX; //robot2
+  MQTT_TOPIC_DATA[2] = MQTT_PATH_ROOT + "/" + robot3.getName() + MQTT_PATH_SUFFIX; //robot3
   MQTT_TOPIC_BEGIN = MQTT_PATH_ROOT + "/all/info/begin";
-
-  // Load corresponding image.
-  robotLogo = loadImage(robotName + "_blanc_fond_noir.jpg");
 
   // Image adjustements.
   smooth();
   noCursor();
+  speed = 3;
 }
 
 void draw() {
@@ -130,7 +118,7 @@ void draw() {
 
   ///// TITLE MODE //////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////
-  
+
   if (titleMode) {
     // Write the title.
     fill(255);
@@ -145,31 +133,29 @@ void draw() {
 
   //// GRAPH MODE //////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
-  
+
   else {
-    
+
     //// DRAW LOGO /////
     ////////////////////
-    
+
     robot1.drawLogo();
     robot2.drawLogo();
     robot3.drawLogo();
-    
-    
+
     ////// DRAW GRAPH ////
     //////////////////////
+    pushMatrix();
+    //translate(graphPos,0);
+    robot1.drawGraphTest();
+    robot2.drawGraph();
+    robot3.drawGraph();
+    popMatrix();
     
-   robot1.drawGraph();
-   robot2.drawGraph();
-   robot3.drawGraph();
+    graphPos-=speed;
 
     // Write the title.
-    if (watch.second() >= SUBTITLE_START_TIME) {
-      textAlign(RIGHT, TOP);
-      fill(192);
-      textSize(SUBTITLE_SIZE);
-      text(behaviorTitle, width - ROBOT_LOGO_OFFSET, height - BORDER_BOTTOM + ROBOT_LOGO_OFFSET);
-    }
+    writeTitle();
   }
 }
 
@@ -179,6 +165,15 @@ void draw() {
 //  else
 //    return map(reward, minHeight, maxHeight, minReward, maxReward);
 //}
+
+void writeTitle() {
+  if (watch.second() >= SUBTITLE_START_TIME) {
+    textAlign(RIGHT, TOP);
+    fill(192);
+    textSize(SUBTITLE_SIZE);
+    text(behaviorTitle, width - ROBOT_LOGO_OFFSET, height - BORDER_BOTTOM + ROBOT_LOGO_OFFSET);
+  }
+}
 
 color getColorReward(float reward) {
   return lerpColor(COLOR_REWARD_MIN, COLOR_REWARD_MAX, reward);
@@ -209,7 +204,9 @@ void clientConnected() {
   println("MQTT connected");
 
   // Subscribe to topics.
-  client.subscribe(MQTT_TOPIC_DATA);
+  client.subscribe(MQTT_TOPIC_DATA[0]);
+  client.subscribe(MQTT_TOPIC_DATA[1]);
+  client.subscribe(MQTT_TOPIC_DATA[2]);
   client.subscribe(MQTT_TOPIC_BEGIN);
 }
 
@@ -220,26 +217,31 @@ void connectionLost() {
 void messageReceived(String topic, byte[] payload) {
   println("new message: " + topic + " - " + new String(payload));
   // Receive data.
-  if (topic.equals(MQTT_TOPIC_DATA)) {
-    nValuesReceived++;
-    if (nValuesReceived >= 2) // drop the first one
-      values.add(getValues(parseJSONArray(new String(payload))));
+  //if (topic.equals(MQTT_TOPIC_DATA)) {
+  //  nValuesReceived++;
+  //  if (nValuesReceived >= 2) // drop the first one
+  //    values.add(getValues(parseJSONArray(new String(payload))));
 
-    // Receive begin with titlee.
-  } else if (topic.equals(MQTT_TOPIC_BEGIN)) {
-    nValuesReceived = 0;
-    minReward = +9999;
-    maxReward = -9999;
 
+
+  // Receive begin with title.
+
+  if (topic.equals(MQTT_TOPIC_BEGIN)) {
+    robot1.reinitializeValues();
+    robot2.reinitializeValues();
+    robot3.reinitializeValues();
     // Get title.
     behaviorTitle = new String(payload);
-
-    // Reinitialize values.
-    values.clear();
 
     // Switch to title mode and start timer.
     titleMode = true;
     watch.start();
+
+    //receive values
+  } else {
+    robot1.addValues(topic, payload);
+    robot2.addValues(topic, payload);
+    robot3.addValues(topic, payload);
   }
 }
 
@@ -265,17 +267,11 @@ float[] getOSCValues(OscMessage msg) {
   return OscValues;
 }
 
-// OSC event.
+//OSC event.
 void oscEvent(OscMessage msg) {
-  // Receive information point.
-  if (msg.checkAddrPattern(OSC_PATH_PREFIX + "/info")) {
-    nValuesReceived++;
-    if (nValuesReceived > 5)
-      values.add(getOSCValues(msg));
-  }
 
   // Begin new behavior.
-  else if (msg.checkAddrPattern("/all/begin")) {
+  if (msg.checkAddrPattern("/all/begin")) {
     // Get title.
     behaviorTitle = msg.get(0).stringValue();
 
@@ -285,5 +281,9 @@ void oscEvent(OscMessage msg) {
     // Switch to title mode and start timer.
     titleMode = true;
     watch.start();
+  } else {
+    robot1.addValues(msg);
+    robot2.addValues(msg);
+    robot3.addValues(msg);
   }
 }
