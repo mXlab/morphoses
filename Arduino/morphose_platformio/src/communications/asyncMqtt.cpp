@@ -293,8 +293,8 @@ void handlePosition(int robot, char* data) {
 
   // Test if parsing succeeds.
   if (error) {
-    char buffer[128];
-    sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
+    char buffer[256];
+    sprintf(buffer,"handlePosition() deserializeJson() failed: %s\n", error.c_str());
     mqtt::debug(buffer);
     return;
   }
@@ -321,13 +321,14 @@ void handleAnimation(char* data){
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, data);
 
-  // Test if parsing succeeds.
-  if (error) {
-    char buffer[128];
-    sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
-    mqtt::debug(buffer);
-    return;
-  }
+    // Test if parsing succeeds.
+    if (error) {
+      char buffer[256];
+      sprintf(buffer,"handleAnimation() deserializeJson() failed: %s\n", error.c_str());
+      mqtt::debug(buffer);
+      return;
+    }
+    
     // JSONVar animationData = JSON.parse(data);
 
     JsonArray _baseColor = doc["base"];
@@ -410,8 +411,8 @@ void handleNav(char* payload){
 
     // Test if parsing succeeds.
     if (error) {
-      char buffer[128];
-      sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
+      char buffer[256];
+      sprintf(buffer,"handleNav() deserializeJson() failed: %s\n", error.c_str());
       mqtt::debug(buffer);
       return;
     }
