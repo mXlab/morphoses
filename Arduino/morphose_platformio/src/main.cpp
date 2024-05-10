@@ -103,6 +103,10 @@ void setup() {
   mqtt::initialize();
   mqtt::debug(" MQTT initialized");
 
+  char buffer[128];
+  sprintf(buffer, "Reset reason: %s\n", utils::getResetReason());
+  mqtt::debug(buffer);
+
   motors::initialize();
   mqtt::debug("Motors initialized");
 

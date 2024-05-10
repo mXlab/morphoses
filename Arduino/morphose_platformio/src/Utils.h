@@ -28,9 +28,8 @@ float wrapAngle360(float angle);
 // Remaps normalised value in [-1, 1] to [midPoint-maxRange, midPoint+maxRange].
 int safeRemapNorm(float unitVal, int maxRange, int midPoint = 0);
 
-
-
-
+const char* getResetReason();
+const char* getResetReason(esp_reset_reason_t resetReason);
 
 }  // namespace utils
 
