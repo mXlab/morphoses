@@ -8,10 +8,10 @@ class Robot { //
   PImage robotLogo;
   String robotName;
   int robotNumber;
-  final int ROBOT_LOGO_SIZE = 100;
+  float robotLogoSize;
   final int ROBOT_LOGO_OFFSET = 50;
   final float ROBOT_LOGO_SHAKE = 1;
-  float speed;
+  //float speed;
   float logoX;
   float logoY;
   float minHeight;
@@ -19,6 +19,14 @@ class Robot { //
   int nValuesReceived;
   ArrayList<float[]> values;
   float[] valuesTemp = {0, 1, 2, 1, 0, 1, 2, 1, 0, 2, 1, 0, 2, 0, 1};
+  PGraphics graph;
+  float dataStep;
+  float oldNValues = 0;
+
+  float timeBetweenValues;
+
+  //float minReward;
+  //float maxReward;
 
   //// CONSTRUCTOR ////
   /////////////////////
@@ -32,166 +40,100 @@ class Robot { //
     robotName = "robot" + str(robotNumber);
     this.robotLogo = loadImage(robotName + "_blanc_fond_noir.jpg");
 
-
-
+    graph = createGraphics(20000, int(borderBottom-borderTop));
+    timeBetweenValues = 0;
 
     // values
 
     values = new ArrayList<float[]>();
 
-
     borderSpaceY = (borderBottom - borderTop)/20;
 
-    minHeight = borderTop + ROBOT_LOGO_SIZE + borderSpaceY;
-    maxHeight = borderBottom - borderSpaceY;
-
-    logoX = borderRight-ROBOT_LOGO_SIZE-ROBOT_LOGO_OFFSET+random(-ROBOT_LOGO_SHAKE, ROBOT_LOGO_SHAKE);
+    robotLogoSize = height/5;
+    logoX = borderRight-robotLogoSize;
     logoY = borderTop+ROBOT_LOGO_OFFSET+random(-ROBOT_LOGO_SHAKE, ROBOT_LOGO_SHAKE);
+
+    minHeight = robotLogoSize + borderSpaceY;
+    maxHeight = graph.height - borderSpaceY;
+
+    //minReward = -9999;
+    //maxReward = 9999;
+
+    dataStep = 10;
   }
 
   //// DRAW ////
   //////////////
 
   void drawLogo() {
-    //  float[] lastPoint = values.get(values.size()-1);
-    //  tint(getColorReward(lastPoint[lastPoint.length-1]));
-    //  tint(getColorReward(0.5));
-
-    image(robotLogo, logoX, logoY, ROBOT_LOGO_SIZE, ROBOT_LOGO_SIZE);
+    fill (0);
+    rect(0, borderRight - robotLogoSize, robotLogoSize, robotLogoSize);
+    image(robotLogo, logoX, logoY, robotLogoSize, robotLogoSize);
   }
 
   void drawGraph() {
-
-    /////////////////////
-
+    graph.beginDraw();
+    graph.background(0);
     if (values.size() >= 1) {
-
-      // Get the last point added.
-      float[] prevPoint = getY(values, values.size()-1);
-      float prevX = borderRight-1;
-
-      // Draw the graph from right to left.
-      for (int i=1; i<N_POINTS; i++) {
+      float[] prevPoint = getY(values, 0);
+      float prevX = borderLeft;
+      // Draw the graph
+      for (int i=1; i <= values.size()-1; i++) {
         // Position of i-th point.
-        float x = map(i, 1, N_POINTS-1, borderRight-1, 0); // Inverted: right to left.
+        float x = (i+1)*dataStep;
 
-        // Get the point to the left.
-        int k = (values.size()-1) - i;
-        if (0 <= k && k < values.size()) {
-          // Draw the line segments for each part of the point.
-          float[] point = getY(values, k);
-          for (int j=0; j<point.length; j++) {
+        // Draw the line segments for each part of the point.
+        float[] pointY = getY(values, i);
+        for (int j=0; j<pointY.length; j++) {
 
-            // Reward line. //
+          // Reward line. //
 
-            if (j == point.length-1) {
-              strokeWeight(LINE_WEIGHT_REWARD);
-              gradientLine(x, point[j], prevX, prevPoint[j]);
-            }
+          if (j == pointY.length-1 && j>0) {
+            graph.stroke(255, 0, 0);
+            graph.strokeWeight(LINE_WEIGHT_REWARD);
+            gradientLine( prevX, prevPoint[j], x, pointY[j]);
 
-            // Data line. //
+            float valuesReward[] = values.get(i);
 
-            else {
-              strokeWeight(LINE_WEIGHT_DATA);
-              stroke(COLOR_DATA);
-              line(x, point[j], prevX, prevPoint[j]);
-            }
+            graph.text(str(valuesReward[valuesReward.length-1]), x, pointY[j] -10);
           }
-          // Update previous point.
-          prevPoint = point;
+
+          // Data line. //
+
+          else {
+            graph.strokeWeight(LINE_WEIGHT_DATA);
+            graph.stroke(COLOR_DATA);
+            graph.line(prevX, prevPoint[j], x, pointY[j]);
+          }
         }
+        // Update previous point.
+        prevPoint = pointY;
+
         // Update previous x.
         prevX = x;
       }
+
+      // draw rectangle to hide end
+      graph.endDraw();
+      image(graph, 0, borderTop);
     }
   }
-  
-  void drawGraphTest() {
 
-    /////////////////////
-
-    if (values.size() >= 1) {
-
-      // Get the last point added.
-      float[] prevPoint = getY(values, values.size()-1);
-      float prevX = borderRight-1;
-
-      // Draw the graph from right to left.
-       for (int i=1; i<values.size(); i++) {
-        // Position of i-th point.
-        float x = i*10; 
-
-        // Get the point to the left.
-        //int k = (values.size()-1) - i;
-        //if (0 <= k && k < values.size()) {
-          // Draw the line segments for each part of the point.
-          float[] point = getY(values, i);
-          for (int j=0; j<point.length; j++) {
-
-            // Reward line. //
-
-            if (j == point.length-1) {
-              strokeWeight(LINE_WEIGHT_REWARD);
-              gradientLine(prevX, prevPoint[j],x, point[j]);
-            }
-
-            // Data line. //
-
-            else {
-              strokeWeight(LINE_WEIGHT_DATA);
-              stroke(COLOR_DATA);
-              line(x, point[j], prevX, prevPoint[j]);
-            }
-          }
-          // Update previous point.
-          prevPoint = point;
-        }
-        // Update previous x.
-        prevX = x;
-      }
-    }
-  }
+  //// METHODS ////
+  /////////////////
 
   // Returns the y coordinates of the i-th data element.
 
-  float[] getY(ArrayList<float[]> array, int i) {
-    // Get data.
-    float[] point = array.get(i);
-    float[] ys = new float[point.length];
+  //void computeMinMaxOSC(float nValues, float i, float oscValuesI) {
+  //  if (i == nValues - 1) {
+  //    minReward = min(minReward, oscValuesI);
+  //    maxReward = max(maxReward, oscValuesI);
+  //    //println(i);
+  //  }
+  //}
 
-    // Map the data to the screen.
-    for (int j=0; j<point.length; j++) {
-      if (j == point.length - 1) {
-        if (minReward == maxReward)
-          ys[j] = map(0.5, 0, 1, minHeight, maxHeight);
-        else
-          ys[j] = map(point[j], minReward, maxReward, minHeight, maxHeight);
-      } else
-        ys[j] = map(point[j], 0, 1, minHeight, maxHeight);
-    }
-    // Return the y coordinates.
-    return ys;
-  }
-
-  
-  float[] getYTest(ArrayList<float[]> array, int i) {
-    // Get data.
-    float[] point = array.get(i);
-    float[] ys = new float[point.length];
-
-    // Map the data to the screen.
-    for (int j=0; j<point.length; j++) {
-      if (j == point.length - 1) {
-        if (minReward == maxReward)
-          ys[j] = map(0.5, 0, 1, minHeight, maxHeight);
-        else
-          ys[j] = map(point[j], minReward, maxReward, minHeight, maxHeight);
-      } else
-        ys[j] = map(point[j], 0, 1, minHeight, maxHeight);
-    }
-    // Return the y coordinates.
-    return ys;
-  }
+  // draw //
+  //////////
 
 
   void gradientLine(float x1, float y1, float x2, float y2) {
@@ -210,18 +152,69 @@ class Robot { //
       int currentColor = lerpColor(COLOR_REWARD_MIN, COLOR_REWARD_MAX, gradient);
 
       // Set the stroke color
-      stroke(currentColor);
+      graph.stroke(currentColor);
 
       // Draw the point
-      point(x, y);
+      graph.point(x, y);
     }
+  }
+
+  // values //
+  ////////////
+
+  float[] getValues(JSONArray array) {
+    // Get n. values.
+    int nValues = array.size();
+
+    // Extract values.
+    float[] values = new float[nValues];
+    for (int i=0; i<nValues; i++) {
+      values[i] = array.getFloat(i);
+
+      // Compute min/max reward values.
+      if (i == nValues - 1) {
+        minReward = min(minReward, values[i]);
+        maxReward = max(maxReward, values[i]);
+      }
+    }
+    // Return values.
+    return values;
+  }
+
+  float[] getY(ArrayList<float[]> array, int i) {
+    // Get data.
+    float[] point = array.get(i);
+    float[] ys = new float[point.length];
+
+    // Map the data to the screen.
+    for (int j=0; j<point.length; j++) {
+      if (j == point.length - 1) {
+        if (minReward == maxReward)
+          ys[j] = map(0.5, 0, 1, maxHeight, minHeight);
+        else
+          ys[j] = map(point[j], minReward, maxReward, maxHeight, minHeight);
+      } else
+        ys[j] = map(point[j], 0, 1, maxHeight, minHeight);
+    }
+    // Return the y coordinates.
+    return ys;
   }
 
   void addValues(OscMessage msg) {
     if (msg.checkAddrPattern("/" + robotName + "/info")) {
+      if (nValuesReceived != oldNValues) {
+
+        //timeBetweenValues = float(valuesWatch);
+        valuesWatch.start();
+      }
+      println(valuesWatch.second());
       nValuesReceived++;
-      if (nValuesReceived > 5)
+      oldNValues = nValuesReceived;
+      
+      if (nValuesReceived > 5) {
         values.add(getOSCValues(msg));
+        speed = getSpeed();
+      }
     }
   }
 
@@ -237,10 +230,14 @@ class Robot { //
     nValuesReceived = 0;
     minReward = +9999;
     maxReward = -9999;
+    speed = 0;
 
     // Reinitialize values.
     values.clear();
   }
+
+  // communicate with main code //
+  ////////////////////////////////
 
   String getName() {
     return robotName;

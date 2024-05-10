@@ -42,10 +42,10 @@ final float SUBTITLE_START_TIME = TITLE_DURATION + 4.0;
 MQTTClient client;
 
 // Number of values received.
-int nValuesReceived;
+//int nValuesReceived;
 
 // Contains all the values to be plotted.
-ArrayList<float[]> values;
+//ArrayList<float[]> values;
 
 // Min. and max. reward values.
 float minReward = +9999;
@@ -53,17 +53,14 @@ float maxReward = -9999;
 
 // Stopwatch to measure time.
 Stopwatch watch;
+Stopwatch valuesWatch;
+
 
 // Mode: title vs graph.
 boolean titleMode = false;
 
 // Title of current behavior.
 String behaviorTitle = "";
-
-PImage robotLogo;
-final int ROBOT_LOGO_SIZE = 100;
-final int ROBOT_LOGO_OFFSET = 50;
-final float ROBOT_LOGO_SHAKE = 1;
 
 final int TITLE_SIZE = 48;
 final int SUBTITLE_SIZE = 32;
@@ -78,15 +75,9 @@ final float LINE_WEIGHT_DATA = 3;
 float speed;
 float graphPos;
 
-float minHeight;
-float maxHeight;
-
-final float BORDER_TOP    = ROBOT_LOGO_SIZE + 2*ROBOT_LOGO_OFFSET;
-final float BORDER_BOTTOM = 2*ROBOT_LOGO_OFFSET + SUBTITLE_SIZE;
-
 void setup() {
-  fullScreen(P2D, 0);
-
+  //  fullScreen(P2D, 0);
+  size(800, 600);
   // Initialize.
   graphPos = 0;
   client = new MQTTClient(this);
@@ -94,6 +85,8 @@ void setup() {
   oscP5 = new OscP5(this, OSC_PORT);
 
   watch = new Stopwatch(this);
+  valuesWatch = new Stopwatch(this);
+
 
   robot1 = new Robot(1, 0, width, 0, (height-SUBTITLE_SIZE*3)/3);
   robot2 = new Robot(2, 0, width, (height-SUBTITLE_SIZE*3)/3, 2*(height-SUBTITLE_SIZE*3)/3);
@@ -109,10 +102,16 @@ void setup() {
   // Image adjustements.
   smooth();
   noCursor();
-  speed = 3;
+  speed = 0;
+  graphPos = 10;
+  //  frameRate(1);
+  //test
+
+  behaviorTitle = "test";
 }
 
 void draw() {
+
   // Clear the screen.
   background(0);
 
@@ -136,6 +135,18 @@ void draw() {
 
   else {
 
+    ////// DRAW GRAPH ////
+    //////////////////////
+    pushMatrix();
+    translate(graphPos, 0);
+    scale(-1, 1);
+    robot1.drawGraph();
+    robot2.drawGraph();
+    robot3.drawGraph();
+    popMatrix();
+
+    graphPos+=speed;
+
     //// DRAW LOGO /////
     ////////////////////
 
@@ -143,61 +154,22 @@ void draw() {
     robot2.drawLogo();
     robot3.drawLogo();
 
-    ////// DRAW GRAPH ////
-    //////////////////////
-    pushMatrix();
-    //translate(graphPos,0);
-    robot1.drawGraphTest();
-    robot2.drawGraph();
-    robot3.drawGraph();
-    popMatrix();
-    
-    graphPos-=speed;
-
     // Write the title.
     writeTitle();
   }
 }
-
-//float yToReward(float y) {
-//  if (minReward == maxReward)
-//    return minReward;
-//  else
-//    return map(reward, minHeight, maxHeight, minReward, maxReward);
-//}
 
 void writeTitle() {
   if (watch.second() >= SUBTITLE_START_TIME) {
     textAlign(RIGHT, TOP);
     fill(192);
     textSize(SUBTITLE_SIZE);
-    text(behaviorTitle, width - ROBOT_LOGO_OFFSET, height - BORDER_BOTTOM + ROBOT_LOGO_OFFSET);
+    text(behaviorTitle, width - 50, height - SUBTITLE_SIZE + 150); //********************88
   }
 }
 
 color getColorReward(float reward) {
   return lerpColor(COLOR_REWARD_MIN, COLOR_REWARD_MAX, reward);
-}
-
-// Extract floating point values from message and return them as an array.
-float[] getValues(JSONArray array) {
-  // Get n. values.
-  int nValues = array.size();
-
-  // Extract values.
-  float[] values = new float[nValues];
-  for (int i=0; i<nValues; i++) {
-    values[i] = array.getFloat(i);
-
-    // Compute min/max reward values.
-    if (i == nValues - 1) {
-      minReward = min(minReward, values[i]);
-      maxReward = max(maxReward, values[i]);
-    }
-  }
-
-  // Return values.
-  return values;
 }
 
 void clientConnected() {
@@ -216,13 +188,6 @@ void connectionLost() {
 
 void messageReceived(String topic, byte[] payload) {
   println("new message: " + topic + " - " + new String(payload));
-  // Receive data.
-  //if (topic.equals(MQTT_TOPIC_DATA)) {
-  //  nValuesReceived++;
-  //  if (nValuesReceived >= 2) // drop the first one
-  //    values.add(getValues(parseJSONArray(new String(payload))));
-
-
 
   // Receive begin with title.
 
@@ -267,6 +232,25 @@ float[] getOSCValues(OscMessage msg) {
   return OscValues;
 }
 
+float getSpeed() {
+  float speed = 0;
+  switch(behaviorTitle) {
+  case "c":
+    speed = 1;
+    break;
+  case "b":
+    speed = 1;
+    break;
+  case "a":
+    speed = 1;
+    break;
+  case "test":
+    speed = 1.2;
+    break;
+  }
+  return speed;
+}
+
 //OSC event.
 void oscEvent(OscMessage msg) {
 
@@ -276,7 +260,9 @@ void oscEvent(OscMessage msg) {
     behaviorTitle = msg.get(0).stringValue();
 
     // Reinitialize values.
-    values.clear();
+    robot1.reinitializeValues();
+    robot2.reinitializeValues();
+    robot3.reinitializeValues();
 
     // Switch to title mode and start timer.
     titleMode = true;
