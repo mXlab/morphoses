@@ -47,6 +47,7 @@ char jsonString[1024];
 
 Chrono sendRate{true};
 Chrono moterCheckTimer{true};
+Chrono idleActionTimer{true};
 
 Vec2f currPosition;
 pq::Smoother avgPositionX(AVG_POSITION_TIME_WINDOW);
@@ -97,17 +98,24 @@ void updateLocation() {
   avgPosition.set(avgPositionX.get(), avgPositionY.get());
 }
 
-void setIdle(bool state) {
+void setIdle(bool idleMode) {
 
   
-  if (!idle && state) { // when switching to idle
+  if (!idle && idleMode) { // when switching to idle
+
+// TODO:    motors::setEngineSpeedPower(0);
+    motors::setEngineSpeed(0);
+    motors::setEngineSteer(0);
+
+    idleActionTimer.restart();
+
     if (animations::lockMutex()) {
       animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
       
-      animations::currentAnimation().setBaseColor(128, 0, 255);
-      animations::currentAnimation().setAltColor(255, 0, 128);
+      animations::currentAnimation().setBaseColor(8, 0, 16);
+      animations::currentAnimation().setAltColor(16, 0, 8);
       animations::currentAnimation().setNoise(0);
-      animations::currentAnimation().setPeriod(5);
+      animations::currentAnimation().setPeriod(10);
       animations::currentAnimation().setType(animations::AnimationType::FULL);
       animations::currentAnimation().setRegion(pixels::Region::ALL);
       animations::beginTransition();  // start transition
@@ -115,18 +123,21 @@ void setIdle(bool state) {
     }
   }
 
-  idle = state;
-
-}
-
-void idleMode() {
-  // 
+  // Switch.
+  idle = idleMode;
 }
 
 void update() {
 
-  if(idle){
-    idleMode();
+  if(idle) {
+
+    // Run idle mode.
+    if (idleActionTimer.hasPassed(1000, true)) {
+      if (pq::randomUniform() < 0.1f) {
+        motors::setEngineSteer(pq::randomFloat(-1, 1));
+      }
+    }
+
   }
 
   else {

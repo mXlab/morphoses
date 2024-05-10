@@ -35,9 +35,7 @@ namespace morphose {
 
     void sendData();
 
-    void idleMode();
-
-    void setIdle(bool idle);
+    void setIdle(bool idleMode);
 
 namespace json {
 
