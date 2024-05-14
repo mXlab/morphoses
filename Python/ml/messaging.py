@@ -186,9 +186,11 @@ class Messaging:
         pass
 
     def begin(self):
+        print("Messaging begin")
         self.mqtt.begin()
 
     def terminate(self):
+        print('Messaging terminated')
         self.mqtt.terminate()
 
     # Callbacks. ################################################################
@@ -201,7 +203,7 @@ class Messaging:
 
     # Receive data from robot.
     def receive_data(self, data, name):
-        print("*** Receiving data")
+        print("*** Receiving data Mqtt callback***")
         self.world.store_rotation_data_main(name, 
                                             data['main']['quat'] + data['main']['d-quat'] +
                                             data['main']['rot'] + data['main']['d-rot'])

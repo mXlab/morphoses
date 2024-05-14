@@ -11,6 +11,7 @@ Help: search "Extensions" in wiki
 from TDStoreTools import StorageManager
 import TDFunctions as TDF
 import TDJSON
+import json
 
 class RobotExt:
 	"""
@@ -84,7 +85,7 @@ class RobotExt:
 		
 		p = payload.decode()
 		#json = TDJSON.textToJSON(p)
-		print(p)
+		
 		self.UpdateBattery(float(p))
 
 	def SetConnected(self, status):
@@ -101,4 +102,34 @@ class RobotExt:
 	def LogDebug(self,payload):
 		p = payload.decode()
 		self.logger.Info("Received from Debug: {}".format(p))
+		
+	def Stop(self):
+		topicLights = "morphoses/{}/animation".format(self.name)
+		topicPower = "morphoses/{}/power".format(self.name)
+		topicSpeed = "morphoses/{}/speed".format(self.name)
+		
+		animation = {
+        	"base": [0,0,0],
+        	"alt": [0,0,0],
+        	"period": 0,
+        	"noise": 0,
+        	"region": 0,
+        	"type": 1
+        }
+
+		res_bytes = json.dumps(animation).encode('utf-8')
+		self.logger.Info("Stopping Robot asked from UI")
+		self.mqtt.publish(topicPower,b'0')
+		self.mqtt.publish(topicSpeed,b'0')
+		print(topicLights)
+		self.mqtt.publish(topicLights,b'0')
+		
+	
+	def IdleOff(self):
+		topic = "morphoses/{}/idle".format(self.name)
+		self.mqtt.publish(topic,b'0')
+		
+	def IdleOn(self):
+		topic = "morphoses/{}/idle".format(self.name)
+		self.mqtt.publish(topic,b'1')
 		

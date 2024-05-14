@@ -53,5 +53,7 @@ if __name__ == "__main__":
     while manager.is_running():
         manager.step()
 
+    manager.end()
+
     world.terminate()
     print("Done")

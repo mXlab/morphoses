@@ -17,7 +17,7 @@ class Data:
                  is_angle=False,
                  smoothing=0.0,
                  force_delta=False,
-                 default=None):
+                 default=None): #None
         self.value = self.prev_value = self.stored_value = default
         self.delta_value = 0
         self.auto_scale = auto_scale
@@ -406,15 +406,19 @@ class World:
         if isinstance(variable, list):
             valid = True
             for v in variable:
+                print(v)
                 if not self.is_valid(agent, v):
+                    print(v,type(v))
                     print("Invalid variable for agent {}: {}".format(agent.get_name(), v))
                     valid = False
             return valid
 
         # Process single variable.
         else:
+            print('here')
             entity_name, variable, __ = self._get_variable_info(agent, variable)
             data = self.entities[entity_name].get(variable)
+            print(data,type(data))
             return data.is_valid()
 
     def get_robots(self):
@@ -500,14 +504,12 @@ class World:
         
     # Stop mode: depending on success.
     def display_stop(self, agent, success):
-        if success:
-            alt_color = [4, 16, 0]
-        else:
-            alt_color = [20, 4, 0]
         # Calculate color representative of reward.
         animation = {
-            "base": [32, 32, 16],
-            "alt": alt_color,
+            "base": [24, 24, 24],
+            "alt": [8, 8, 8],
+#            "base": [24, 24, 4],
+#            "alt": [8, 8, 4],
             "period": 4,
             "noise": 0.1,
             "region": 0,
@@ -571,7 +573,7 @@ class World:
 
         # Broadcast as OSC.
         name = self.agent_as_name(agent)
-        info = state[0].tolist() + [reward]
+        info = state[0].tolist() + [scaled_reward]
         self.messaging.send_info(name, "/display-data", info)
 
     # def set_animation_period(self, agent, period):
@@ -611,16 +613,19 @@ class World:
                 (self.virtual_boundaries['y_min'] + offset <= y <= self.virtual_boundaries['y_max'] - offset)
 
     def begin(self):
-        print("Messaging begin")
+        print('World Begin')
+
+        
         self.messaging.begin()
 
         print("Init robots")
-        for robot in self.robots:
+        for robot in self.robots: #TODO : Chek why asking for robot that are not enabled
             self.set_motors(robot, 0, 0)
             self.entities[robot].store_action(0, self.get_time())
             # self.set_color(robot, [0, 255, 255])
             self.messaging.send(robot, "/power", 1)
             self.messaging.send(robot, "/stream", 0)
+            self.messaging.send(robot, "/idle", 0)
             #self.messaging.send(robot, "/stream", 1, board_name='imu')
 
         # Call an update to initialize data.
@@ -634,12 +639,17 @@ class World:
         self.messaging.loop()
         self.update()
         self.debug()
-        self.send_data()
+        self.send_data() #TODO: Maybe remove, function only returns
 
     def sleep(self, t):
         start_time = time.time()
         while time.time() - start_time < t:
             self.messaging.loop()
+
+    def end(self):
+        for robot in self.robots:
+            self.set_motors(robot, 0, 0)
+            self.messaging.send(robot, "/idle", 1)
 
     def terminate(self):
         for robot in self.robots:
@@ -652,12 +662,14 @@ class World:
         self.messaging.terminate()
 
     def update(self):
+        print()
+        print()
+        print('=-------------------update--------------------------')
         for entity in self.entities.values():
             entity.update()
 
         for robot_name in self.robots:
             robot = self.entities[robot_name]
-            
             # Ask for data.
             self.messaging.send(robot_name, "/get-data", 1)
 

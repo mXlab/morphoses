@@ -83,8 +83,11 @@ class Manager:
         self.world.send_info("all", "/begin", title)
         for a in self.current_agents.values():
             print("** Begin agent {} **".format(a.get_name()))
-            a.begin()
-        
+            status = a.begin()
+            if not status:
+                print("Initialization of {} failed. Removing it from script".format(a.get_name()))
+                self.current_agents.pop(a.get_name())
+
         self.world.sleep(10)
 
     def behavior_end(self):
@@ -95,9 +98,9 @@ class Manager:
         return self.running
     
     def begin(self):
-        print("** Begin **")
+        print("**Manager Begin **")
         self.world.begin()
-
+        print("Succesfully initialized wolrd")
         # Begin all agents.
         self.behavior_begin()
 
@@ -148,6 +151,10 @@ class Manager:
                 self.world.sleep(1) # Wait
             else:
                 self.running = False
+
+    def end(self):
+        self.world.end()
+        self.world.terminate()
 
     # Callback for threads.
     def run_step_agent(self, agent):
