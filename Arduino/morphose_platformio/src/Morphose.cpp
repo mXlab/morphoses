@@ -372,7 +372,9 @@ namespace energy {
 #define ENERGY_VOLTAGE_CRITICAL_MODE 2
 
         void deepSleepLowMode(float batteryVoltage) {
-            mqtt::debug("Battery low");
+            char buff[64];
+            sprintf(buff,"Battery low : %.2F volts", batteryVoltage);
+            mqtt::debug(buff);
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
 
             // Wakeup every ENERGY_VOLTAGE_LOW_WAKEUP_TIME seconds.
@@ -384,7 +386,9 @@ namespace energy {
         }
 
         void deepSleepCriticalMode(float batteryVoltage) {
-            mqtt::debug("Battery critical");
+            char buff[64];
+            sprintf(buff,"Battery critical : %.2F volts", batteryVoltage);
+            mqtt::debug(buff);
 
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
 
@@ -395,6 +399,11 @@ namespace energy {
         void check() {
             // Read battery voltage.
             float batteryVoltage = motors::getBatteryVoltage();
+
+            if (batteryVoltage == 0) {
+                mqtt::debug("WARNING : Battery missread");
+                return;
+            }
             mqtt::sendBatteryVoltage(batteryVoltage);
             // char buffer[64];
             // sprintf(buffer,"Battery voltage : %F \n",batteryVoltage);
