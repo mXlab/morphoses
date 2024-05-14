@@ -112,8 +112,23 @@ void setIdle(bool idleMode) {
     if (animations::lockMutex()) {
       animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
       
-      animations::currentAnimation().setBaseColor(8, 0, 16);
-      animations::currentAnimation().setAltColor(16, 0, 8);
+      animations::currentAnimation().setBaseColor(8, 8, 8);
+      animations::currentAnimation().setAltColor(2, 2, 2);
+      animations::currentAnimation().setNoise(0.1);
+      animations::currentAnimation().setPeriod(6);
+      animations::currentAnimation().setType(animations::AnimationType::FULL);
+      animations::currentAnimation().setRegion(pixels::Region::TOP);
+      animations::beginTransition();  // start transition
+      animations::unlockMutex();
+    }
+  }
+
+  else if (idle && !idleMode) { // when switching from idle
+    if (animations::lockMutex()) {
+      animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
+      
+      animations::currentAnimation().setBaseColor(0, 0, 0);
+      animations::currentAnimation().setAltColor(0, 0, 0);
       animations::currentAnimation().setNoise(0);
       animations::currentAnimation().setPeriod(10);
       animations::currentAnimation().setType(animations::AnimationType::FULL);
@@ -121,6 +136,7 @@ void setIdle(bool idleMode) {
       animations::beginTransition();  // start transition
       animations::unlockMutex();
     }
+
   }
 
   // Switch.
