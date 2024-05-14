@@ -504,12 +504,16 @@ class World:
         
     # Stop mode: depending on success.
     def display_stop(self, agent, success):
+        if success:
+            base_color = [22, 42, 10]
+            alt_color  = [6, 10, 4]
+        else:
+            base_color = [24, 24, 24],
+            alt_color  = [8, 8, 8]
         # Calculate color representative of reward.
         animation = {
-            "base": [24, 24, 24],
-            "alt": [8, 8, 8],
-#            "base": [24, 24, 4],
-#            "alt": [8, 8, 4],
+            "base": base_color,
+            "alt": alt_color,
             "period": 4,
             "noise": 0.1,
             "region": 0,
