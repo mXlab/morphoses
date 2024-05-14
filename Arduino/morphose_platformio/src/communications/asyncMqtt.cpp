@@ -71,7 +71,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[10] ={"morphoses/robot2/steer",
                                             "morphoses/robot2/calib",
                                             "morphoses/robot2/stream",
                                             "morphoses/robot2/reboot",
-                                              "morphoses/robot1/idle"};
+                                            "morphoses/robot2/idle"};
 const char* debugAddress  = "morphoses/robot2/debug";
 const char* temperatureAddress  = "morphoses/robot2/temperature";
 const char* batteryAddress  = "morphoses/robot2/battery";
@@ -87,7 +87,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[10] ={"morphoses/robot3/steer",
                                             "morphoses/robot3/calib",
                                             "morphoses/robot3/stream",
                                             "morphoses/robot3/reboot",
-                                              "morphoses/robot1/idle"};
+                                            "morphoses/robot3/idle"};
 
 const char* debugAddress  = "morphoses/robot3/debug";
 const char* temperatureAddress  = "morphoses/robot3/temperature";
