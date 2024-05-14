@@ -3,14 +3,10 @@ behaviors:
 
   immobilism:
     title: Being still.
-    action_profile: cross
+    action_profile: i
     state_profile:
       - this.d_mrx
       - this.d_mry
-      - this.d_mrz
-      # - this.d_rx
-      # - this.d_ry
-      # - this.d_rz
     reward_profile:
       - type: sum
         weight: 0.25
@@ -18,7 +14,7 @@ behaviors:
           variables:
             - this.d_mrx
             - this.d_mry
-            - this.d_mrz
+            # - this.d_mrz
           absolute: True
           invert: True
       - type: inv_delta_position
@@ -30,14 +26,15 @@ behaviors:
       high_reward_duration: 20
     curiosity_weight: 0
     q_model_type: tables
-    n_state_tiles: 1
+    n_state_tiles: 3
     n_state_tilings: 1
-    time_step: 5
+    time_step: 2.5
+    time_balance: 0
     navigation_mode: false
     learning_rate: 0.5
     #learning_rate: 0.1
     gamma: 0.5
-    epsilon: 1
+    epsilon: 0.1
 
   dance:
     title: Rocking without rolling.
