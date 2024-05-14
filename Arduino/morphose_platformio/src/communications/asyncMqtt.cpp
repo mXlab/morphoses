@@ -71,7 +71,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[10] ={"morphoses/robot2/steer",
                                             "morphoses/robot2/calib",
                                             "morphoses/robot2/stream",
                                             "morphoses/robot2/reboot",
-                                              "morphoses/robot1/idle"};
+                                            "morphoses/robot2/idle"};
 const char* debugAddress  = "morphoses/robot2/debug";
 const char* temperatureAddress  = "morphoses/robot2/temperature";
 const char* batteryAddress  = "morphoses/robot2/battery";
@@ -87,7 +87,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[10] ={"morphoses/robot3/steer",
                                             "morphoses/robot3/calib",
                                             "morphoses/robot3/stream",
                                             "morphoses/robot3/reboot",
-                                              "morphoses/robot1/idle"};
+                                            "morphoses/robot3/idle"};
 
 const char* debugAddress  = "morphoses/robot3/debug";
 const char* temperatureAddress  = "morphoses/robot3/temperature";
@@ -293,8 +293,8 @@ void handlePosition(int robot, char* data) {
 
   // Test if parsing succeeds.
   if (error) {
-    char buffer[128];
-    sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
+    char buffer[256];
+    sprintf(buffer,"handlePosition() deserializeJson() failed: %s\n", error.c_str());
     mqtt::debug(buffer);
     return;
   }
@@ -321,13 +321,14 @@ void handleAnimation(char* data){
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, data);
 
-  // Test if parsing succeeds.
-  if (error) {
-    char buffer[128];
-    sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
-    mqtt::debug(buffer);
-    return;
-  }
+    // Test if parsing succeeds.
+    if (error) {
+      char buffer[256];
+      sprintf(buffer,"handleAnimation() deserializeJson() failed: %s\n", error.c_str());
+      mqtt::debug(buffer);
+      return;
+    }
+    
     // JSONVar animationData = JSON.parse(data);
 
     JsonArray _baseColor = doc["base"];
@@ -338,13 +339,13 @@ void handleAnimation(char* data){
     animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
     
     animations::currentAnimation().setBaseColor(_baseColor[0].as<int>(), _baseColor[1].as<int>(), _baseColor[2].as<int>());
-
     animations::currentAnimation().setAltColor(_altColor[0].as<int>(),  _altColor[1].as<int>(),  _altColor[2].as<int>());
 
-    animations::currentAnimation().setNoise(doc["noise"][0].as<float>());
-    animations::currentAnimation().setPeriod(doc["period"][0].as<float>());
-    animations::currentAnimation().setType((animations::AnimationType)doc["type"][0].as<int>());
-    animations::currentAnimation().setRegion((pixels::Region)int(doc["region"][0]) );
+    animations::currentAnimation().setNoise(doc["noise"].as<float>());
+    animations::currentAnimation().setPeriod(doc["period"].as<float>());
+    animations::currentAnimation().setType((animations::AnimationType)doc["type"].as<int>());
+    animations::currentAnimation().setRegion((pixels::Region)doc["region"].as<int>() );
+
     animations::beginTransition();  // start transition
     animations::unlockMutex();
   }
@@ -410,8 +411,8 @@ void handleNav(char* payload){
 
     // Test if parsing succeeds.
     if (error) {
-      char buffer[128];
-      sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
+      char buffer[256];
+      sprintf(buffer,"handleNav() deserializeJson() failed: %s\n", error.c_str());
       mqtt::debug(buffer);
       return;
     }

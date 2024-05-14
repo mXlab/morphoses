@@ -75,11 +75,19 @@ using namespace pq;
 // #include "Logger.h"
 #include "Morphose.h"
 #include "Utils.h"
+#include "Watchdog.h"
 
 
 void setup() {
 
   delay(5000);
+
+  // Init watchdog.
+  watchdog::initialize();
+  // Register core task.
+  watchdog::registerTask();
+
+  // Launch everything.
   Plaquette.begin();
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
@@ -94,6 +102,10 @@ void setup() {
  
   mqtt::initialize();
   mqtt::debug(" MQTT initialized");
+
+  char buffer[128];
+  sprintf(buffer, "Reset reason: %s\n", utils::getResetReason());
+  mqtt::debug(buffer);
 
   motors::initialize();
   mqtt::debug("Motors initialized");
@@ -112,7 +124,6 @@ void setup() {
   // Initialize OTA.
   initOTA(morphose::name);
   mqtt::debug(" OTA initialized");
-
 
   morphose::energy::check();
   mqtt::debug("Energy initialized");
@@ -144,6 +155,8 @@ void checkMemory() {
 }
 
 void loop() {
+  // Ping watchdog.
+  watchdog::reset();
 
  // logger::update();
   //logger::info("logger::update ok");

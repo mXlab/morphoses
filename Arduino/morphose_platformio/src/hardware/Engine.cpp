@@ -59,12 +59,13 @@ namespace motors {
         // Create mutex.
         dxlMutex = xSemaphoreCreateMutex();
 
+        // Initialize engine-related flags.
         engineSpeedPower = engineSteerPower = false;
         speedTemperatureCritical = steerTemperatureCritical = false;
 
-        // todo : verify if baudrate is too slow
-        // Set Port baudrate to 57600bps for DYNAMIXEL motors.
         if (lockMutex()) {
+
+            // Set Port baudrate to 57600bps for DYNAMIXEL motors.
             dxl.begin(57600);
             // Set Port Protocol Version. This has to match with DYNAMIXEL protocol version.
             dxl.setPortProtocolVersion(DXL_PROTOCOL_VERSION);
@@ -94,17 +95,22 @@ namespace motors {
             // Turn off torque when configuring items in EEPROM area
             dxl.torqueOff(DXL_ID_SPEED);
             dxl.torqueOff(DXL_ID_STEER);
+
+            // Set operating mode for each motor.
             dxl.setOperatingMode(DXL_ID_SPEED, OP_VELOCITY);  // rolling
             dxl.setOperatingMode(DXL_ID_STEER, OP_POSITION);  // steering left right
+
+            // Turn torque back on.
             dxl.torqueOn(DXL_ID_SPEED);
             dxl.torqueOn(DXL_ID_STEER);
 
+            // Set profile acceleration and velocity motors.
             dxl.writeControlTableItem(PROFILE_ACCELERATION, DXL_ID_SPEED, PROFILE_ACCELERATION_SPEED);
-            dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_ID_SPEED, PROFILE_VELOCITY_SPEED);
-
+            dxl.writeControlTableItem(PROFILE_VELOCITY,     DXL_ID_SPEED, PROFILE_VELOCITY_SPEED);
             dxl.writeControlTableItem(PROFILE_ACCELERATION, DXL_ID_STEER, PROFILE_ACCELERATION_STEER);
-            dxl.writeControlTableItem(PROFILE_VELOCITY, DXL_ID_STEER, PROFILE_VELOCITY_STEER);
+            dxl.writeControlTableItem(PROFILE_VELOCITY,     DXL_ID_STEER, PROFILE_VELOCITY_STEER);
 
+            // Init current values of speed and steer.
             currentSpeed = currentSteer = 0;
 
             unlockMutex();
@@ -113,35 +119,34 @@ namespace motors {
 
 
     void checkTemperature() {
+        // These variables keep track of power status of engines when they are temporarily disabled because of 
+        // critical temperatures so that we can return back to them after.
         static bool engineSpeedPowerSave = false;
         static bool engineSteerPowerSave = false;
 
+        // Get temperatures.
         int speedTemperature = getEngineSpeedTemperature();
         int steerTemperature = getEngineSteerTemperature();
         
-        
-
-        // High temperature: Launch safety procedure.
-
-        // Critical speed motor temperature: disable motor.
+        // *!* Critical speed motor temperature: disable motor...
         if (speedTemperature >= MOTOR_TEMPERATURE_CRITICAL) {
             speedTemperatureCritical = true;
             engineSpeedPowerSave = engineSpeedPower; // Keep trace of current power state.
             setEngineSpeedPower(false);
         }
-        // Speed motor has cooled down: re-enable motor.
+        // ... speed motor has cooled down: re-enable motor.
         else if (speedTemperatureCritical && speedTemperature <= MOTOR_TEMPERATURE_COOLDOWN) {
             speedTemperatureCritical = false;
             setEngineSpeedPower(engineSpeedPowerSave); // Reset engine power state.
         }
 
-        // Critical steering motor temperature: disable motor.
+        // *!* Critical steering motor temperature: disable motor...
         if (steerTemperature >= MOTOR_TEMPERATURE_CRITICAL) {
             steerTemperatureCritical = true;
             engineSteerPowerSave = engineSteerPower; // Keep trace of current power state.
             setEngineSteerPower(false);
         }
-        // Steering motor has cooled down: re-enable motor.
+        // ... steering motor has cooled down: re-enable motor.
         else if (steerTemperatureCritical && steerTemperature <= MOTOR_TEMPERATURE_COOLDOWN) {
             steerTemperatureCritical = false;
             setEngineSteerPower(engineSteerPowerSave);  // Reset engine power state.
@@ -159,7 +164,7 @@ namespace motors {
             mqtt::debug(buffer);
         }
 
-
+        // Send temperatures to MQTT.
         char buffer[64];
         sprintf(buffer,"%d,%d,%d,%d", speedTemperature,speedTemperatureCritical, steerTemperature,steerTemperatureCritical);
         mqtt::sendTemperature(buffer);
