@@ -239,6 +239,8 @@ class Agent:
             scaled_r = utils.inv_lerp(r, self.min_r, self.max_r)
             self.world.display(self, state, r, scaled_r)
 
+            self.world.debug_display(self, self.get_state(False), r_int, r_ext, r)
+
             # Compute average reward.
             r_array = np.array([ r_int, r_ext, r ])
             if self.avg_r is None:
@@ -389,8 +391,8 @@ class Agent:
     def state_is_ready(self):
         return self.world.is_valid(self, self.state_profile)
 
-    def get_state(self, raw=False):
-        return np.reshape(np.array(self.world.get(self, self.state_profile)), (1, self.n_inputs))
+    def get_state(self, standardized=True):
+        return np.reshape(np.array(self.world.get(self, self.state_profile, standardized)), (1, self.n_inputs))
 
 
 # Return list of reward functions from textual reward profile.
