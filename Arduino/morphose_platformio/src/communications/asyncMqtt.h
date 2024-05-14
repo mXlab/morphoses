@@ -21,7 +21,7 @@ extern AsyncMqttClient client;
 void debug(const char * msg);
 void sendTemperature(const char* msg);
 void sendBatteryVoltage(float v);
-
+void sendBatteryCritical();
 namespace callbacks {
 void handlePosition(int robot, char* data);
 void handleAnimation(char* data);

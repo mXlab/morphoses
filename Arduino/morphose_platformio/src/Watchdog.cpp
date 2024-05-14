@@ -17,4 +17,8 @@ namespace watchdog {
     esp_task_wdt_reset();
   }
 
+  void deleteCurrentTask(){
+    esp_task_wdt_delete(NULL);
+    }
+
 }
