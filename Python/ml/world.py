@@ -525,7 +525,7 @@ class World:
         self.messaging.send_animation(name, animation)
 
     # Idle mode (between behaviors).
-    def display_idle(self, agent):
+    def display_fade(self, agent):
         animation = {
             "base": [8, 4, 0],
             "alt": [0, 0, 0],
