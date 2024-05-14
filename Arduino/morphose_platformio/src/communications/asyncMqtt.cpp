@@ -339,13 +339,13 @@ void handleAnimation(char* data){
     animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
     
     animations::currentAnimation().setBaseColor(_baseColor[0].as<int>(), _baseColor[1].as<int>(), _baseColor[2].as<int>());
-
     animations::currentAnimation().setAltColor(_altColor[0].as<int>(),  _altColor[1].as<int>(),  _altColor[2].as<int>());
 
-    animations::currentAnimation().setNoise(doc["noise"][0].as<float>());
-    animations::currentAnimation().setPeriod(doc["period"][0].as<float>());
-    animations::currentAnimation().setType((animations::AnimationType)doc["type"][0].as<int>());
-    animations::currentAnimation().setRegion((pixels::Region)int(doc["region"][0]) );
+    animations::currentAnimation().setNoise(doc["noise"].as<float>());
+    animations::currentAnimation().setPeriod(doc["period"].as<float>());
+    animations::currentAnimation().setType((animations::AnimationType)doc["type"].as<int>());
+    animations::currentAnimation().setRegion((pixels::Region)doc["region"].as<int>() );
+
     animations::beginTransition();  // start transition
     animations::unlockMutex();
   }
