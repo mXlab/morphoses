@@ -606,9 +606,9 @@ class World:
     #         self.messaging.send(name, "/blue", rgb[2])
 
     def is_inside_boundaries(self, agent, use_recenter_offset=True):
-        if (not self.is_valid(agent, 'x') or not self.is_valid(agent, 'y')):
-            return True
         if not self.use_virtual_boundaries:
+            return True
+        if (not self.is_valid(agent, 'x') or not self.is_valid(agent, 'y')):
             return True
         x = self.get(agent, 'x', standardized=False)
         y = self.get(agent, 'y', standardized=False)
@@ -618,8 +618,6 @@ class World:
 
     def begin(self):
         print('World Begin')
-
-        
         self.messaging.begin()
 
         print("Init robots")
