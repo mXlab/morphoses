@@ -92,7 +92,7 @@ void setup() {
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 
-  Log.infoln(" Morphose - 2023 - 10 ");
+  Log.infoln(" Morphose - 2024 - 11 ");
 
   Wire.begin();
   
@@ -130,7 +130,8 @@ void setup() {
 
   mqtt::debug("---------------- End of setup ----------------");
 
-  Serial.println("End of setup");
+  animations::setDebugColor(DEBUG_COLOR_A, 0,255,0,0);
+  
 }
 
 void checkMemory() {

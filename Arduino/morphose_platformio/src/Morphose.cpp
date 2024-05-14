@@ -16,6 +16,7 @@
 #include "hardware/IMU.h"
 
 #include "lights/Animation.h"
+#include "Watchdog.h"
 
 #define AVG_POSITION_TIME_WINDOW 0.2f
 
@@ -62,19 +63,11 @@ JsonDocument deviceData;
 void initialize() {
   Log.infoln("Robot id is set to : %d", id);
   Log.infoln("Robot name is : %s", name);
-  network::outgoingPort =
-      outgoingPort;  // sets port in network file for desired robot port.
+  network::outgoingPort =  outgoingPort;  // sets port in network file for desired robot port.
   Log.infoln("Robot streaming port is : %d", network::outgoingPort);
   Log.warningln("Morphose successfully initialized");
 }
 
-// void sayHello() {
-//     bool lastState = osc::isBroadcasting();
-//     osc::setBroadcast(true);
-//     osc::bundle.add("/bonjour").add(name);
-//     osc::sendBundle();
-//     osc::setBroadcast(lastState);
-// }
 
 void resetPosition() {
   currPosition.set(0, 0);
@@ -179,9 +172,9 @@ void update() {
 
     if (sendRate.hasPassed(STREAM_INTERVAL, true)) {
       imus::process();
-      Serial.println("imus::process done");
+      //Serial.println("imus::process done");
       morphose::navigation::process();
-      Serial.println("morphose::navigation::process done");
+      //Serial.println("morphose::navigation::process done");
 
       if (stream) {
         sendData();
@@ -191,7 +184,7 @@ void update() {
     if(moterCheckTimer.hasPassed(1000, true)){
         motors::checkTemperature();
         energy::check();  // Energy checkpoint to prevent damage when low
-        Serial.println("energy::check done");
+        //Serial.println("energy::check done");
     }
 
   }
@@ -380,7 +373,6 @@ namespace energy {
             // Wakeup every ENERGY_VOLTAGE_LOW_WAKEUP_TIME seconds.
             esp_sleep_enable_timer_wakeup(ENERGY_VOLTAGE_LOW_WAKEUP_TIME * 1000000UL);
             mqtt::debug("Battery low2");
-
             // Go to sleep (light sleep mode).
             esp_light_sleep_start();
         }
@@ -390,6 +382,13 @@ namespace energy {
             sprintf(buff,"Battery critical : %.2F volts", batteryVoltage);
             mqtt::debug(buff);
 
+            mqtt::sendBatteryCritical();
+            animations::setDebugColor(0, 0,0,0,0);
+            animations::setDebugColor(1, 0,0,0,0);
+            animations::setDebugColor(2, 0,0,0,0);
+            animations::setDebugColor(3, 0,0,0,0);
+            motors::setEnginePower(false);
+            // watchdog::deleteCurrentTask();
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
 
             // Go to sleep forever (deep sleep mode).
@@ -397,36 +396,35 @@ namespace energy {
         }
 
         void check() {
-            // Read battery voltage.
-            float batteryVoltage = motors::getBatteryVoltage();
+          static const float criticalVoltage = 12.0;
+          
+          // Read battery voltage.
+          float batteryVoltage = motors::getBatteryVoltage();
 
-            if (batteryVoltage == 0) {
-                mqtt::debug("WARNING : Battery missread");
-                return;
-            }
-            mqtt::sendBatteryVoltage(batteryVoltage);
-            // char buffer[64];
-            // sprintf(buffer,"Battery voltage : %F \n",batteryVoltage);
-            // mqtt::debug(buffer);
+          if (batteryVoltage == 0) {
+              mqtt::debug("WARNING : Battery missread");
+              return;
+          }
+           
 
             // Low voltage: Launch safety procedure.
-            if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
-                // Put IMUs to sleep to protect them.
-                imus::sleep();
+            // if (batteryVoltage < lowVoltage) {
+            //     // Put IMUs to sleep to protect them.
+            //     imus::sleep();
 
-    // Power engine off.
-    motors::setEnginePower(false);
+            //     // Power engine off.
+            //     motors::setEnginePower(false);
 
                 // If energy level is critical, just shut down the ESP.
-                if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL) {
-                    deepSleepCriticalMode(batteryVoltage);
-                }
-
-                // Otherwise, sleep but wake up to show that something is wrong.
-                else {
-                    deepSleepLowMode(batteryVoltage);
-                }
+            if (batteryVoltage < criticalVoltage) {
+                deepSleepCriticalMode(batteryVoltage);
+            }else{
+               mqtt::sendBatteryVoltage(batteryVoltage);
             }
+                // }else {    // Otherwise, sleep but wake up to show that something is wrong.
+                //     deepSleepLowMode(batteryVoltage);
+                // }
+            // }
         }
     }  // namespace energy
 }  // namespace morphose
