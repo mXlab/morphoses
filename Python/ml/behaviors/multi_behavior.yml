@@ -1,4 +1,22 @@
 ---
+sequence:  
+  - dance
+  - curiosity
+  - synchrony
+  # - get_close_thing1
+  - go_to_y
+  - get_close_center
+  - immobilism
+#  - test
+
+robots:
+  - robot1
+  - robot2
+  - robot3
+
+settings:
+  repeat_sequence: false
+
 behaviors:
 
   immobilism:
@@ -301,21 +319,3 @@ behaviors:
     gamma: 0.5
     epsilon: 1
 
-sequence:  
-  - test
-  - dance
-  - curiosity
-  - synchrony
-  # - get_close_thing1
-  - go_to_y
-  - get_close_center
-  - immobilism
-#  - test
-
-robots:
-  - robot1
-  - robot2
-  - robot3
-
-settings:
-  repeat_sequence: false
