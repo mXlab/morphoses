@@ -133,3 +133,17 @@ class RobotExt:
 		topic = "morphoses/{}/idle".format(self.name)
 		self.mqtt.publish(topic,b'1')
 		
+	def BatteryCritical(self, payload):
+		self.logger.Error("BATTERY CRITICAL")
+		self.UpdateBattery(9.7)
+		
+	def Ping(self):
+		topic = "morphoses/{}/ping".format(self.name)
+		self.mqtt.publish(topic,b'1')
+	
+	def RobotAcknowledge(self,payload):
+		p = payload.decode()
+		if p == '1':
+			self.logger.Info("Received ACK from {}".format(p))
+			op('timer1').par.initialize.pulse()
+			parent().par.Enablerobot = 1

@@ -141,7 +141,7 @@ class Manager:
             print("*** Done waiting move to next behavior ***")
             # Fade out.
             for a in self.current_agents.values():
-                self.world.display_idle(a) # Display idle mode.
+                self.world.display_fade(a) # Display fade mode.
             self.world.sleep(5) # Wait
 
             # Change behavior.

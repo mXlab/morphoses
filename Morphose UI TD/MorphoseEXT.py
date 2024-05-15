@@ -77,7 +77,5 @@ class MorphoseEXT:
 		
 		return
 	
-	def SetIdleOff(self):
-		return
 		
 			
