@@ -66,7 +66,7 @@ def onPublish(dat, topic):
 # dup - dup flag of the incoming message
 def onMessage(dat, topic, payload, qos, retained, dup):
 	
-	#print(topic,payload)
+	print(topic,payload)
 	parent().MessageIn()
 	if topic == parent().GetMqttAddress(0): #temperature
 		parent().UpdateMotorTemperature(payload)
@@ -74,8 +74,10 @@ def onMessage(dat, topic, payload, qos, retained, dup):
 		parent().ParseData(payload)
 	elif topic == parent().GetMqttAddress(2): #debug
 		parent().LogDebug(payload)
+	elif topic == parent().GetMqttAddress(3): #battery critical
+		parent().BatteryCritical(payload)
+	elif topic == parent().GetMqttAddress(4): #ack
+		parent().RobotAcknowledge(payload)
 		return
-		
-	else:
-		print(topic,payload)
+
 	return
