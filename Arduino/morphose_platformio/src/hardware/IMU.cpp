@@ -50,7 +50,6 @@ namespace imus {
       // Add details and send.
       mqtt::debug(name());
       mqtt::debug(isOk ? "is ready" : "  imu error");
-      mqtt::debug(isOk ? "is ready" : " imu error");
     }
 
     boolean MorphosesIMU::process() {

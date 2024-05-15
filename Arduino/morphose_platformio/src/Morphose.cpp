@@ -36,10 +36,6 @@ const char* topicName = "morphoses/robot2/data";
 int outgoingPort = 8130;
 const char* name = "robot3";
 const char* topicName = "morphoses/robot3/data";
-#elif ROBOT_ID == 4
-int outgoingPort = 8140;
-const char* name = "robot4";
-const char* topicName = "morphoses/robot4/data";
 #endif
 
 bool stream = false;

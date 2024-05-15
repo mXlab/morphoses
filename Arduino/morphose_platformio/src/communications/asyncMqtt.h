@@ -22,6 +22,7 @@ void debug(const char * msg);
 void sendTemperature(const char* msg);
 void sendBatteryVoltage(float v);
 void sendBatteryCritical();
+void sendAck();
 namespace callbacks {
 void handlePosition(int robot, char* data);
 void handleAnimation(char* data);
@@ -34,6 +35,7 @@ void handleCalib(char* payload);
 void handleStream(char* payload);
 void handleReboot(char* payload);
 void handleIdle(char* payload);
+void handlePing(char* payload);
 
 }
 
