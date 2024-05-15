@@ -504,12 +504,16 @@ class World:
         
     # Stop mode: depending on success.
     def display_stop(self, agent, success):
+        if success:
+            base_color = [22, 42, 10]
+            alt_color  = [6, 10, 4]
+        else:
+            base_color = [24, 24, 24],
+            alt_color  = [8, 8, 8]
         # Calculate color representative of reward.
         animation = {
-            "base": [24, 24, 24],
-            "alt": [8, 8, 8],
-#            "base": [24, 24, 4],
-#            "alt": [8, 8, 4],
+            "base": base_color,
+            "alt": alt_color,
             "period": 4,
             "noise": 0.1,
             "region": 0,
@@ -521,7 +525,7 @@ class World:
         self.messaging.send_animation(name, animation)
 
     # Idle mode (between behaviors).
-    def display_idle(self, agent):
+    def display_fade(self, agent):
         animation = {
             "base": [8, 4, 0],
             "alt": [0, 0, 0],
@@ -602,9 +606,9 @@ class World:
     #         self.messaging.send(name, "/blue", rgb[2])
 
     def is_inside_boundaries(self, agent, use_recenter_offset=True):
-        if (not self.is_valid(agent, 'x') or not self.is_valid(agent, 'y')):
-            return True
         if not self.use_virtual_boundaries:
+            return True
+        if (not self.is_valid(agent, 'x') or not self.is_valid(agent, 'y')):
             return True
         x = self.get(agent, 'x', standardized=False)
         y = self.get(agent, 'y', standardized=False)
@@ -614,8 +618,6 @@ class World:
 
     def begin(self):
         print('World Begin')
-
-        
         self.messaging.begin()
 
         print("Init robots")

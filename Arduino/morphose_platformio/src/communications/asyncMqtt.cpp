@@ -59,6 +59,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[10] ={"morphoses/robot1/steer",
 const char* debugAddress  = "morphoses/robot1/debug";
 const char* temperatureAddress  = "morphoses/robot1/temperature";
 const char* batteryAddress  = "morphoses/robot1/battery";
+const char* batteryCriticalAddress  = "morphoses/robot1/batteryCritical";
 
 #elif (ROBOT_ID == 2)
 const char* cid = "robot2";
@@ -75,6 +76,8 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[10] ={"morphoses/robot2/steer",
 const char* debugAddress  = "morphoses/robot2/debug";
 const char* temperatureAddress  = "morphoses/robot2/temperature";
 const char* batteryAddress  = "morphoses/robot2/battery";
+const char* batteryCriticalAddress  = "morphoses/robot2/batteryCritical";
+
 
 #elif (ROBOT_ID == 3)
 const char* cid = "robot3";
@@ -92,6 +95,7 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[10] ={"morphoses/robot3/steer",
 const char* debugAddress  = "morphoses/robot3/debug";
 const char* temperatureAddress  = "morphoses/robot3/temperature";
 const char* batteryAddress  = "morphoses/robot3/battery";
+const char* batteryCriticalAddress  = "morphoses/robot3/batteryCritical";
 
 #elif (ROBOT_ID == 4)
 const char* cid = "robot4";
@@ -111,6 +115,11 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
 uint16_t mqttRobotLocations[N_ROBOTS];
 uint16_t animId;
 int qos = 1;
+
+void sendBatteryCritical(){
+  const char* msg = "1";
+  client.publish(batteryCriticalAddress, 1, true, msg);
+}
 
 void sendTemperature(const char* msg){
   client.publish(temperatureAddress, 1, true, msg);
@@ -225,31 +234,31 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     //Serial.println("animation");
     callbacks::handleAnimation(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[STEER]) == 0){
-    Serial.println("steer");
+    //Serial.println("steer");
     callbacks::handleSteer(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[SPEED]) == 0){
-    Serial.println("speed");
+    //Serial.println("speed");
     callbacks::handleSpeed(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[POWER]) == 0){
-    Serial.println("power");
+    //Serial.println("power");
     callbacks::handlePower(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[GET_DATA]) == 0){
-    Serial.println("get data");
+    //Serial.println("get data");
     callbacks::handleGetData(realPayload);    
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[NAV]) == 0){
-    Serial.println("nav");
+    //Serial.println("nav");
     callbacks::handleNav(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[CALIB]) == 0){
-    Serial.println("calib");
+    //Serial.println("calib");
     callbacks::handleCalib(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[STREAM]) == 0){
-    Serial.println("stream");
+    //Serial.println("stream");
     callbacks::handleStream(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[REBOOT]) == 0){
-    Serial.println("reboot");
+    //Serial.println("reboot");
     callbacks::handleReboot(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[IDLE]) == 0){
-    Serial.println("idle");
+    //Serial.println("idle");
     callbacks::handleIdle(realPayload);
   }
   
@@ -289,10 +298,12 @@ void handlePosition(int robot, char* data) {
   Vec2f newPosition;
   
   JsonDocument doc;
+  
   DeserializationError error = deserializeJson(doc, data);
 
   // Test if parsing succeeds.
   if (error) {
+    mqtt::debug(data);
     char buffer[256];
     sprintf(buffer,"handlePosition() deserializeJson() failed: %s\n", error.c_str());
     mqtt::debug(buffer);
@@ -304,6 +315,17 @@ void handlePosition(int robot, char* data) {
   
   if ((int)position["quality"] > 50) {
     // Set current position.
+
+    //handling case where we receive "NaN" values
+    auto positionXStr = position["x"].as<const char*>();
+    auto positionYStr = position["y"].as<const char*>();
+    Serial.println(positionXStr);
+    Serial.println(positionYStr);
+    if(strcmp(positionXStr, "NaN") == 0 || strcmp(positionYStr, "NaN") == 0) {
+      mqtt::debug("received NaN position from decawave anchors");
+      return;
+    }
+
     newPosition = Vec2f((float)double(position["x"]), (float)double(position["y"]));
     
     // buffer all robot positions
@@ -358,7 +380,7 @@ void handleSteer(char* payload){
 
     char buffer[32];
     sprintf(buffer,"Set steer to %.2F\n", val);
-    mqtt::debug(buffer);
+    //mqtt::debug(buffer);
 
     motors::setEngineSteer(val);
   }
@@ -369,7 +391,7 @@ void handleSpeed(char* payload){
 
     char buffer[32];
     sprintf(buffer,"Set speed to %.2F\n", val);
-    mqtt::debug(buffer);
+    //mqtt::debug(buffer);
 
     motors::setEngineSpeed(val);
 }
@@ -389,7 +411,7 @@ void handlePower(char* payload){
 
     char buffer[32];
     sprintf(buffer,"Set power to %d\n", power);
-    mqtt::debug(buffer);
+    //mqtt::debug(buffer);
 
     motors::setEnginePower(power);
   }

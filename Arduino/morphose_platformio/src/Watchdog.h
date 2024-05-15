@@ -10,6 +10,7 @@ namespace watchdog {
 
   void initialize();
   void registerTask(TaskHandle_t taskHandle=NULL);
+  void deleteCurrentTask();
   void reset();
 }
 

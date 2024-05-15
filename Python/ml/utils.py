@@ -8,6 +8,14 @@ def map(value, fromMin, fromMax, toMin, toMax):
         return (toMin + toMax) * 0.5 # dummy value
     return (value - fromMin) * (toMax - toMin) / (fromMax - fromMin) + toMin
 
+def clamp(value, min, max):
+    if value <= min:
+        return min
+    elif value >= max:
+        return max
+    else:
+        return value
+    
 def lerp(t, out_min, out_max):
     return out_min + t * (out_max-out_min)
 
