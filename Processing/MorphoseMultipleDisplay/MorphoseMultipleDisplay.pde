@@ -41,20 +41,12 @@ final float SUBTITLE_START_TIME = TITLE_DURATION + 4.0;
 // MQTT communication.
 MQTTClient client;
 
-// Number of values received.
-//int nValuesReceived;
-
-// Contains all the values to be plotted.
-//ArrayList<float[]> values;
-
 // Min. and max. reward values.
 float minReward = +9999;
 float maxReward = -9999;
 
 // Stopwatch to measure time.
 Stopwatch watch;
-Stopwatch valuesWatch;
-
 
 // Mode: title vs graph.
 boolean titleMode = false;
@@ -72,25 +64,20 @@ final float LINE_WEIGHT_REWARD = 3;
 final color COLOR_DATA = color(255, 48);
 final float LINE_WEIGHT_DATA = 3;
 
-float speed;
-float graphPos;
-
 void setup() {
-  //  fullScreen(P2D, 0);
-  size(800, 600);
+  fullScreen();
+  //size(800, 600);
   // Initialize.
-  graphPos = 0;
   client = new MQTTClient(this);
-  //  client.connect("mqtt://" + MQTT_BROKER);
+  //client.connect("mqtt://" + MQTT_BROKER);
   oscP5 = new OscP5(this, OSC_PORT);
 
   watch = new Stopwatch(this);
-  valuesWatch = new Stopwatch(this);
 
 
-  robot1 = new Robot(1, 0, width, 0, (height-SUBTITLE_SIZE*3)/3);
-  robot2 = new Robot(2, 0, width, (height-SUBTITLE_SIZE*3)/3, 2*(height-SUBTITLE_SIZE*3)/3);
-  robot3 = new Robot(3, 0, width, 2*(height-SUBTITLE_SIZE*3)/3, (height-SUBTITLE_SIZE*3));
+  robot1 = new Robot(this, 1, 0, width, 0, (height-SUBTITLE_SIZE*3)/3);
+  robot2 = new Robot(this, 2, 0, width, (height-SUBTITLE_SIZE*3)/3, 2*(height-SUBTITLE_SIZE*3)/3);
+  robot3 = new Robot(this, 3, 0, width, 2*(height-SUBTITLE_SIZE*3)/3, (height-SUBTITLE_SIZE*3));
 
   // Set topics variables.
   MQTT_TOPIC_DATA  = new String[3];
@@ -102,16 +89,12 @@ void setup() {
   // Image adjustements.
   smooth();
   noCursor();
-  speed = 0;
-  graphPos = 10;
-  //  frameRate(1);
-  //test
 
   behaviorTitle = "test";
 }
 
 void draw() {
-
+  
   // Clear the screen.
   background(0);
 
@@ -137,15 +120,10 @@ void draw() {
 
     ////// DRAW GRAPH ////
     //////////////////////
-    pushMatrix();
-    translate(graphPos, 0);
-    scale(-1, 1);
+    //pushMatrix();
     robot1.drawGraph();
     robot2.drawGraph();
     robot3.drawGraph();
-    popMatrix();
-
-    graphPos+=speed;
 
     //// DRAW LOGO /////
     ////////////////////
@@ -210,7 +188,7 @@ void messageReceived(String topic, byte[] payload) {
   }
 }
 
-// Extract OSC vals
+// Extract vals
 
 float[] getOSCValues(OscMessage msg) {
   // Get n. values.
@@ -223,6 +201,7 @@ float[] getOSCValues(OscMessage msg) {
 
     // Compute min/max reward values.
     if (i == nValues - 1) {
+      println(minReward, OscValues[i]);
       minReward = min(minReward, OscValues[i]);
       maxReward = max(maxReward, OscValues[i]);
     }
@@ -230,25 +209,6 @@ float[] getOSCValues(OscMessage msg) {
 
   // Return values.
   return OscValues;
-}
-
-float getSpeed() {
-  float speed = 0;
-  switch(behaviorTitle) {
-  case "c":
-    speed = 1;
-    break;
-  case "b":
-    speed = 1;
-    break;
-  case "a":
-    speed = 1;
-    break;
-  case "test":
-    speed = 1.2;
-    break;
-  }
-  return speed;
 }
 
 //OSC event.
