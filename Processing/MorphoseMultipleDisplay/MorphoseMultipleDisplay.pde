@@ -30,7 +30,7 @@ final String MQTT_PATH_ROOT = "morphoses";
 final String MQTT_PATH_SUFFIX = "/info/display-data";
 String[] MQTT_TOPIC_DATA;
 String MQTT_TOPIC_BEGIN;
-
+ 
 // Number of points to be plotted.
 final int N_POINTS = 100;
 
@@ -60,7 +60,7 @@ final int SUBTITLE_SIZE = 32;
 final color COLOR_REWARD_MAX = #00ff00;
 final color COLOR_REWARD_MIN = #ff0000;
 final float LINE_WEIGHT_REWARD = 3;
-
+ 
 final color COLOR_DATA = color(255, 48);
 final float LINE_WEIGHT_DATA = 3;
 

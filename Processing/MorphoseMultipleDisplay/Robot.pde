@@ -1,4 +1,4 @@
-class Robot { //
+ class Robot { //
   float borderRight;
   float borderLeft;
   float borderTop;
