@@ -35,6 +35,8 @@ namespace morphose {
 
     void sendData();
 
+    void setIdle(bool idleMode);
+
 namespace json {
 
     extern JsonDocument deviceData;

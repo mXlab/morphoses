@@ -1,18 +1,42 @@
 ---
+sequence:  
+  - dance
+  - curiosity
+  - synchrony
+  # - get_close_thing1
+  - go_to_y
+  - get_close_center
+  - immobilism
+#  - test
+
+robots:
+  - robot1
+  - robot2
+  - robot3
+
+settings:
+  repeat_sequence: false
+
 behaviors:
 
   immobilism:
     title: Being still.
-    action_profile: cross
+    action_profile: i
     state_profile:
       - this.d_mrx
       - this.d_mry
-      - this.d_mrz
-      # - this.d_rx
-      # - this.d_ry
-      # - this.d_rz
     reward_profile:
+      - type: sum
+        weight: 0.25
+        args:
+          variables:
+            - this.d_mrx
+            - this.d_mry
+            # - this.d_mrz
+          absolute: True
+          invert: True
       - type: inv_delta_position
+        weight: 0.75
     stop_profile:
       min_duration: 30
       max_duration: 180
@@ -20,24 +44,25 @@ behaviors:
       high_reward_duration: 20
     curiosity_weight: 0
     q_model_type: tables
-    n_state_tiles: 1
+    n_state_tiles: 3
     n_state_tilings: 1
-    time_step: 5
+    time_step: 2.5
+    time_balance: 0
     navigation_mode: false
     learning_rate: 0.5
     #learning_rate: 0.1
     gamma: 0.5
-    epsilon: 1
+    epsilon: 0.1
 
   dance:
-    title: Shaking.
+    title: Rocking without rolling.
     action_profile: cross
     state_profile:
       - this.d_mrx
       - this.d_mry
     reward_profile:
-      - type: sum
-        weight: 0.95
+      - type: max
+        weight: 0.5
         args:
           variables:
             - this.d_mrx
@@ -45,17 +70,17 @@ behaviors:
           absolute: True
           invert: False
       - type: inv_delta_position
-        weight: 0.05
+        weight: 0.5
     stop_profile:
       min_duration: 20
       max_duration: 240
-      high_reward_threshold: -0.1
+      high_reward_threshold: 0.2
       high_reward_duration: 15
     curiosity_weight: 0.0
     q_model_type: tables
     n_state_tiles: 3
     n_state_tilings: 1
-    time_step: 0.5
+    time_step: 1
     time_balance: 0.1
     learning_rate: 0.5
     #learning_rate: 0.2
@@ -85,7 +110,47 @@ behaviors:
           absolute: false
     stop_profile:
       min_duration: 30
-      max_duration: 180
+      max_duration: 240
+      high_reward_threshold: 1.0
+      high_reward_duration: 15
+    curiosity_weight: 0
+    q_model_type: tables
+    n_state_tiles: [ [3, 3, 4] ]
+    n_state_tilings: 2
+    time_step: 5
+    time_balance: 1
+    learning_rate: 0.1
+    #learning_rate: 0.2
+    epsilon: 0.05
+    temperature: 0.05
+    policy: boltzmann
+    gamma: 0.7
+    n_hidden_forward: 6
+    max_speed: 1.0
+    max_steer: 1.0
+    navigation_mode: true
+
+  go_to_x:
+    title: Moving in one direction.
+    action_profile: h
+    state_profile:
+      - this.d_x
+      - this.x
+      - this.mrz
+    reward_profile:
+      - type: single
+        weight: 0.75
+        args:
+          variable: this.x
+          absolute: false
+      - type: single
+        weight: 0.25
+        args:
+          variable: this.d_x
+          absolute: false
+    stop_profile:
+      min_duration: 30
+      max_duration: 240
       high_reward_threshold: 1.0
       high_reward_duration: 15
     curiosity_weight: 0
@@ -145,7 +210,7 @@ behaviors:
           target: thing1
     stop_profile:
       min_duration: 30
-      max_duration: 180
+      max_duration: 240
       high_reward_threshold: 0.5
       high_reward_duration: 20
     curiosity_weight: 0
@@ -166,7 +231,7 @@ behaviors:
     max_steer: 1.0
 
   get_close_center:
-    title: Getting closer.
+    title: Getting together.
     action_profile: x
     state_profile:
       - this.close_center
@@ -177,7 +242,7 @@ behaviors:
           target: center
     stop_profile:
       min_duration: 30
-      max_duration: 180
+      max_duration: 240
       high_reward_threshold: 0.5
       high_reward_duration: 40
     curiosity_weight: 0
@@ -239,8 +304,8 @@ behaviors:
     reward_profile:
       - type: inv_delta_position
     stop_profile:
-      min_duration: 20
-      max_duration: 120
+      min_duration: 10
+      max_duration: 20
       high_reward_threshold: 0.7
       high_reward_duration: 15
     curiosity_weight: 0
@@ -253,16 +318,4 @@ behaviors:
     #learning_rate: 0.1
     gamma: 0.5
     epsilon: 1
-sequence:
-  - dance
-  - curiosity
-  - synchrony
-  - get_close_thing1
-  - go_to_y
-  - immobilism
-#  - test
 
-robots:
-  - robot1
-  - robot2
-  - robot3

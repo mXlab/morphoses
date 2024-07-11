@@ -24,7 +24,7 @@ namespace motors {
   int getEngineSpeedTemperature();  
   int getEngineSteerTemperature();  
   void collectData();
-  void dxlLibErrorToString(DXLLibErrorCode_t  error);
+  void dxlLibErrorToString(DXLLibErrorCode_t error);
   void dxlPacketErrorToString(int  error);
   void checkTemperature();
 

@@ -6,6 +6,7 @@
 #include <VectorXf.h>
 #include <WiFi.h>
 
+#include "lights/Animation.h"
 
 #include "Utils.h"
 #include "communications/Network.h"
@@ -14,12 +15,15 @@
 #include "hardware/Engine.h"
 #include "hardware/IMU.h"
 
+#include "lights/Animation.h"
+#include "Watchdog.h"
+
 #define AVG_POSITION_TIME_WINDOW 0.2f
 
 namespace morphose {
 
 int id = ROBOT_ID;
-
+bool idle = false;
 #if ROBOT_ID == 1
 int outgoingPort = 8110;
 const char* name = "robot1";
@@ -32,10 +36,6 @@ const char* topicName = "morphoses/robot2/data";
 int outgoingPort = 8130;
 const char* name = "robot3";
 const char* topicName = "morphoses/robot3/data";
-#elif ROBOT_ID == 4
-int outgoingPort = 8140;
-const char* name = "robot4";
-const char* topicName = "morphoses/robot4/data";
 #endif
 
 bool stream = false;
@@ -44,6 +44,7 @@ char jsonString[1024];
 
 Chrono sendRate{true};
 Chrono moterCheckTimer{true};
+Chrono idleActionTimer{true};
 
 Vec2f currPosition;
 pq::Smoother avgPositionX(AVG_POSITION_TIME_WINDOW);
@@ -58,19 +59,11 @@ JsonDocument deviceData;
 void initialize() {
   Log.infoln("Robot id is set to : %d", id);
   Log.infoln("Robot name is : %s", name);
-  network::outgoingPort =
-      outgoingPort;  // sets port in network file for desired robot port.
+  network::outgoingPort =  outgoingPort;  // sets port in network file for desired robot port.
   Log.infoln("Robot streaming port is : %d", network::outgoingPort);
   Log.warningln("Morphose successfully initialized");
 }
 
-// void sayHello() {
-//     bool lastState = osc::isBroadcasting();
-//     osc::setBroadcast(true);
-//     osc::bundle.add("/bonjour").add(name);
-//     osc::sendBundle();
-//     osc::setBroadcast(lastState);
-// }
 
 void resetPosition() {
   currPosition.set(0, 0);
@@ -94,44 +87,108 @@ void updateLocation() {
   avgPosition.set(avgPositionX.get(), avgPositionY.get());
 }
 
+void setIdle(bool idleMode) {
+
+  
+  if (!idle && idleMode) { // when switching to idle
+
+// TODO:    motors::setEngineSpeedPower(0);
+    motors::setEngineSpeed(0);
+    motors::setEngineSteer(0);
+
+    idleActionTimer.restart();
+
+    if (animations::lockMutex()) {
+      animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
+      
+      animations::currentAnimation().setBaseColor(8, 8, 8);
+      animations::currentAnimation().setAltColor(2, 2, 2);
+      animations::currentAnimation().setNoise(0.1);
+      animations::currentAnimation().setPeriod(6);
+      animations::currentAnimation().setType(animations::AnimationType::FULL);
+      animations::currentAnimation().setRegion(pixels::Region::TOP);
+      animations::beginTransition();  // start transition
+      animations::unlockMutex();
+    }
+  }
+
+  else if (idle && !idleMode) { // when switching from idle
+    if (animations::lockMutex()) {
+      animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
+      
+      animations::currentAnimation().setBaseColor(0, 0, 0);
+      animations::currentAnimation().setAltColor(0, 0, 0);
+      animations::currentAnimation().setNoise(0);
+      animations::currentAnimation().setPeriod(10);
+      animations::currentAnimation().setType(animations::AnimationType::FULL);
+      animations::currentAnimation().setRegion(pixels::Region::ALL);
+      animations::beginTransition();  // start transition
+      animations::unlockMutex();
+    }
+
+  }
+
+  // Switch.
+  idle = idleMode;
+}
+
 void update() {
-  if (sendDataFlag) {
-    sendDataFlag = false;
 
-    json::deviceData.clear();
+  if(idle) {
 
-    imus::collectData();
+    // Run idle mode.
+    if (idleActionTimer.hasPassed(1000, true)) {
+      if (pq::randomUniform() < 0.1f) {
+        motors::setEngineSteer(pq::randomFloat(-1, 1));
+      }
+    }
 
-    morphose::navigation::collectData();
-
-    // get data stop here.
-    motors::collectData();
-
-    serializeJson(json::deviceData, jsonString);
-    // serializeJsonPretty(json::deviceData, Serial);
-    mqtt::client.publish(topicName, 0, true, jsonString);
-    return;
   }
 
-  updateLocation();
+  else {
+    if (sendDataFlag) {
+      sendDataFlag = false;
 
-  if (sendRate.hasPassed(STREAM_INTERVAL, true)) {
-    imus::process();
-    Serial.println("imus::process done");
-    morphose::navigation::process();
-    Serial.println("morphose::navigation::process done");
+      json::deviceData.clear();
 
-    if (stream) {
-      sendData();
+      imus::collectData();
+
+      morphose::navigation::collectData();
+
+      // get data stop here.
+      motors::collectData();
+
+      serializeJson(json::deviceData, jsonString);
+      // serializeJsonPretty(json::deviceData, Serial);
+      mqtt::client.publish(topicName, 0, true, jsonString);
+      return;
     }
+
+    updateLocation();
+
+    if (sendRate.hasPassed(STREAM_INTERVAL, true)) {
+      imus::process();
+      //Serial.println("imus::process done");
+      morphose::navigation::process();
+      //Serial.println("morphose::navigation::process done");
+
+      if (stream) {
+        sendData();
+      }
+    }
+
+    if(moterCheckTimer.hasPassed(1000, true)){
+        motors::checkTemperature();
+        energy::check();  // Energy checkpoint to prevent damage when low
+        //Serial.println("energy::check done");
+    }
+
   }
 
-        if(moterCheckTimer.hasPassed(1000, true)){
-            motors::checkTemperature();
-            energy::check();  // Energy checkpoint to prevent damage when low
-            Serial.println("energy::check done");
-        }
-    }
+  
+}
+
+  
 
 void sendData() { sendDataFlag = true; }
 
@@ -304,20 +361,30 @@ namespace energy {
 #define ENERGY_VOLTAGE_CRITICAL_MODE 2
 
         void deepSleepLowMode(float batteryVoltage) {
-            mqtt::debug("Battery low");
+            char buff[64];
+            sprintf(buff,"Battery low : %.2F volts", batteryVoltage);
+            mqtt::debug(buff);
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
 
             // Wakeup every ENERGY_VOLTAGE_LOW_WAKEUP_TIME seconds.
             esp_sleep_enable_timer_wakeup(ENERGY_VOLTAGE_LOW_WAKEUP_TIME * 1000000UL);
             mqtt::debug("Battery low2");
-
             // Go to sleep (light sleep mode).
             esp_light_sleep_start();
         }
 
         void deepSleepCriticalMode(float batteryVoltage) {
-            mqtt::debug("Battery critical");
+            char buff[64];
+            sprintf(buff,"Battery critical : %.2F volts", batteryVoltage);
+            mqtt::debug(buff);
 
+            mqtt::sendBatteryCritical();
+            animations::setDebugColor(0, 0,0,0,0);
+            animations::setDebugColor(1, 0,0,0,0);
+            animations::setDebugColor(2, 0,0,0,0);
+            animations::setDebugColor(3, 0,0,0,0);
+            motors::setEnginePower(false);
+            // watchdog::deleteCurrentTask();
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
 
             // Go to sleep forever (deep sleep mode).
@@ -325,31 +392,35 @@ namespace energy {
         }
 
         void check() {
-            // Read battery voltage.
-            float batteryVoltage = motors::getBatteryVoltage();
-            
-            char buffer[64];
-            sprintf(buffer,"Battery voltage : %F \n",batteryVoltage);
-            mqtt::debug(buffer);
+          static const float criticalVoltage = 12.0;
+          
+          // Read battery voltage.
+          float batteryVoltage = motors::getBatteryVoltage();
+
+          if (batteryVoltage == 0) {
+              mqtt::debug("WARNING : Battery missread");
+              return;
+          }
+           
 
             // Low voltage: Launch safety procedure.
-            if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
-                // Put IMUs to sleep to protect them.
-                imus::sleep();
+            // if (batteryVoltage < lowVoltage) {
+            //     // Put IMUs to sleep to protect them.
+            //     imus::sleep();
 
-    // Power engine off.
-    motors::setEnginePower(false);
+            //     // Power engine off.
+            //     motors::setEnginePower(false);
 
                 // If energy level is critical, just shut down the ESP.
-                if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL) {
-                    deepSleepCriticalMode(batteryVoltage);
-                }
-
-                // Otherwise, sleep but wake up to show that something is wrong.
-                else {
-                    deepSleepLowMode(batteryVoltage);
-                }
+            if (batteryVoltage < criticalVoltage) {
+                deepSleepCriticalMode(batteryVoltage);
+            }else{
+               mqtt::sendBatteryVoltage(batteryVoltage);
             }
+                // }else {    // Otherwise, sleep but wake up to show that something is wrong.
+                //     deepSleepLowMode(batteryVoltage);
+                // }
+            // }
         }
     }  // namespace energy
 }  // namespace morphose

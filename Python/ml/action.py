@@ -139,6 +139,11 @@ def create_action_set(action_profile):
                       [          [+1,  0],
                        [ 0, -1], [ 0,  0], [ 0, +1],
                                  [-1, 0]])
+    elif action_profile == 'i':
+        return ActionSet(
+                      [          [+1,  0],
+                                 [ 0,  0],
+                                 [-1,  0]])
     elif action_profile == 'trident':
         return ActionSet(
                       [[+1, -0.2], [+1,  0], [+1, +0.1],
