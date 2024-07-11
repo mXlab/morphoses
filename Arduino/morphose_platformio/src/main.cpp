@@ -75,16 +75,24 @@ using namespace pq;
 // #include "Logger.h"
 #include "Morphose.h"
 #include "Utils.h"
+#include "Watchdog.h"
 
 
 void setup() {
 
   delay(5000);
+
+  // Init watchdog.
+  watchdog::initialize();
+  // Register core task.
+  watchdog::registerTask();
+
+  // Launch everything.
   Plaquette.begin();
   Serial.begin(115200);
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 
-  Log.infoln(" Morphose - 2023 - 9 ");
+  Log.infoln(" Morphose - 2024 - 11 ");
 
   Wire.begin();
   
@@ -94,6 +102,10 @@ void setup() {
  
   mqtt::initialize();
   mqtt::debug(" MQTT initialized");
+
+  char buffer[128];
+  sprintf(buffer, "Reset reason: %s\n", utils::getResetReason());
+  mqtt::debug(buffer);
 
   motors::initialize();
   mqtt::debug("Motors initialized");
@@ -113,13 +125,13 @@ void setup() {
   initOTA(morphose::name);
   mqtt::debug(" OTA initialized");
 
-
   morphose::energy::check();
   mqtt::debug("Energy initialized");
 
   mqtt::debug("---------------- End of setup ----------------");
 
-  Serial.println("End of setup");
+  animations::setDebugColor(DEBUG_COLOR_A, 0,255,0,0);
+  
 }
 
 void checkMemory() {
@@ -144,6 +156,8 @@ void checkMemory() {
 }
 
 void loop() {
+  // Ping watchdog.
+  watchdog::reset();
 
  // logger::update();
   //logger::info("logger::update ok");

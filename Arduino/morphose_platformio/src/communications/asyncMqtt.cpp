@@ -38,13 +38,15 @@ enum {
     NAV,
     CALIB,
     STREAM,
-    REBOOT
+    REBOOT,
+    IDLE,
+    PING
 };
 
 
 #if (ROBOT_ID == 1)
 const  char* cid = "robot1";
-static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
+static const char *ROBOT_CUSTOM_MQTT_ADDRESS[11] ={"morphoses/robot1/steer",
                                               "morphoses/robot1/speed",
                                               "morphoses/robot1/power",
                                               "morphoses/robot1/animation",
@@ -52,14 +54,19 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
                                               "morphoses/robot1/nav",
                                               "morphoses/robot1/calib",
                                               "morphoses/robot1/stream",
-                                              "morphoses/robot1/reboot"};
+                                              "morphoses/robot1/reboot",
+                                              "morphoses/robot1/idle",
+                                              "morphoses/robot1/ping"};
                                             
 const char* debugAddress  = "morphoses/robot1/debug";
 const char* temperatureAddress  = "morphoses/robot1/temperature";
+const char* batteryAddress  = "morphoses/robot1/battery";
+const char* batteryCriticalAddress  = "morphoses/robot1/batteryCritical";
+const char* ackAddress  = "morphoses/robot1/acknowledge";
 
 #elif (ROBOT_ID == 2)
 const char* cid = "robot2";
-static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot2/steer",
+static const char *ROBOT_CUSTOM_MQTT_ADDRESS[11] ={"morphoses/robot2/steer",
                                             "morphoses/robot2/speed",
                                             "morphoses/robot2/power",
                                             "morphoses/robot2/animation",
@@ -67,12 +74,19 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot2/steer",
                                             "morphoses/robot2/nav",
                                             "morphoses/robot2/calib",
                                             "morphoses/robot2/stream",
-                                            "morphoses/robot2/reboot"};
+                                            "morphoses/robot2/reboot",
+                                            "morphoses/robot2/idle",
+                                              "morphoses/robot2/ping"};
 const char* debugAddress  = "morphoses/robot2/debug";
 const char* temperatureAddress  = "morphoses/robot2/temperature";
+const char* batteryAddress  = "morphoses/robot2/battery";
+const char* batteryCriticalAddress  = "morphoses/robot2/batteryCritical";
+const char* ackAddress  = "morphoses/robot2/acknowledge";
+
+
 #elif (ROBOT_ID == 3)
 const char* cid = "robot3";
-static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot3/steer",
+static const char *ROBOT_CUSTOM_MQTT_ADDRESS[11] ={"morphoses/robot3/steer",
                                             "morphoses/robot3/speed",
                                             "morphoses/robot3/power",
                                             "morphoses/robot3/animation",
@@ -80,21 +94,15 @@ static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot3/steer",
                                             "morphoses/robot3/nav",
                                             "morphoses/robot3/calib",
                                             "morphoses/robot3/stream",
-                                            "morphoses/robot3/reboot"};
+                                            "morphoses/robot3/reboot",
+                                            "morphoses/robot3/idle",
+                                            "morphoses/robot3/ping"};
 
 const char* debugAddress  = "morphoses/robot3/debug";
 const char* temperatureAddress  = "morphoses/robot3/temperature";
-#elif (ROBOT_ID == 4)
-const char* cid = "robot4";
-static const char *ROBOT_CUSTOM_MQTT_ADDRESS[9] ={"morphoses/robot1/steer",
-                                            "morphoses/robot1/speed",
-                                            "morphoses/robot1/power",
-                                            "morphoses/robot1/animation",
-                                            "morphoses/robot1/get-data",
-                                            "morphoses/robot1/nav",
-                                            "morphoses/robot1/calib",
-                                            "morphoses/robot1/stream",
-                                            "morphoses/robot1/reboot"};
+const char* batteryAddress  = "morphoses/robot3/battery";
+const char* batteryCriticalAddress  = "morphoses/robot3/batteryCritical";
+const char* ackAddress  = "morphoses/robot3/acknowledge";
 
 #endif
 
@@ -103,13 +111,29 @@ uint16_t mqttRobotLocations[N_ROBOTS];
 uint16_t animId;
 int qos = 1;
 
+void sendAck(){
+  const char* msg = "1";
+  client.publish(ackAddress, qos, true, msg);
+}
+
+void sendBatteryCritical(){
+  const char* msg = "1";
+  client.publish(batteryCriticalAddress, qos, true, msg);
+}
+
 void sendTemperature(const char* msg){
-  client.publish(temperatureAddress, 1, true, msg);
+  client.publish(temperatureAddress, qos, true, msg);
 }
 
 void connectToMqtt() {
   mqtt::debug("Connecting to MQTT...");
   client.connect();
+}
+
+void sendBatteryVoltage(float v){
+  char buff[16];
+            sprintf(buff, "%.2F", v);
+            mqtt::client.publish(mqtt::batteryAddress,2,true,buff);
 }
 
 void WiFiEvent(WiFiEvent_t event) {
@@ -162,6 +186,8 @@ void onMqttConnect(bool sessionPresent) {
   client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[CALIB], qos);
   client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[STREAM], qos);
   client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[REBOOT], qos);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[IDLE], qos);
+  client.subscribe(ROBOT_CUSTOM_MQTT_ADDRESS[PING], qos);
 
 
   
@@ -209,29 +235,35 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     //Serial.println("animation");
     callbacks::handleAnimation(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[STEER]) == 0){
-    Serial.println("steer");
+    //Serial.println("steer");
     callbacks::handleSteer(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[SPEED]) == 0){
-    Serial.println("speed");
+    //Serial.println("speed");
     callbacks::handleSpeed(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[POWER]) == 0){
-    Serial.println("power");
+    //Serial.println("power");
     callbacks::handlePower(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[GET_DATA]) == 0){
-    Serial.println("get data");
+    //Serial.println("get data");
     callbacks::handleGetData(realPayload);    
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[NAV]) == 0){
-    Serial.println("nav");
+    //Serial.println("nav");
     callbacks::handleNav(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[CALIB]) == 0){
-    Serial.println("calib");
+    //Serial.println("calib");
     callbacks::handleCalib(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[STREAM]) == 0){
-    Serial.println("stream");
+    //Serial.println("stream");
     callbacks::handleStream(realPayload);
   }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[REBOOT]) == 0){
-    Serial.println("reboot");
+    //Serial.println("reboot");
     callbacks::handleReboot(realPayload);
+  }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[IDLE]) == 0){
+    //Serial.println("idle");
+    callbacks::handleIdle(realPayload);
+  }else if(strcmp(topic, ROBOT_CUSTOM_MQTT_ADDRESS[PING]) == 0){
+    //Serial.println("idle");
+    callbacks::handlePing(realPayload);
   }
   
 
@@ -270,12 +302,14 @@ void handlePosition(int robot, char* data) {
   Vec2f newPosition;
   
   JsonDocument doc;
+  
   DeserializationError error = deserializeJson(doc, data);
 
   // Test if parsing succeeds.
   if (error) {
-    char buffer[128];
-    sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
+    mqtt::debug(data);
+    char buffer[256];
+    sprintf(buffer,"handlePosition() deserializeJson() failed: %s\n", error.c_str());
     mqtt::debug(buffer);
     return;
   }
@@ -285,6 +319,17 @@ void handlePosition(int robot, char* data) {
   
   if ((int)position["quality"] > 50) {
     // Set current position.
+
+    //handling case where we receive "NaN" values
+    auto positionXStr = position["x"].as<const char*>();
+    auto positionYStr = position["y"].as<const char*>();
+    Serial.println(positionXStr);
+    Serial.println(positionYStr);
+    if(strcmp(positionXStr, "NaN") == 0 || strcmp(positionYStr, "NaN") == 0) {
+      mqtt::debug("received NaN position from decawave anchors");
+      return;
+    }
+
     newPosition = Vec2f((float)double(position["x"]), (float)double(position["y"]));
     
     // buffer all robot positions
@@ -302,13 +347,14 @@ void handleAnimation(char* data){
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, data);
 
-  // Test if parsing succeeds.
-  if (error) {
-    char buffer[128];
-    sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
-    mqtt::debug(buffer);
-    return;
-  }
+    // Test if parsing succeeds.
+    if (error) {
+      char buffer[256];
+      sprintf(buffer,"handleAnimation() deserializeJson() failed: %s\n", error.c_str());
+      mqtt::debug(buffer);
+      return;
+    }
+    
     // JSONVar animationData = JSON.parse(data);
 
     JsonArray _baseColor = doc["base"];
@@ -319,13 +365,13 @@ void handleAnimation(char* data){
     animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
     
     animations::currentAnimation().setBaseColor(_baseColor[0].as<int>(), _baseColor[1].as<int>(), _baseColor[2].as<int>());
-
     animations::currentAnimation().setAltColor(_altColor[0].as<int>(),  _altColor[1].as<int>(),  _altColor[2].as<int>());
 
-    animations::currentAnimation().setNoise(doc["noise"][0].as<float>());
-    animations::currentAnimation().setPeriod(doc["period"][0].as<float>());
-    animations::currentAnimation().setType((animations::AnimationType)doc["type"][0].as<int>());
-    animations::currentAnimation().setRegion((pixels::Region)int(doc["region"][0]) );
+    animations::currentAnimation().setNoise(doc["noise"].as<float>());
+    animations::currentAnimation().setPeriod(doc["period"].as<float>());
+    animations::currentAnimation().setType((animations::AnimationType)doc["type"].as<int>());
+    animations::currentAnimation().setRegion((pixels::Region)doc["region"].as<int>() );
+
     animations::beginTransition();  // start transition
     animations::unlockMutex();
   }
@@ -338,7 +384,7 @@ void handleSteer(char* payload){
 
     char buffer[32];
     sprintf(buffer,"Set steer to %.2F\n", val);
-    mqtt::debug(buffer);
+    //mqtt::debug(buffer);
 
     motors::setEngineSteer(val);
   }
@@ -349,9 +395,19 @@ void handleSpeed(char* payload){
 
     char buffer[32];
     sprintf(buffer,"Set speed to %.2F\n", val);
-    mqtt::debug(buffer);
+    //mqtt::debug(buffer);
 
     motors::setEngineSpeed(val);
+}
+
+void handleIdle(char* payload){
+    const float val = atof(payload);
+
+    char buffer[32];
+    sprintf(buffer,"Set idle to %.2F\n", val);
+    mqtt::debug(buffer);
+
+    morphose::setIdle(val);
 }
 
 void handlePower(char* payload){
@@ -359,7 +415,7 @@ void handlePower(char* payload){
 
     char buffer[32];
     sprintf(buffer,"Set power to %d\n", power);
-    mqtt::debug(buffer);
+    //mqtt::debug(buffer);
 
     motors::setEnginePower(power);
   }
@@ -381,8 +437,8 @@ void handleNav(char* payload){
 
     // Test if parsing succeeds.
     if (error) {
-      char buffer[128];
-      sprintf(buffer,"deserializeJson() failed: %s\n", error.c_str());
+      char buffer[256];
+      sprintf(buffer,"handleNav() deserializeJson() failed: %s\n", error.c_str());
       mqtt::debug(buffer);
       return;
     }
@@ -443,6 +499,10 @@ void handleStream(char* payload){
 
 void handleReboot(char* payload){
   ESP.restart();
+}
+
+void handlePing(char* payload){
+  mqtt::sendAck();
 }
 
 }

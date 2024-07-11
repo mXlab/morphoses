@@ -49,8 +49,7 @@ namespace imus {
 
       // Add details and send.
       mqtt::debug(name());
-      mqtt::debug(isOk ? "is ready" : " error");
-      mqtt::debug(isOk ? "is ready" : " error");
+      mqtt::debug(isOk ? "is ready" : "  imu error");
     }
 
     boolean MorphosesIMU::process() {
@@ -215,7 +214,7 @@ void wake() {
 
 
 void process() {
-  mqtt::debug("imus Process");
+  // mqtt::debug("imus Process");
   #if defined(MORPHOSE_DEBUG)
   animations::setDebugColor(DEBUG_COLOR_A,0,50,0,0);
   #endif

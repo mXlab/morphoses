@@ -1,4 +1,5 @@
 #include "Animation.h"
+#include "Watchdog.h"
 
 namespace animations {
 
@@ -114,6 +115,9 @@ void initialize() {
     0,                    // Priority of the task
     &taskAnimation,       // Task handle.
     0);                   // Core where the task should run
+
+  // Register to watchdog.
+  watchdog::registerTask(taskAnimation);
 }
 
 void update() {
@@ -152,6 +156,9 @@ void display() {
 void run(void *parameters) {
   // Infinite loop.
   for (;;) {
+    // Ping watchdog.
+    watchdog::reset();
+
     // Wait for mutex.
     if (lockMutex()) {
 

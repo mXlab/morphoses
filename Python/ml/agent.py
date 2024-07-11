@@ -11,7 +11,7 @@ import tilecoding.representation as rep
 
 from keras.models import Sequential
 from keras.layers import Dense, InputLayer
-from keras.utils.np_utils import to_categorical
+from tensorflow.keras.utils import to_categorical
 from keras import optimizers
 
 from chrono import Chrono
@@ -112,6 +112,7 @@ class Agent:
         print("=== Model forward ===")
         print(self.model_forward.summary())
 
+        self.begin_attemp = 0
         self.has_begin = False
 
     def get_name(self):
@@ -144,8 +145,12 @@ class Agent:
 
     def begin(self):
         while not self.state_is_ready():
+            if self.begin_attemp >= 5: 
+                print('Max begin attemp reached for {}. Force exiting function'.format(self.get_name()))
+                return False
             self.world.update()
             self.world.sleep(1.0) # Wait - don't wait for less than that pls
+            self.begin_attemp +=1 
 
         self.prev_state = self.get_state()
         self.prev_action = None
@@ -162,6 +167,7 @@ class Agent:
 
         self.success = None
         self.behavior_chrono.start()
+        return True
         
     def step(self):
         if not self.has_begin:
@@ -232,6 +238,8 @@ class Agent:
             self.max_r = max(self.max_r, r)
             scaled_r = utils.inv_lerp(r, self.min_r, self.max_r)
             self.world.display(self, state, r, scaled_r)
+
+            self.world.debug_display(self, self.get_state(False), r_int, r_ext, r)
 
             # Compute average reward.
             r_array = np.array([ r_int, r_ext, r ])
@@ -383,8 +391,8 @@ class Agent:
     def state_is_ready(self):
         return self.world.is_valid(self, self.state_profile)
 
-    def get_state(self, raw=False):
-        return np.reshape(np.array(self.world.get(self, self.state_profile)), (1, self.n_inputs))
+    def get_state(self, standardized=True):
+        return np.reshape(np.array(self.world.get(self, self.state_profile, standardized)), (1, self.n_inputs))
 
 
 # Return list of reward functions from textual reward profile.

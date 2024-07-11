@@ -22,7 +22,15 @@ def reward_sum(world, agent, variables, absolute=True, invert=False):
     sum /= len(variables)
     return sum
 
-def reward_single(world, agent, variable, absolute=True, invert=False):
+def reward_max(world, agent, variables, absolute=True, invert=False):
+    maximum = None
+    for v in variables:
+        r = reward_single(world, agent, v, absolute, invert)
+        if maximum is None or maximum < r:
+            maximum = r
+    return maximum
+
+def reward_single(world, agent, variable, absolute=True, invert=False, clamp=True):
     # Get standardized values (all in [0, 1]).
     data = world.get(agent, variable)
     # Option: for delta values, you can use absolute values centered at 0.5.
@@ -30,6 +38,9 @@ def reward_single(world, agent, variable, absolute=True, invert=False):
         data = abs(data - 0.5) * 2 # Remap in [0, 1].
     # Reward equals data in [-1, 1].
     r = utils.map(data, 0, 1, -1, 1)
+    # Option: clamp.
+    if clamp:
+        r = utils.clamp(r, -1, 1)
     # Option: invert.
     if invert:
         r = -r
