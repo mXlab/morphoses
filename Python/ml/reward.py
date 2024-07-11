@@ -46,11 +46,11 @@ def reward_single(world, agent, variable, absolute=True, invert=False, clamp=Tru
         r = -r
     return r
 
-def reward_delta_euler(world, agent):
-    return reward_sum(world, agent, ['this.d_rx', 'this.d_ry', 'this.d_rz'], absolute=True, invert=False)
+# def reward_delta_euler(world, agent):
+#     return reward_sum(world, agent, ['this.d_rx', 'this.d_ry', 'this.d_rz'], absolute=True, invert=False)
 
-def reward_inv_delta_euler(world, agent):
-    return reward_sum(world, agent, ['this.d_rx', 'this.d_ry', 'this.d_rz'], absolute=True, invert=True)
+# def reward_inv_delta_euler(world, agent):
+#     return reward_sum(world, agent, ['this.d_rx', 'this.d_ry', 'this.d_rz'], absolute=True, invert=True)
 
 def reward_delta_position(world, agent):
     return reward_sum(world, agent, ['this.d_x', 'this.d_y'], absolute=True, invert=False)

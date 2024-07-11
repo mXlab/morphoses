@@ -157,7 +157,7 @@ namespace imus {
 ///----
 
 MorphosesIMU imuMain(true);
-MorphosesIMU imuSide(false);
+//MorphosesIMU imuSide(false);
 
 #define IMU_LOW_ACCURACY  1
 #define IMU_HIGH_ACCURACY 3
@@ -173,43 +173,43 @@ void initialize() {
     imuMain.init();
   }
 
-  if (!imuSide.isInitialized()) {
-    mqtt::debug("Side imu not initialized");
-    #if defined(MORPHOSE_DEBUG)
-      animations::setDebugColor(DEBUG_COLOR_A,10,0,0,0);
-    #endif
-    imuSide.init();
-  }
+  // if (!imuSide.isInitialized()) {
+  //   mqtt::debug("Side imu not initialized");
+  //   #if defined(MORPHOSE_DEBUG)
+  //     animations::setDebugColor(DEBUG_COLOR_A,10,0,0,0);
+  //   #endif
+  //   imuSide.init();
+  // }
 
 }
 
 void beginCalibration() {
   mqtt::debug("Begin calibration");
   imuMain.calibrateBegin();
-  imuSide.calibrateBegin();
+  // imuSide.calibrateBegin();
 }
 
 void endCalibration() {
   mqtt::debug("End calibration");
   imuMain.calibrateEnd();
-  imuSide.calibrateEnd();
+  // imuSide.calibrateEnd();
 }
 
 void saveCalibration() {
   imuMain.calibrateSave();
-  imuSide.calibrateSave();
+  // imuSide.calibrateSave();
 }
 
 void sleep() {
   mqtt::debug("imus Sleeping");
   imuMain.modeSleep();
-  imuSide.modeSleep();
+  // imuSide.modeSleep();
 }
 
 void wake() {
   mqtt::debug("imus Waking");
   imuMain.modeOn();
-  imuSide.modeOn();
+  // imuSide.modeOn();
 }
 
 
@@ -219,7 +219,7 @@ void process() {
   animations::setDebugColor(DEBUG_COLOR_A,0,50,0,0);
   #endif
   imuMain.process();
-  imuSide.process();
+  // imuSide.process();
   #if defined(MORPHOSE_DEBUG)
   animations::setDebugColor(DEBUG_COLOR_A,0,0,100,0);
   #endif
@@ -227,7 +227,7 @@ void process() {
 
 void collectData() {
   imuMain.collectData();
-  imuSide.collectData();
+  // imuSide.collectData();
 }
 
 float getHeading() {
