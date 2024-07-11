@@ -391,8 +391,19 @@ namespace energy {
             esp_deep_sleep_start();
         }
 
+        float average(const float* array, const int size) {
+          float avg = 0;
+          for(int i = 0; i < size; i++){
+            avg += array[i];
+          }
+          return avg /= size;
+        }
+
         void check() {
           static const float criticalVoltage = 12.0;
+          static float voltageReading[10]={0,0,0,0,0,0,0,0,0,0};
+          static unsigned int voltageReadingIndex = 0;
+          static bool firstBufferFill = false;
           
           // Read battery voltage.
           float batteryVoltage = motors::getBatteryVoltage();
@@ -401,7 +412,16 @@ namespace energy {
               mqtt::debug("WARNING : Battery missread");
               return;
           }
-           
+
+          voltageReading[voltageReadingIndex] = batteryVoltage;
+          voltageReadingIndex = (voltageReadingIndex + 1) % 10; // loop the buffer index
+          
+          if(voltageReadingIndex == 0) firstBufferFill = true; // Buffer is filled with readings
+
+          if(!firstBufferFill) return; // Wait until buffer is filled
+
+          batteryVoltage = average(voltageReading , sizeof(voltageReading)/sizeof(voltageReading[0])); // calculate average
+             
 
             // Low voltage: Launch safety procedure.
             // if (batteryVoltage < lowVoltage) {
@@ -416,6 +436,9 @@ namespace energy {
                 deepSleepCriticalMode(batteryVoltage);
             }else{
                mqtt::sendBatteryVoltage(batteryVoltage);
+               char buff[64];
+               sprintf(buff,"Battery voltage : %.2F volts", batteryVoltage);
+               mqtt::debug(buff);
             }
                 // }else {    // Otherwise, sleep but wake up to show that something is wrong.
                 //     deepSleepLowMode(batteryVoltage);
