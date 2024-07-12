@@ -505,8 +505,8 @@ class World:
     # Stop mode: depending on success.
     def display_stop(self, agent, success):
         if success:
-            base_color = [22, 42, 10]
-            alt_color  = [6, 10, 4]
+            base_color = [96, 255, 48],
+            alt_color  = [4, 32, 0]
         else:
             base_color = [24, 24, 24],
             alt_color  = [8, 8, 8]
@@ -651,6 +651,8 @@ class World:
     def end(self):
         for robot in self.robots:
             self.set_motors(robot, 0, 0)
+            self.messaging.send(robot, "/idle", 1)
+            self.messaging.send(robot, "/idle", 1)
             self.messaging.send(robot, "/idle", 1)
 
     def terminate(self):

@@ -4,8 +4,8 @@
 # Called when connection established
 # dat - the OP which is cooking
 def onConnect(dat):
-	print("Connected")
-	parent().SetConnected(True)
+	#print("Connected")
+	#parent().SetConnected(True)
 	op('logger').Info("Connected to Mqtt broker")
 	parent().SubscribeToAllTopics()
 
@@ -16,7 +16,7 @@ def onConnect(dat):
 # msg - reason for failure
 def onConnectFailure(dat, msg):
 	op('logger').Error("Mqtt connection failure : {}".format(msg))
-	parent().SetConnected(False)
+	#parent().SetConnected(False)
 	return
 
 # Called when current connection lost
@@ -24,13 +24,13 @@ def onConnectFailure(dat, msg):
 # msg - reason for failure
 def onConnectionLost(dat, msg):
 	op('logger').Error("Mqtt connection Lost : {}".format(msg))
-	parent().SetConnected(False)
+	#parent().SetConnected(False)
 	return
 
 # Called when the subscribe call succeeds and is sent to the server
 # dat - the OP which is cooking
 def onSubscribe(dat):
-	print("Subscribe successfull")
+	#print("Subscribe successfull")
 	op('logger').Info("Subscribe successfull")
 	return
 
@@ -66,7 +66,7 @@ def onPublish(dat, topic):
 # dup - dup flag of the incoming message
 def onMessage(dat, topic, payload, qos, retained, dup):
 	
-	print(topic,payload)
+	#print(topic,payload)
 	parent().MessageIn()
 	if topic == parent().GetMqttAddress(0): #temperature
 		parent().UpdateMotorTemperature(payload)

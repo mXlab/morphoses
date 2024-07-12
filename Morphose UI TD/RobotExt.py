@@ -32,7 +32,7 @@ class RobotExt:
 		self.status = self.ownerComp.op("header").op("status").par.Connected
 
 		self.logger = self.ownerComp.op("logger")
-
+		self.lostConnection = 0
 		# properties
 
 		TDF.createProperty(self, 'MyProperty', value=0, dependable=True,
@@ -95,8 +95,9 @@ class RobotExt:
 		self.msgIn.pulse()
 		
 	def Reboot(self):
+		parent.Robot.par.Connected = 0
 		topic = "morphoses/{}/reboot".format(self.name)
-		self.logger.Info("Reboot asked from UI")
+		self.logger.Warning("Reboot asked from UI")
 		self.mqtt.publish(topic,b'1')
 		
 	def LogDebug(self,payload):
@@ -118,20 +119,22 @@ class RobotExt:
         }
 
 		res_bytes = json.dumps(animation).encode('utf-8')
-		self.logger.Info("Stopping Robot asked from UI")
+		self.logger.Warning("Stopping Robot asked from UI")
 		self.mqtt.publish(topicPower,b'0')
 		self.mqtt.publish(topicSpeed,b'0')
-		print(topicLights)
+		#print(topicLights)
 		self.mqtt.publish(topicLights,b'0')
 		
 	
 	def IdleOff(self):
 		topic = "morphoses/{}/idle".format(self.name)
 		self.mqtt.publish(topic,b'0')
+		self.logger.Info("Turning idle mode off")
 		
 	def IdleOn(self):
 		topic = "morphoses/{}/idle".format(self.name)
 		self.mqtt.publish(topic,b'1')
+		self.logger.Info("Turning idle mode on")
 		
 	def BatteryCritical(self, payload):
 		self.logger.Error("BATTERY CRITICAL")
@@ -144,6 +147,38 @@ class RobotExt:
 	def RobotAcknowledge(self,payload):
 		p = payload.decode()
 		if p == '1':
-			self.logger.Info("Received ACK from {}".format(p))
-			op('timer1').par.initialize.pulse()
-			parent().par.Enablerobot = 1
+			op('timer_missed_ping').par.start.pulse() #restart missed ping timer on ack
+			if parent.Robot.par.Connected.val == 0:
+				self.logger.Info("Received ACK from {}".format(p))
+				#op('timer1').par.initialize.pulse()
+				
+				self.logger.Info("Successfuly connected with {}".format(parent.Robot.name))
+				parent.Robot.par.Connected.val = 1
+				parent.Robot.par.Missedping = 0
+				self.lostConnection = 0	
+				#parent().par.Enablerobot = 1 #maybe not automate enabling robot in show
+			
+	def Connect(self):
+		if parent.Robot.par.Connected.val == 0:
+			self.logger.Info("Trying to connect to with {}".format(parent.Robot.name))
+			op('timer1').par.gotodone.pulse()
+			op('timer_missed_ping').par.start.pulse()
+			
+			
+	def MissedPing(self):
+		parent.Robot.par.Missedping.val +=1
+		self.logger.Warning("{} missed a ping for the {} time".format(parent.Robot.name,parent.Robot.par.Missedping))
+		
+		if parent.Robot.par.Missedping.val >= 3:
+			if self.lostConnection == 0:
+				self.logger.Error("{} disconnected".format(parent.Robot.name))
+				parent.Robot.par.Connected.val = 0
+				self.lostConnection = 1
+			self.Connect()
+		else: 
+			op('timer_missed_ping').par.start.pulse() #restart missed ping timer on ack
+			
+		return
+		
+	def StartShow(self):
+		self.logger.Warning("Show started")

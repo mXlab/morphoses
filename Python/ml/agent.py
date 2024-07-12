@@ -239,7 +239,7 @@ class Agent:
             scaled_r = utils.inv_lerp(r, self.min_r, self.max_r)
             self.world.display(self, state, r, scaled_r)
 
-            self.world.debug_display(self, self.get_state(False), r_int, r_ext, r)
+            #self.world.debug_display(self, self.get_state(False), r_int, r_ext, r)
 
             # Compute average reward.
             r_array = np.array([ r_int, r_ext, r ])
