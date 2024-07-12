@@ -1,6 +1,5 @@
 #include "Morphose.h"
 
-#include <ArduinoLog.h>
 #include <Chrono.h>
 #include <PlaquetteLib.h>
 #include <VectorXf.h>
@@ -57,11 +56,11 @@ JsonDocument deviceData;
 }
 
 void initialize() {
-  Log.infoln("Robot id is set to : %d", id);
-  Log.infoln("Robot name is : %s", name);
+  Serial.printf("Robot id is set to : %d\n", id);
+  Serial.printf("Robot name is : %s\n", name);
   network::outgoingPort =  outgoingPort;  // sets port in network file for desired robot port.
-  Log.infoln("Robot streaming port is : %d", network::outgoingPort);
-  Log.warningln("Morphose successfully initialized");
+  Serial.printf("Robot streaming port is : %d\n", network::outgoingPort);
+  Serial.println("Morphose successfully initialized");
 }
 
 
@@ -76,7 +75,7 @@ Vec2f getPosition() { return avgPosition; }
 
 void setCurrentPosition(Vec2f newPosition) {
   currPosition.set(newPosition);
-  Log.infoln("New position - x : %F y: %F", newPosition.x, newPosition.y);
+  Serial.printf("New position - x : %F y: %F\n", newPosition.x, newPosition.y);
 }
 
 void updateLocation() {
