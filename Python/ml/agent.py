@@ -112,7 +112,7 @@ class Agent:
         print("=== Model forward ===")
         print(self.model_forward.summary())
 
-        self.begin_attemp = 0
+        self.begin_attempts = 0
         self.has_begin = False
 
     def get_name(self):
@@ -145,12 +145,12 @@ class Agent:
 
     def begin(self):
         while not self.state_is_ready():
-            if self.begin_attemp >= 5: 
+            if self.begin_attempts >= 5: 
                 print('Max begin attemp reached for {}. Force exiting function'.format(self.get_name()))
                 return False
-            self.world.update()
+            self.world.update() # Update (will ping the robots).
             self.world.sleep(1.0) # Wait - don't wait for less than that pls
-            self.begin_attemp +=1 
+            self.begin_attempts +=1 
 
         self.prev_state = self.get_state()
         self.prev_action = None
