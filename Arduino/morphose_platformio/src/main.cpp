@@ -56,7 +56,6 @@
 
 #include <Arduino.h>
 
-#include <ArduinoLog.h>
 #include <Chrono.h>
 #include <PlaquetteLib.h>
 using namespace pq;
@@ -90,9 +89,8 @@ void setup() {
   // Launch everything.
   Plaquette.begin();
   Serial.begin(115200);
-  Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 
-  Log.infoln(" Morphose - 2024 - 11 ");
+  Serial.println(" Morphose - 2024 - 11 ");
 
   Wire.begin();
   
