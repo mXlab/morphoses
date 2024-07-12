@@ -3,7 +3,7 @@ robots:
   - name: "robot1"
     id: 1
     version: 3
-    rtls_id: 1a1e
+    rtls_id: 019f #1a1e
     ip: "192.168.0.110"
     osc_send_port: 8000
     osc_recv_port: 8110

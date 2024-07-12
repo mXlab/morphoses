@@ -153,8 +153,7 @@ class Messaging:
             print("Problem with starting MQTT, please check server.")
             sys.exit()
 
-        # Init MQTT.
-        self.mqtt.begin()
+        
 
         # Subscribe to topics.
 
@@ -168,6 +167,9 @@ class Messaging:
             self.mqtt.map("morphoses/{}/data".format(name), self.receive_data, name)
             self.mqtt.map("morphoses/debug", self.receive_debug, (name, "debug"))
             self.mqtt.map("morphoses/error", self.receive_debug, (name, "error"))
+        
+        # Init MQTT.
+        self.mqtt.begin()
 
     def set_manager(self, manager):
         self.manager = manager
@@ -207,9 +209,9 @@ class Messaging:
         self.world.store_rotation_data_main(name, 
                                             data['main']['quat'] + data['main']['d-quat'] +
                                             data['main']['rot'] + data['main']['d-rot'])
-        self.world.store_rotation_data_side(name, 
-                                            data['side']['quat'] + data['side']['d-quat'] +
-                                            data['side']['rot'] + data['side']['d-rot'])
+    #    self.world.store_rotation_data_side(name, 
+    #                                        data['side']['quat'] + data['side']['d-quat'] +
+    #                                        data['side']['rot'] + data['side']['d-rot'])
 
     # def receive_accuracy(self, accuracy, args):
     #     name, imu_is_main = args
