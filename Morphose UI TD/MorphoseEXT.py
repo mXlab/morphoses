@@ -65,6 +65,15 @@ class MorphoseEXT:
 				eval("op.{}.IdleOn()".format(r))
 		return
 		
+	def RebootAll(self):
+		robots = self.GetEnabledRobots()
+		
+		if not robots:
+			print('No robots enable')
+		else:
+			for r in robots:
+				eval("op.{}.Reboot()".format(r))
+		return
 		
 	def SetIdleOff(self):
 		robots = self.GetEnabledRobots()
