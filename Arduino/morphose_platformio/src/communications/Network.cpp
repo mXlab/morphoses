@@ -28,8 +28,6 @@ namespace network {
     IPAddress mcuIP{192, 168, 0, 120};
 #elif ROBOT_ID == 3
     IPAddress mcuIP{192, 168, 0, 130};
-#elif ROBOT_ID == 4
-    IPAddress mcuIP{192, 168, 0, 140};
 #endif
 
      IPAddress broadcast{192, 168, 0, 255};

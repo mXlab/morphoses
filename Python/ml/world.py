@@ -201,16 +201,16 @@ class RobotData(EntityData):
         self.add_data('y', auto_scale=False, max_change_per_second=0.01, min_value=boundaries['y_min'],
                       max_value=boundaries['y_max'], smoothing=0.1)
 
-        self.add_group('quaternion_side', ['qx', 'qy', 'qz', 'qw'])
-        self.add_data('qx', force_delta=True)
-        self.add_data('qy', force_delta=True)
-        self.add_data('qz', force_delta=True)
-        self.add_data('qw', force_delta=True)
+        # self.add_group('quaternion_side', ['qx', 'qy', 'qz', 'qw'])
+        # self.add_data('qx', force_delta=True)
+        # self.add_data('qy', force_delta=True)
+        # self.add_data('qz', force_delta=True)
+        # self.add_data('qw', force_delta=True)
 
-        self.add_group('rotation_side', ['rx', 'ry', 'rz'])
-        self.add_data('rx', is_angle=True, force_delta=True)
-        self.add_data('ry', is_angle=True, force_delta=True)
-        self.add_data('rz', is_angle=True, force_delta=True)
+        # self.add_group('rotation_side', ['rx', 'ry', 'rz'])
+        # self.add_data('rx', is_angle=True, force_delta=True)
+        # self.add_data('ry', is_angle=True, force_delta=True)
+        # self.add_data('rz', is_angle=True, force_delta=True)
 
         self.add_group('quaternion_main', ['mqx', 'mqy', 'mqz', 'mqw'])
         self.add_data('mqx', force_delta=True)
@@ -258,14 +258,14 @@ class RobotData(EntityData):
     def get_position(self, delta=False, standardized=True):
         return self.get_values(['x', 'y'], delta, standardized)
 
-    def get_quaternion_side(self, delta=False, standardized=True):
-        return self.get_values(['qx', 'qy', 'qz', 'qw'], delta, standardized)
+    # def get_quaternion_side(self, delta=False, standardized=True):
+    #     return self.get_values(['qx', 'qy', 'qz', 'qw'], delta, standardized)
 
     def get_quaternion_main(self, delta=False, standardized=True):
         return self.get_values(['mqx', 'mqy', 'mqz', 'mqw'], delta, standardized)
 
-    def get_rotation_side(self, delta=False, standardized=True):
-        return self.get_values(['rx', 'ry', 'rz'], delta, standardized)
+    # def get_rotation_side(self, delta=False, standardized=True):
+    #     return self.get_values(['rx', 'ry', 'rz'], delta, standardized)
 
     def get_rotation_main(self, delta=False, standardized=True):
         return self.get_values(['mrx', 'mry', 'mrz'], delta, standardized)
@@ -278,10 +278,10 @@ class RobotData(EntityData):
             data[10] = wrap_angle_180(data[10] + zOffset)
         return data[0:4], data[4:8], data[8:11], data[11:14]
 
-    def store_rotation_data_side(self, data, t):
-        quat, dQuat, rot, dRot = self.extract_data(data)
-        self.store(['qx', 'qy', 'qz', 'qw'], quat, t, delta=dQuat)
-        self.store(['rx', 'ry', 'rz'], rot, t, delta=dRot)
+    # def store_rotation_data_side(self, data, t):
+    #     quat, dQuat, rot, dRot = self.extract_data(data)
+    #     self.store(['qx', 'qy', 'qz', 'qw'], quat, t, delta=dQuat)
+    #     self.store(['rx', 'ry', 'rz'], rot, t, delta=dRot)
         
     def store_rotation_data_main(self, data, t, zOffset=0):
         quat, dQuat, rot, dRot = self.extract_data(data, zOffset)
@@ -717,8 +717,8 @@ class World:
     #     # Correct euler yaw with room heading offset.
     #     self.entities[entity_name].store_quaternion_main(quat, self.get_time(), -self.room_heading)
 
-    def store_rotation_data_side(self, entity_name, data):
-        self.entities[entity_name].store_rotation_data_side(data, self.get_time())
+    # def store_rotation_data_side(self, entity_name, data):
+    #     self.entities[entity_name].store_rotation_data_side(data, self.get_time())
 
     def store_rotation_data_main(self, entity_name, data):
         # Correct euler yaw with room heading offset.
