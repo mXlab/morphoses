@@ -1,6 +1,5 @@
 #include "asyncMqtt.h"
 
-#include <ArduinoLog.h>
 
 
 #include "lights/Animation.h"
@@ -24,7 +23,7 @@ TimerHandle_t wifiReconnectTimer;
 
 
 // RTLS IDs.
-static const char *ROBOT_RTLS_MQTT_ADDRESS[N_ROBOTS] = {"dwm/node/1a1e/uplink/location",
+static const char *ROBOT_RTLS_MQTT_ADDRESS[N_ROBOTS] = {"dwm/node/019f/uplink/location", //1a1e
                                                   "dwm/node/0f32/uplink/location",
                                                   "dwm/node/5b26/uplink/location"};
 
@@ -230,8 +229,9 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     // Convert to string.
     realPayload[total] = '\0';
 
+    // char buffer[256];
     // sprintf(buffer, "Message received.\n topic: %s\n payload: %s \n qos: %d\n dup: %d\n retain: %d\n len: %zu\n index: %zu\n total: %zu\n",topic,realPayload,properties.qos,properties.dup,properties.retain,len,index,total);
-    // //mqtt::debug(buffer);
+    // mqtt::debug(buffer);
     
     // Call appropriate callback.
 
