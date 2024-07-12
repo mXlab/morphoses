@@ -177,7 +177,7 @@ behaviors:
       - this.mry
       - this.mrz
     reward_profile:
-      - type: inv_delta_euler # dummy
+      - type: inv_delta_position # dummy
     stop_profile:
       min_duration: 60
       max_duration: 240

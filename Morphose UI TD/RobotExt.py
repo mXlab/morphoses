@@ -95,6 +95,7 @@ class RobotExt:
 		self.msgIn.pulse()
 		
 	def Reboot(self):
+		parent.Robot.par.Connected = 0
 		topic = "morphoses/{}/reboot".format(self.name)
 		self.logger.Warning("Reboot asked from UI")
 		self.mqtt.publish(topic,b'1')

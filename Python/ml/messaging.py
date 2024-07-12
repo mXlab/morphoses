@@ -153,8 +153,7 @@ class Messaging:
             print("Problem with starting MQTT, please check server.")
             sys.exit()
 
-        # Init MQTT.
-        self.mqtt.begin()
+        
 
         # Subscribe to topics.
 
@@ -168,6 +167,9 @@ class Messaging:
             self.mqtt.map("morphoses/{}/data".format(name), self.receive_data, name)
             self.mqtt.map("morphoses/debug", self.receive_debug, (name, "debug"))
             self.mqtt.map("morphoses/error", self.receive_debug, (name, "error"))
+        
+        # Init MQTT.
+        self.mqtt.begin()
 
     def set_manager(self, manager):
         self.manager = manager
