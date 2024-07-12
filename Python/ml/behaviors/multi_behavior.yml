@@ -7,7 +7,6 @@ sequence:
   - go_to_y
   - get_close_center
   - immobilism
-#  - test
 
 robots:
   - robot1
@@ -38,10 +37,10 @@ behaviors:
       - type: inv_delta_position
         weight: 0.75
     stop_profile:
-      min_duration: 30
+      min_duration: 45
       max_duration: 180
       high_reward_threshold: 0.9
-      high_reward_duration: 20
+      high_reward_duration: 30
     curiosity_weight: 0
     q_model_type: tables
     n_state_tiles: 3
@@ -74,7 +73,7 @@ behaviors:
     stop_profile:
       min_duration: 20
       max_duration: 240
-      high_reward_threshold: 0.2
+      high_reward_threshold: 999
       high_reward_duration: 15
     curiosity_weight: 0.0
     q_model_type: tables
@@ -182,7 +181,7 @@ behaviors:
     stop_profile:
       min_duration: 60
       max_duration: 240
-      high_reward_threshold: 0.5
+      high_reward_threshold: 999
       high_reward_duration: 30
     curiosity_weight: 1.0
     q_model_type: tables
@@ -195,7 +194,7 @@ behaviors:
     epsilon: 0.1
     gamma: 0.7
     n_hidden_forward: 5
-    max_speed: 1.0
+    max_speed: 0.8
     max_steer: 1.0
 
   get_close_thing1:
@@ -227,7 +226,7 @@ behaviors:
     policy: boltzmann
     gamma: 0.7
     n_hidden_forward: 6
-    max_speed: 0.4
+    max_speed: 0.8
     max_steer: 1.0
 
   get_close_center:
@@ -244,7 +243,7 @@ behaviors:
       min_duration: 30
       max_duration: 240
       high_reward_threshold: 0.5
-      high_reward_duration: 40
+      high_reward_duration: 30
     curiosity_weight: 0
     q_model_type: tables
     n_state_tiles: [ [2, 4] ]
@@ -259,7 +258,7 @@ behaviors:
     policy: boltzmann
     gamma: 0.7
     n_hidden_forward: 6
-    max_speed: 0.4
+    max_speed: 0.8
     max_steer: 1.0
 
   synchrony:
@@ -273,7 +272,7 @@ behaviors:
     stop_profile:
       min_duration: 30
       max_duration: 240
-      high_reward_threshold: 0.7
+      high_reward_threshold: 999
       high_reward_duration: 120
     flash_mode: True
     curiosity_weight: 0.0

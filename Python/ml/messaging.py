@@ -207,9 +207,9 @@ class Messaging:
         self.world.store_rotation_data_main(name, 
                                             data['main']['quat'] + data['main']['d-quat'] +
                                             data['main']['rot'] + data['main']['d-rot'])
-        self.world.store_rotation_data_side(name, 
-                                            data['side']['quat'] + data['side']['d-quat'] +
-                                            data['side']['rot'] + data['side']['d-rot'])
+    #    self.world.store_rotation_data_side(name, 
+    #                                        data['side']['quat'] + data['side']['d-quat'] +
+    #                                        data['side']['rot'] + data['side']['d-rot'])
 
     # def receive_accuracy(self, accuracy, args):
     #     name, imu_is_main = args
