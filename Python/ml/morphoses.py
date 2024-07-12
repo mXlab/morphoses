@@ -31,6 +31,20 @@ if __name__ == "__main__":
     # Parse arguments.
     args = parser.parse_args()
 
+    # Display title.
+    print(r"""
+          
+  __  __                  _                        
+ |  \/  |                | |                       
+ | \  / | ___  _ __ _ __ | |__   ___  ___  ___ ___ 
+ | |\/| |/ _ \| '__| '_ \| '_ \ / _ \/ __|/ _ / __|
+ | |  | | (_) | |  | |_) | | | | (_) \__ |  __\__ \
+ |_|  |_|\___/|_|  | .__/|_| |_|\___/|___/\___|___/
+                   | |                             
+                   |_|                                       
+                    
+    """)
+
     run_settings = yaml.load(open(args.run_file, 'r'), Loader=yaml.SafeLoader)
     settings = yaml.load(open(args.settings_file, 'r'), Loader=yaml.SafeLoader)
 
@@ -44,7 +58,7 @@ if __name__ == "__main__":
     # Create agents (for now just one agent).
     behaviors = run_settings['behaviors']
     robots = run_settings['robots']
-
+    
     manager = Manager(world, run_settings)
     world.set_manager(manager)
 
