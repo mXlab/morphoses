@@ -173,7 +173,7 @@ class Messaging:
         self.manager = manager
 
     def send(self, robot_name, address, args=[]):
-        print("Sending {} {} {}".format(robot_name, address, str(args)))
+        # print("Sending {} {} {}".format(robot_name, address, str(args)))
         self.mqtt.send("morphoses/{}{}".format(robot_name, address), args)
 
     def send_info(self, robot_name, address, args=[]):
@@ -203,7 +203,7 @@ class Messaging:
 
     # Receive data from robot.
     def receive_data(self, data, name):
-        print("*** Receiving data Mqtt callback***")
+        # print("*** Receiving data Mqtt callback***")
         self.world.store_rotation_data_main(name, 
                                             data['main']['quat'] + data['main']['d-quat'] +
                                             data['main']['rot'] + data['main']['d-rot'])
@@ -225,7 +225,7 @@ class Messaging:
 
     def set_behavior(self, args, extra):
         robot_name, behavior_name = args
-        print("*** CHANGING BEHAVIOR: {} => {}".format(robot_name, behavior_name))
+        print("Changing behavior: {} => {}".format(robot_name, behavior_name))
         self.manager.set_current_agent(robot_name, behavior_name)
 
     def send_animation(self, robot_name, animation):

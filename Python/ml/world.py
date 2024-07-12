@@ -406,19 +406,15 @@ class World:
         if isinstance(variable, list):
             valid = True
             for v in variable:
-                print(v)
                 if not self.is_valid(agent, v):
-                    print(v,type(v))
                     print("Invalid variable for agent {}: {}".format(agent.get_name(), v))
                     valid = False
             return valid
 
         # Process single variable.
         else:
-            print('here')
             entity_name, variable, __ = self._get_variable_info(agent, variable)
             data = self.entities[entity_name].get(variable)
-            print(data,type(data))
             return data.is_valid()
 
     def get_robots(self):
@@ -477,7 +473,6 @@ class World:
         name = self.agent_as_name(agent)
         entity = self.entities[name]
         if entity.get_version() >= 3:
-            print("set speed: {}".format(speed))
             self.messaging.send(name, "/speed", speed)
         else:
             self.messaging.send(name, "/motor/1", round(speed * 128))
@@ -635,9 +630,9 @@ class World:
         self.update()
 
     def step(self):
-        print("===== debug =====")
-        print(self.get('robot1', ['d_mrx', 'd_mry', 'd_mrz'], True))
-        print(self.get('robot1', ['d_mrx', 'd_mry', 'd_mrz'], False))
+        # print("===== debug =====")
+        # print(self.get('robot1', ['d_mrx', 'd_mry', 'd_mrz'], True))
+        # print(self.get('robot1', ['d_mrx', 'd_mry', 'd_mrz'], False))
         self.messaging.loop()
         self.update()
         self.debug()
@@ -664,14 +659,12 @@ class World:
         self.messaging.terminate()
 
     def update(self):
-        print()
-        print()
-        print('=-------------------update--------------------------')
+        print("Update")
         for entity in self.entities.values():
             entity.update()
 
         for robot_name in self.robots:
-            robot = self.entities[robot_name]
+            # robot = self.entities[robot_name]
             # Ask for data.
             self.messaging.send(robot_name, "/get-data", 1)
 

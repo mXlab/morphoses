@@ -146,7 +146,7 @@ class Agent:
     def begin(self):
         while not self.state_is_ready():
             if self.begin_attempts >= 5: 
-                print('Max begin attemp reached for {}. Force exiting function'.format(self.get_name()))
+                print('Max begin attempts reached for {}. Force exiting function'.format(self.get_name()))
                 return False
             self.world.update() # Update (will ping the robots).
             self.world.sleep(1.0) # Wait - don't wait for less than that pls
@@ -208,7 +208,7 @@ class Agent:
 
         # Get current state.
         state = self.get_state()
-        print("State: {}".format(state))
+        # print("State: {}".format(state))
 
         r = 0
 
@@ -253,15 +253,15 @@ class Agent:
 
             # Verify stopping criteria.
             if self.behavior_chrono.has_passed(self.stop_profile['min_duration']):
-                print("Passed min duration")
+                # print("Passed min duration")
                 if not self.high_reward_chrono.is_started():
                     self.high_reward_chrono.start()
 
                 # Check stop condition: high rewards.
                 if r >= self.stop_profile['high_reward_threshold']:
-                    print("High thresh")
+                    # print("High thresh")
                     if self.high_reward_chrono.has_passed(self.stop_profile['high_reward_duration']):
-                        print("Chrono passed")
+                        # print("Chrono passed")
                         self.success = True
                 # Low reward.
                 else:
@@ -280,10 +280,10 @@ class Agent:
             n_iter_log = 10
             if self.iter % n_iter_log == 0:
                 print("t={} average reward = (int: {} ext: {} total: {})".format(iter, self.avg_r[0], self.avg_r[1], self.avg_r[2]))
-                print("state = ", state)
+                # print("state = ", state)
                 self.avg_r = r_array # reset
-                print("MODEL: ")
-                print(self.model_q)
+                # print("MODEL: ")
+                # print(self.model_q)
 
         # Gather predictions.
         if self.use_ann:
@@ -311,7 +311,7 @@ class Agent:
             action = 0
 
         # Perform action in world.
-        print("Chosen action: {}".format(action))
+        # print("Chosen action: {}".format(action))
         self.world.do_action(self, action, self.action_manager)
 
         # Perform one step.
@@ -470,6 +470,6 @@ def choose_action_softmax(prediction, temperature=1):
     # if (prediction.sum() == 0):
     #     prediction.fill(1)
     prediction /= prediction.sum()
-    print("Prediction: {}".format(prediction))
+    # print("Prediction: {}".format(prediction))
     return np.random.choice(np.arange(len(prediction)), 1, p=prediction).item()
 #    return np.asscalar(np.random.choice(np.arange(len(prediction)), 1, p=prediction))
