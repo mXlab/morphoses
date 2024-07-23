@@ -153,8 +153,7 @@ class Messaging:
             print("Problem with starting MQTT, please check server.")
             sys.exit()
 
-        # Init MQTT.
-        self.mqtt.begin()
+        
 
         # Subscribe to topics.
 
@@ -168,12 +167,15 @@ class Messaging:
             self.mqtt.map("morphoses/{}/data".format(name), self.receive_data, name)
             self.mqtt.map("morphoses/debug", self.receive_debug, (name, "debug"))
             self.mqtt.map("morphoses/error", self.receive_debug, (name, "error"))
+        
+        # Init MQTT.
+        self.mqtt.begin()
 
     def set_manager(self, manager):
         self.manager = manager
 
     def send(self, robot_name, address, args=[]):
-        print("Sending {} {} {}".format(robot_name, address, str(args)))
+        # print("Sending {} {} {}".format(robot_name, address, str(args)))
         self.mqtt.send("morphoses/{}{}".format(robot_name, address), args)
 
     def send_info(self, robot_name, address, args=[]):
@@ -186,9 +188,11 @@ class Messaging:
         pass
 
     def begin(self):
+        print("Messaging begin")
         self.mqtt.begin()
 
     def terminate(self):
+        print('Messaging terminated')
         self.mqtt.terminate()
 
     # Callbacks. ################################################################
@@ -201,13 +205,13 @@ class Messaging:
 
     # Receive data from robot.
     def receive_data(self, data, name):
-        print("*** Receiving data")
+        # print("*** Receiving data Mqtt callback***")
         self.world.store_rotation_data_main(name, 
                                             data['main']['quat'] + data['main']['d-quat'] +
                                             data['main']['rot'] + data['main']['d-rot'])
-        self.world.store_rotation_data_side(name, 
-                                            data['side']['quat'] + data['side']['d-quat'] +
-                                            data['side']['rot'] + data['side']['d-rot'])
+    #    self.world.store_rotation_data_side(name, 
+    #                                        data['side']['quat'] + data['side']['d-quat'] +
+    #                                        data['side']['rot'] + data['side']['d-rot'])
 
     # def receive_accuracy(self, accuracy, args):
     #     name, imu_is_main = args
@@ -223,7 +227,7 @@ class Messaging:
 
     def set_behavior(self, args, extra):
         robot_name, behavior_name = args
-        print("*** CHANGING BEHAVIOR: {} => {}".format(robot_name, behavior_name))
+        print("Changing behavior: {} => {}".format(robot_name, behavior_name))
         self.manager.set_current_agent(robot_name, behavior_name)
 
     def send_animation(self, robot_name, animation):

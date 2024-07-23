@@ -56,7 +56,6 @@
 
 #include <Arduino.h>
 
-#include <ArduinoLog.h>
 #include <Chrono.h>
 #include <PlaquetteLib.h>
 using namespace pq;
@@ -72,28 +71,37 @@ using namespace pq;
 #include "lights/Animation.h"
 #include "lights/Pixels.h"
 
-// #include "Logger.h"
+
 #include "Morphose.h"
 #include "Utils.h"
+#include "Watchdog.h"
 
 
 void setup() {
 
   delay(5000);
+
+  // Init watchdog.
+  watchdog::initialize();
+  // Register core task.
+  watchdog::registerTask();
+
+  // Launch everything.
   Plaquette.begin();
   Serial.begin(115200);
-  Log.begin(LOG_LEVEL_VERBOSE, &Serial);
 
-  Log.infoln(" Morphose - 2023 - 9 ");
+  Serial.println(" Morphose - 2024 - 11 ");
 
   Wire.begin();
-  
-  //logger::initialize();
 
   morphose::initialize();  // cannot send message before this point. Morphose needs to be initialized
  
   mqtt::initialize();
   mqtt::debug(" MQTT initialized");
+
+  char buffer[128];
+  sprintf(buffer, "Reset reason: %s\n", utils::getResetReason());
+  mqtt::debug(buffer);
 
   motors::initialize();
   mqtt::debug("Motors initialized");
@@ -104,8 +112,9 @@ void setup() {
   animations::initialize();
   mqtt::debug(" Animation initialized");
   #if defined(MORPHOSE_DEBUG)
-    animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
+    
   #endif
+  animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
   imus::initialize();
   mqtt::debug(" IMU initialized");
 
@@ -113,13 +122,13 @@ void setup() {
   initOTA(morphose::name);
   mqtt::debug(" OTA initialized");
 
-
   morphose::energy::check();
   mqtt::debug("Energy initialized");
 
   mqtt::debug("---------------- End of setup ----------------");
 
-  Serial.println("End of setup");
+  animations::setDebugColor(DEBUG_COLOR_A, 0,255,0,0);
+  
 }
 
 void checkMemory() {
@@ -144,18 +153,12 @@ void checkMemory() {
 }
 
 void loop() {
-
- // logger::update();
-  //logger::info("logger::update ok");
+  // Ping watchdog.
+  watchdog::reset();
 
   // // Update OTA.
    updateOTA();
-  
-
-//  logger::info("mqtt::update ok");
-
    morphose::update();
-// logger::info("morphose::update ok");
 
   //checkMemory();
 }

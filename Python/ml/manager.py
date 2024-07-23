@@ -17,6 +17,8 @@ class Manager:
 
         self.sequence = settings['sequence']
         self.sequence_current = 0
+        self.sequence_repeat = settings['settings']['repeat_sequence']
+        self.running = True
 
         self.agents = {}
         self.current_agents = {}
@@ -37,6 +39,9 @@ class Manager:
         behavior = self.sequence[self.sequence_current]
         for robot in self.robots:
             self.set_current_agent(robot, behavior, begin, reset)
+
+    def sequence_has_next(self):
+        return self.sequence_repeat or (self.sequence_current + 1) < len(self.sequence)
 
     def sequence_next(self, begin=True, reset=False):
         self.sequence_set_current(self.sequence_current + 1, begin, reset)
@@ -78,18 +83,24 @@ class Manager:
         self.world.send_info("all", "/begin", title)
         for a in self.current_agents.values():
             print("** Begin agent {} **".format(a.get_name()))
-            a.begin()
-        
+            status = a.begin()
+            if not status:
+                print("Initialization of {} failed. Removing it from script".format(a.get_name()))
+                self.current_agents.pop(a.get_name())
+
         self.world.sleep(10)
 
     def behavior_end(self):
         title = self.sequence_current_behavior()['title']
         # self.world.send_info("all", "/end", title)
     
+    def is_running(self):
+        return self.running
+    
     def begin(self):
-        print("** Begin **")
+        print("**Manager Begin **")
         self.world.begin()
-
+        print("Succesfully initialized wolrd")
         # Begin all agents.
         self.behavior_begin()
 
@@ -130,12 +141,23 @@ class Manager:
             print("*** Done waiting move to next behavior ***")
             # Fade out.
             for a in self.current_agents.values():
-                self.world.display_idle(a) # Display idle mode.
+                self.world.display_fade(a) # Display fade mode.
             self.world.sleep(5) # Wait
+
             # Change behavior.
-            self.sequence_next(begin=False, reset=False)
-            self.behavior_begin()
-            self.world.sleep(1) # Wait
+            if self.sequence_has_next():
+                self.sequence_next(begin=False, reset=False)
+                self.behavior_begin()
+                self.world.sleep(1) # Wait
+            else:
+                self.running = False
+
+    def end(self):
+        self.world.end()
+        self.world.terminate()
+
+    def terminate(self):
+        self.world.terminate()
 
     # Callback for threads.
     def run_step_agent(self, agent):

@@ -1,11 +1,11 @@
 #include "Morphose.h"
 
-#include <ArduinoLog.h>
 #include <Chrono.h>
 #include <PlaquetteLib.h>
 #include <VectorXf.h>
 #include <WiFi.h>
 
+#include "lights/Animation.h"
 
 #include "Utils.h"
 #include "communications/Network.h"
@@ -14,12 +14,15 @@
 #include "hardware/Engine.h"
 #include "hardware/IMU.h"
 
+#include "lights/Animation.h"
+#include "Watchdog.h"
+
 #define AVG_POSITION_TIME_WINDOW 0.2f
 
 namespace morphose {
 
 int id = ROBOT_ID;
-
+bool idle = false;
 #if ROBOT_ID == 1
 int outgoingPort = 8110;
 const char* name = "robot1";
@@ -32,10 +35,6 @@ const char* topicName = "morphoses/robot2/data";
 int outgoingPort = 8130;
 const char* name = "robot3";
 const char* topicName = "morphoses/robot3/data";
-#elif ROBOT_ID == 4
-int outgoingPort = 8140;
-const char* name = "robot4";
-const char* topicName = "morphoses/robot4/data";
 #endif
 
 bool stream = false;
@@ -44,6 +43,7 @@ char jsonString[1024];
 
 Chrono sendRate{true};
 Chrono moterCheckTimer{true};
+Chrono idleActionTimer{true};
 
 Vec2f currPosition;
 pq::Smoother avgPositionX(AVG_POSITION_TIME_WINDOW);
@@ -56,21 +56,13 @@ JsonDocument deviceData;
 }
 
 void initialize() {
-  Log.infoln("Robot id is set to : %d", id);
-  Log.infoln("Robot name is : %s", name);
-  network::outgoingPort =
-      outgoingPort;  // sets port in network file for desired robot port.
-  Log.infoln("Robot streaming port is : %d", network::outgoingPort);
-  Log.warningln("Morphose successfully initialized");
+  Serial.printf("Robot id is set to : %d\n", id);
+  Serial.printf("Robot name is : %s\n", name);
+  network::outgoingPort =  outgoingPort;  // sets port in network file for desired robot port.
+  Serial.printf("Robot streaming port is : %d\n", network::outgoingPort);
+  Serial.println("Morphose successfully initialized");
 }
 
-// void sayHello() {
-//     bool lastState = osc::isBroadcasting();
-//     osc::setBroadcast(true);
-//     osc::bundle.add("/bonjour").add(name);
-//     osc::sendBundle();
-//     osc::setBroadcast(lastState);
-// }
 
 void resetPosition() {
   currPosition.set(0, 0);
@@ -83,7 +75,7 @@ Vec2f getPosition() { return avgPosition; }
 
 void setCurrentPosition(Vec2f newPosition) {
   currPosition.set(newPosition);
-  Log.infoln("New position - x : %F y: %F", newPosition.x, newPosition.y);
+  Serial.printf("New position - x : %F y: %F\n", newPosition.x, newPosition.y);
 }
 
 void updateLocation() {
@@ -94,44 +86,101 @@ void updateLocation() {
   avgPosition.set(avgPositionX.get(), avgPositionY.get());
 }
 
+void setIdle(bool idleMode) {
+
+  
+  if (!idle && idleMode) { // when switching to idle
+
+// TODO:    motors::setEngineSpeedPower(0);
+    motors::setEngineSpeed(0);
+    motors::setEngineSteer(0);
+
+    idleActionTimer.restart();
+
+    if (animations::lockMutex()) {
+      animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
+      
+      animations::currentAnimation().setBaseColor(8, 8, 8);
+      animations::currentAnimation().setAltColor(2, 2, 2);
+      animations::currentAnimation().setNoise(0.1);
+      animations::currentAnimation().setPeriod(6);
+      animations::currentAnimation().setType(animations::AnimationType::FULL);
+      animations::currentAnimation().setRegion(pixels::Region::TOP);
+      animations::beginTransition();  // start transition
+      animations::unlockMutex();
+    }
+  }
+
+  else if (idle && !idleMode) { // when switching from idle
+    if (animations::lockMutex()) {
+      animations::previousAnimation().copyFrom(animations::currentAnimation());   // save animation
+      
+      animations::currentAnimation().setBaseColor(0, 0, 0);
+      animations::currentAnimation().setAltColor(0, 0, 0);
+      animations::currentAnimation().setNoise(0);
+      animations::currentAnimation().setPeriod(10);
+      animations::currentAnimation().setType(animations::AnimationType::FULL);
+      animations::currentAnimation().setRegion(pixels::Region::ALL);
+      animations::beginTransition();  // start transition
+      animations::unlockMutex();
+    }
+
+  }
+
+  // Switch.
+  idle = idleMode;
+}
+
 void update() {
-  if (sendDataFlag) {
-    sendDataFlag = false;
 
-    json::deviceData.clear();
+  if(idle) {
+    // Run idle mode.
+    if (idleActionTimer.hasPassed(1000, true)) {
+      if (pq::randomUniform() < 0.1f) {
+        motors::setEngineSteer(pq::randomFloat(-1, 1));
+      }
+    }
+  }else{
+    if (sendDataFlag) {
+      sendDataFlag = false;
 
-    imus::collectData();
+      json::deviceData.clear();
 
-    morphose::navigation::collectData();
+      imus::collectData();
 
-    // get data stop here.
-    motors::collectData();
+      morphose::navigation::collectData();
 
-    serializeJson(json::deviceData, jsonString);
-    // serializeJsonPretty(json::deviceData, Serial);
-    mqtt::client.publish(topicName, 0, true, jsonString);
-    return;
+      // get data stop here.
+      motors::collectData();
+
+      serializeJson(json::deviceData, jsonString);
+      // serializeJsonPretty(json::deviceData, Serial);
+      mqtt::client.publish(topicName, 0, true, jsonString);
+      return;
+    }
+
+    updateLocation();
+
+    if (sendRate.hasPassed(STREAM_INTERVAL, true)) {
+      imus::process();
+      morphose::navigation::process();
+
+      if (stream) {
+        sendData();
+      }
+    }
+
+    if(moterCheckTimer.hasPassed(1000, true)){
+        motors::checkTemperature();
+        energy::check();  // Energy checkpoint to prevent damage when low
+    }
+
   }
 
-  updateLocation();
+  
+}
 
-  if (sendRate.hasPassed(STREAM_INTERVAL, true)) {
-    imus::process();
-    Serial.println("imus::process done");
-    morphose::navigation::process();
-    Serial.println("morphose::navigation::process done");
-
-    if (stream) {
-      sendData();
-    }
-  }
-
-        if(moterCheckTimer.hasPassed(1000, true)){
-            motors::checkTemperature();
-            energy::check();  // Energy checkpoint to prevent damage when low
-            Serial.println("energy::check done");
-        }
-    }
+  
 
 void sendData() { sendDataFlag = true; }
 
@@ -304,52 +353,72 @@ namespace energy {
 #define ENERGY_VOLTAGE_CRITICAL_MODE 2
 
         void deepSleepLowMode(float batteryVoltage) {
-            mqtt::debug("Battery low");
+            char buff[64];
+            sprintf(buff,"Battery low : %.2F volts", batteryVoltage);
+            mqtt::debug(buff);
             delay(1000);    // TODO(Etienne): Verify with sofian why delay here
 
             // Wakeup every ENERGY_VOLTAGE_LOW_WAKEUP_TIME seconds.
             esp_sleep_enable_timer_wakeup(ENERGY_VOLTAGE_LOW_WAKEUP_TIME * 1000000UL);
             mqtt::debug("Battery low2");
-
             // Go to sleep (light sleep mode).
             esp_light_sleep_start();
         }
 
-        void deepSleepCriticalMode(float batteryVoltage) {
-            mqtt::debug("Battery critical");
+        void deepSleepCriticalMode(float batteryVoltage,float batteryVoltageAverage) {
+            
+            mqtt::sendBatteryCritical();
+            char buff[96];
+            sprintf(buff,"[Battery critical] Last reading %.2F volts, Average %.2F", batteryVoltage, batteryVoltageAverage);
+            mqtt::debug(buff);
 
-            delay(1000);    // TODO(Etienne): Verify with sofian why delay here
+            motors::setEnginePower(false);
+            // watchdog::deleteCurrentTask();
+            delay(1000); 
 
             // Go to sleep forever (deep sleep mode).
             esp_deep_sleep_start();
         }
 
+        float average(const float* array, const int size) {
+          float avg = 0;
+          for(int i = 0; i < size; i++){
+            avg += array[i];
+          }
+          return avg /= size;
+        }
+
         void check() {
-            // Read battery voltage.
-            float batteryVoltage = motors::getBatteryVoltage();
-            
-            char buffer[64];
-            sprintf(buffer,"Battery voltage : %F \n",batteryVoltage);
-            mqtt::debug(buffer);
+          static const float criticalVoltage = 12.0;
+          static float voltageReading[20]={0};
+          static unsigned int voltageReadingIndex = 0;
+          static bool firstBufferFill = false;
+          
+          // Read battery voltage.
+          float batteryVoltage = motors::getBatteryVoltage();
 
-            // Low voltage: Launch safety procedure.
-            if (batteryVoltage < ENERGY_VOLTAGE_LOW) {
-                // Put IMUs to sleep to protect them.
-                imus::sleep();
+          if (batteryVoltage == 0) {
+              mqtt::debug("WARNING : Battery missread");
+              return;
+          }
 
-    // Power engine off.
-    motors::setEnginePower(false);
+          voltageReading[voltageReadingIndex] = batteryVoltage;
+          voltageReadingIndex = (voltageReadingIndex + 1) % 20; // loop the buffer index
+          
+          if(voltageReadingIndex == 0) firstBufferFill = true; // Buffer is filled with readings
 
-                // If energy level is critical, just shut down the ESP.
-                if (batteryVoltage < ENERGY_VOLTAGE_CRITICAL) {
-                    deepSleepCriticalMode(batteryVoltage);
-                }
-
-                // Otherwise, sleep but wake up to show that something is wrong.
-                else {
-                    deepSleepLowMode(batteryVoltage);
-                }
-            }
+          if(!firstBufferFill) return; // Wait until buffer is filled
+          
+          float batteryVoltageMax = *std::max_element(voltageReading, voltageReading + 20);//average(voltageReading , sizeof(voltageReading)/sizeof(voltageReading[0])); // calculate average
+              // If energy level is critical, just shut down the ESP.
+          if (batteryVoltageMax < criticalVoltage) {
+              deepSleepCriticalMode(batteryVoltage,batteryVoltageMax);
+          }else{
+              mqtt::sendBatteryVoltage(batteryVoltageMax);
+              char buff[64];
+              sprintf(buff,"Battery voltage : %.2F volts , Max : %.2F", batteryVoltage, batteryVoltageMax);
+              mqtt::debug(buff);
+          }
         }
     }  // namespace energy
 }  // namespace morphose

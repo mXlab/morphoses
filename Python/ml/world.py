@@ -17,7 +17,7 @@ class Data:
                  is_angle=False,
                  smoothing=0.0,
                  force_delta=False,
-                 default=None):
+                 default=None): #None
         self.value = self.prev_value = self.stored_value = default
         self.delta_value = 0
         self.auto_scale = auto_scale
@@ -201,16 +201,16 @@ class RobotData(EntityData):
         self.add_data('y', auto_scale=False, max_change_per_second=0.01, min_value=boundaries['y_min'],
                       max_value=boundaries['y_max'], smoothing=0.1)
 
-        self.add_group('quaternion_side', ['qx', 'qy', 'qz', 'qw'])
-        self.add_data('qx', force_delta=True)
-        self.add_data('qy', force_delta=True)
-        self.add_data('qz', force_delta=True)
-        self.add_data('qw', force_delta=True)
+        # self.add_group('quaternion_side', ['qx', 'qy', 'qz', 'qw'])
+        # self.add_data('qx', force_delta=True)
+        # self.add_data('qy', force_delta=True)
+        # self.add_data('qz', force_delta=True)
+        # self.add_data('qw', force_delta=True)
 
-        self.add_group('rotation_side', ['rx', 'ry', 'rz'])
-        self.add_data('rx', is_angle=True, force_delta=True)
-        self.add_data('ry', is_angle=True, force_delta=True)
-        self.add_data('rz', is_angle=True, force_delta=True)
+        # self.add_group('rotation_side', ['rx', 'ry', 'rz'])
+        # self.add_data('rx', is_angle=True, force_delta=True)
+        # self.add_data('ry', is_angle=True, force_delta=True)
+        # self.add_data('rz', is_angle=True, force_delta=True)
 
         self.add_group('quaternion_main', ['mqx', 'mqy', 'mqz', 'mqw'])
         self.add_data('mqx', force_delta=True)
@@ -258,14 +258,14 @@ class RobotData(EntityData):
     def get_position(self, delta=False, standardized=True):
         return self.get_values(['x', 'y'], delta, standardized)
 
-    def get_quaternion_side(self, delta=False, standardized=True):
-        return self.get_values(['qx', 'qy', 'qz', 'qw'], delta, standardized)
+    # def get_quaternion_side(self, delta=False, standardized=True):
+    #     return self.get_values(['qx', 'qy', 'qz', 'qw'], delta, standardized)
 
     def get_quaternion_main(self, delta=False, standardized=True):
         return self.get_values(['mqx', 'mqy', 'mqz', 'mqw'], delta, standardized)
 
-    def get_rotation_side(self, delta=False, standardized=True):
-        return self.get_values(['rx', 'ry', 'rz'], delta, standardized)
+    # def get_rotation_side(self, delta=False, standardized=True):
+    #     return self.get_values(['rx', 'ry', 'rz'], delta, standardized)
 
     def get_rotation_main(self, delta=False, standardized=True):
         return self.get_values(['mrx', 'mry', 'mrz'], delta, standardized)
@@ -278,10 +278,10 @@ class RobotData(EntityData):
             data[10] = wrap_angle_180(data[10] + zOffset)
         return data[0:4], data[4:8], data[8:11], data[11:14]
 
-    def store_rotation_data_side(self, data, t):
-        quat, dQuat, rot, dRot = self.extract_data(data)
-        self.store(['qx', 'qy', 'qz', 'qw'], quat, t, delta=dQuat)
-        self.store(['rx', 'ry', 'rz'], rot, t, delta=dRot)
+    # def store_rotation_data_side(self, data, t):
+    #     quat, dQuat, rot, dRot = self.extract_data(data)
+    #     self.store(['qx', 'qy', 'qz', 'qw'], quat, t, delta=dQuat)
+    #     self.store(['rx', 'ry', 'rz'], rot, t, delta=dRot)
         
     def store_rotation_data_main(self, data, t, zOffset=0):
         quat, dQuat, rot, dRot = self.extract_data(data, zOffset)
@@ -473,7 +473,6 @@ class World:
         name = self.agent_as_name(agent)
         entity = self.entities[name]
         if entity.get_version() >= 3:
-            print("set speed: {}".format(speed))
             self.messaging.send(name, "/speed", speed)
         else:
             self.messaging.send(name, "/motor/1", round(speed * 128))
@@ -501,12 +500,14 @@ class World:
     # Stop mode: depending on success.
     def display_stop(self, agent, success):
         if success:
-            alt_color = [4, 16, 0]
+            base_color = [96, 255, 48],
+            alt_color  = [4, 32, 0]
         else:
-            alt_color = [20, 4, 0]
+            base_color = [24, 24, 24],
+            alt_color  = [8, 8, 8]
         # Calculate color representative of reward.
         animation = {
-            "base": [32, 32, 16],
+            "base": base_color,
             "alt": alt_color,
             "period": 4,
             "noise": 0.1,
@@ -519,7 +520,7 @@ class World:
         self.messaging.send_animation(name, animation)
 
     # Idle mode (between behaviors).
-    def display_idle(self, agent):
+    def display_fade(self, agent):
         animation = {
             "base": [8, 4, 0],
             "alt": [0, 0, 0],
@@ -571,7 +572,7 @@ class World:
 
         # Broadcast as OSC.
         name = self.agent_as_name(agent)
-        info = state[0].tolist() + [reward]
+        info = state[0].tolist() + [scaled_reward]
         self.messaging.send_info(name, "/display-data", info)
 
     # def set_animation_period(self, agent, period):
@@ -600,9 +601,9 @@ class World:
     #         self.messaging.send(name, "/blue", rgb[2])
 
     def is_inside_boundaries(self, agent, use_recenter_offset=True):
-        if (not self.is_valid(agent, 'x') or not self.is_valid(agent, 'y')):
-            return True
         if not self.use_virtual_boundaries:
+            return True
+        if (not self.is_valid(agent, 'x') or not self.is_valid(agent, 'y')):
             return True
         x = self.get(agent, 'x', standardized=False)
         y = self.get(agent, 'y', standardized=False)
@@ -611,16 +612,17 @@ class World:
                 (self.virtual_boundaries['y_min'] + offset <= y <= self.virtual_boundaries['y_max'] - offset)
 
     def begin(self):
-        print("Messaging begin")
+        print('World Begin')
         self.messaging.begin()
 
         print("Init robots")
-        for robot in self.robots:
+        for robot in self.robots: #TODO : Chek why asking for robot that are not enabled
             self.set_motors(robot, 0, 0)
             self.entities[robot].store_action(0, self.get_time())
             # self.set_color(robot, [0, 255, 255])
             self.messaging.send(robot, "/power", 1)
             self.messaging.send(robot, "/stream", 0)
+            self.messaging.send(robot, "/idle", 0)
             #self.messaging.send(robot, "/stream", 1, board_name='imu')
 
         # Call an update to initialize data.
@@ -628,18 +630,25 @@ class World:
         self.update()
 
     def step(self):
-        print("===== debug =====")
-        print(self.get('robot1', ['d_mrx', 'd_mry', 'd_mrz'], True))
-        print(self.get('robot1', ['d_mrx', 'd_mry', 'd_mrz'], False))
+        # print("===== debug =====")
+        # print(self.get('robot1', ['d_mrx', 'd_mry', 'd_mrz'], True))
+        # print(self.get('robot1', ['d_mrx', 'd_mry', 'd_mrz'], False))
         self.messaging.loop()
         self.update()
         self.debug()
-        self.send_data()
+        self.send_data() #TODO: Maybe remove, function only returns
 
     def sleep(self, t):
         start_time = time.time()
         while time.time() - start_time < t:
             self.messaging.loop()
+
+    def end(self):
+        for robot in self.robots:
+            self.set_motors(robot, 0, 0)
+            self.messaging.send(robot, "/idle", 1)
+            self.messaging.send(robot, "/idle", 1)
+            self.messaging.send(robot, "/idle", 1)
 
     def terminate(self):
         for robot in self.robots:
@@ -652,12 +661,12 @@ class World:
         self.messaging.terminate()
 
     def update(self):
+        print("Update")
         for entity in self.entities.values():
             entity.update()
 
         for robot_name in self.robots:
-            robot = self.entities[robot_name]
-            
+            # robot = self.entities[robot_name]
             # Ask for data.
             self.messaging.send(robot_name, "/get-data", 1)
 
@@ -701,8 +710,8 @@ class World:
     #     # Correct euler yaw with room heading offset.
     #     self.entities[entity_name].store_quaternion_main(quat, self.get_time(), -self.room_heading)
 
-    def store_rotation_data_side(self, entity_name, data):
-        self.entities[entity_name].store_rotation_data_side(data, self.get_time())
+    # def store_rotation_data_side(self, entity_name, data):
+    #     self.entities[entity_name].store_rotation_data_side(data, self.get_time())
 
     def store_rotation_data_main(self, entity_name, data):
         # Correct euler yaw with room heading offset.
