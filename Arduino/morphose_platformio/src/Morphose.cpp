@@ -134,17 +134,13 @@ void setIdle(bool idleMode) {
 void update() {
 
   if(idle) {
-
     // Run idle mode.
     if (idleActionTimer.hasPassed(1000, true)) {
       if (pq::randomUniform() < 0.1f) {
         motors::setEngineSteer(pq::randomFloat(-1, 1));
       }
     }
-
-  }
-
-  else {
+  }else{
     if (sendDataFlag) {
       sendDataFlag = false;
 
@@ -167,9 +163,7 @@ void update() {
 
     if (sendRate.hasPassed(STREAM_INTERVAL, true)) {
       imus::process();
-      //Serial.println("imus::process done");
       morphose::navigation::process();
-      //Serial.println("morphose::navigation::process done");
 
       if (stream) {
         sendData();
@@ -179,7 +173,6 @@ void update() {
     if(moterCheckTimer.hasPassed(1000, true)){
         motors::checkTemperature();
         energy::check();  // Energy checkpoint to prevent damage when low
-        //Serial.println("energy::check done");
     }
 
   }
@@ -372,19 +365,16 @@ namespace energy {
             esp_light_sleep_start();
         }
 
-        void deepSleepCriticalMode(float batteryVoltage) {
-            char buff[64];
-            sprintf(buff,"Battery critical : %.2F volts", batteryVoltage);
+        void deepSleepCriticalMode(float batteryVoltage,float batteryVoltageAverage) {
+            
+            mqtt::sendBatteryCritical();
+            char buff[96];
+            sprintf(buff,"[Battery critical] Last reading %.2F volts, Average %.2F", batteryVoltage, batteryVoltageAverage);
             mqtt::debug(buff);
 
-            mqtt::sendBatteryCritical();
-            animations::setDebugColor(0, 0,0,0,0);
-            animations::setDebugColor(1, 0,0,0,0);
-            animations::setDebugColor(2, 0,0,0,0);
-            animations::setDebugColor(3, 0,0,0,0);
             motors::setEnginePower(false);
             // watchdog::deleteCurrentTask();
-            delay(1000);    // TODO(Etienne): Verify with sofian why delay here
+            delay(1000); 
 
             // Go to sleep forever (deep sleep mode).
             esp_deep_sleep_start();
@@ -400,7 +390,7 @@ namespace energy {
 
         void check() {
           static const float criticalVoltage = 12.0;
-          static float voltageReading[10]={0,0,0,0,0,0,0,0,0,0};
+          static float voltageReading[20]={0};
           static unsigned int voltageReadingIndex = 0;
           static bool firstBufferFill = false;
           
@@ -413,36 +403,22 @@ namespace energy {
           }
 
           voltageReading[voltageReadingIndex] = batteryVoltage;
-          voltageReadingIndex = (voltageReadingIndex + 1) % 10; // loop the buffer index
+          voltageReadingIndex = (voltageReadingIndex + 1) % 20; // loop the buffer index
           
           if(voltageReadingIndex == 0) firstBufferFill = true; // Buffer is filled with readings
 
           if(!firstBufferFill) return; // Wait until buffer is filled
-
-          batteryVoltage = average(voltageReading , sizeof(voltageReading)/sizeof(voltageReading[0])); // calculate average
-             
-
-            // Low voltage: Launch safety procedure.
-            // if (batteryVoltage < lowVoltage) {
-            //     // Put IMUs to sleep to protect them.
-            //     imus::sleep();
-
-            //     // Power engine off.
-            //     motors::setEnginePower(false);
-
-                // If energy level is critical, just shut down the ESP.
-            if (batteryVoltage < criticalVoltage) {
-                deepSleepCriticalMode(batteryVoltage);
-            }else{
-               mqtt::sendBatteryVoltage(batteryVoltage);
-               char buff[64];
-               sprintf(buff,"Battery voltage : %.2F volts", batteryVoltage);
-               mqtt::debug(buff);
-            }
-                // }else {    // Otherwise, sleep but wake up to show that something is wrong.
-                //     deepSleepLowMode(batteryVoltage);
-                // }
-            // }
+          
+          float batteryVoltageMax = *std::max_element(voltageReading, voltageReading + 20);//average(voltageReading , sizeof(voltageReading)/sizeof(voltageReading[0])); // calculate average
+              // If energy level is critical, just shut down the ESP.
+          if (batteryVoltageMax < criticalVoltage) {
+              deepSleepCriticalMode(batteryVoltage,batteryVoltageMax);
+          }else{
+              mqtt::sendBatteryVoltage(batteryVoltageMax);
+              char buff[64];
+              sprintf(buff,"Battery voltage : %.2F volts , Max : %.2F", batteryVoltage, batteryVoltageMax);
+              mqtt::debug(buff);
+          }
         }
     }  // namespace energy
 }  // namespace morphose
