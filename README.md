@@ -8,14 +8,13 @@ Default IP addresses (need to be setup on the router):
 
 | Device            | IP            |
 | ---- | --- |
+| Main PC           | 192.168.0.100 |
 | RTLS/MQTT Gateway | 192.168.0.200 |
 | Robot 1 Esp32     | 192.168.0.110 |
 | Robot 2 Esp32     | 192.168.0.120 |
 | Robot 3 Esp32     | 192.168.0.130 |
-| Visualizer 1 RPi  | 192.168.0.161 |
-| Visualizer 2 RPi  | 192.168.0.171 |
-| Visualizer 3 RPi  | 192.168.0.181 |
-| Main Computer     | 192.168.0.190 |
+| Visualizer PC     | 192.168.0.150 |
+| Title display RPi | 192.168.0.161 |
 
 MQTT Port: 1883
 
