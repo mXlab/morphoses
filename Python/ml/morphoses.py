@@ -10,7 +10,7 @@ from agent import Agent
 from world import World
 from manager import Manager
 
-def interrupt(signup, frame):
+def terminate(signup, frame):
     global world
     print("Exiting program...")
     world.terminate()
@@ -18,7 +18,8 @@ def interrupt(signup, frame):
 
 if __name__ == "__main__":
 
-    signal.signal(signal.SIGINT, interrupt)
+    signal.signal(signal.SIGINT,  terminate)
+    signal.signal(signal.SIGTERM, terminate)
 
     # Create parser
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
