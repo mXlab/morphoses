@@ -71,7 +71,7 @@ using namespace pq;
 #include "lights/Animation.h"
 #include "lights/Pixels.h"
 
-// #include "Logger.h"
+
 #include "Morphose.h"
 #include "Utils.h"
 #include "Watchdog.h"
@@ -93,8 +93,6 @@ void setup() {
   Serial.println(" Morphose - 2024 - 11 ");
 
   Wire.begin();
-  
-  //logger::initialize();
 
   morphose::initialize();  // cannot send message before this point. Morphose needs to be initialized
  
@@ -114,8 +112,9 @@ void setup() {
   animations::initialize();
   mqtt::debug(" Animation initialized");
   #if defined(MORPHOSE_DEBUG)
-    animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
+    
   #endif
+  animations::setDebugColor(DEBUG_COLOR_A, 0,0,200,0);
   imus::initialize();
   mqtt::debug(" IMU initialized");
 
@@ -157,17 +156,9 @@ void loop() {
   // Ping watchdog.
   watchdog::reset();
 
- // logger::update();
-  //logger::info("logger::update ok");
-
   // // Update OTA.
    updateOTA();
-  
-
-//  logger::info("mqtt::update ok");
-
    morphose::update();
-// logger::info("morphose::update ok");
 
   //checkMemory();
 }

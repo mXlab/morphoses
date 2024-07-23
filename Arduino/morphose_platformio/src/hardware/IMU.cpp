@@ -13,12 +13,6 @@ namespace imus {
 
   const char* MorphosesIMU::name() const { return _isMain ? "main" : "side"; }
 
-  // Start an IMU-specific OSC Message by calling this with appropriate sub-address. Result will be "/{main,side}/<addr>".
-  // OSCMessage& MorphosesIMU::oscBundle(const char* addr) {
-  //   char fullAddr[32];
-  //   sprintf(fullAddr, "/%s%s", name(), addr);
-  //   return osc::bundle.add(fullAddr);
-  // }
 
     uint8_t MorphosesIMU::i2cAddress() const { return _isMain ? 0x4B : 0x4A; }
 
@@ -34,9 +28,7 @@ namespace imus {
       // Try to connect.
       boolean isOk = begin(i2cAddress());
       if (!isOk) {
-        //logger::error("Cant initialize imus");
         mqtt::debug("BNO080 not detected at I2C address. Check your jumpers and the hookup guide. Freezing...");
-//        utils::blinkIndicatorLed(1000, 0.1);
       } else {
         // Increase I2C data rate to 400kHz.
         Wire.setClock(400000); 
@@ -157,7 +149,6 @@ namespace imus {
 ///----
 
 MorphosesIMU imuMain(true);
-//MorphosesIMU imuSide(false);
 
 #define IMU_LOW_ACCURACY  1
 #define IMU_HIGH_ACCURACY 3
@@ -172,54 +163,38 @@ void initialize() {
     #endif
     imuMain.init();
   }
-
-  // if (!imuSide.isInitialized()) {
-  //   mqtt::debug("Side imu not initialized");
-  //   #if defined(MORPHOSE_DEBUG)
-  //     animations::setDebugColor(DEBUG_COLOR_A,10,0,0,0);
-  //   #endif
-  //   imuSide.init();
-  // }
-
 }
 
 void beginCalibration() {
   mqtt::debug("Begin calibration");
   imuMain.calibrateBegin();
-  // imuSide.calibrateBegin();
 }
 
 void endCalibration() {
   mqtt::debug("End calibration");
   imuMain.calibrateEnd();
-  // imuSide.calibrateEnd();
 }
 
 void saveCalibration() {
   imuMain.calibrateSave();
-  // imuSide.calibrateSave();
 }
 
 void sleep() {
   mqtt::debug("imus Sleeping");
   imuMain.modeSleep();
-  // imuSide.modeSleep();
 }
 
 void wake() {
   mqtt::debug("imus Waking");
   imuMain.modeOn();
-  // imuSide.modeOn();
 }
 
 
 void process() {
-  // mqtt::debug("imus Process");
   #if defined(MORPHOSE_DEBUG)
   animations::setDebugColor(DEBUG_COLOR_A,0,50,0,0);
   #endif
   imuMain.process();
-  // imuSide.process();
   #if defined(MORPHOSE_DEBUG)
   animations::setDebugColor(DEBUG_COLOR_A,0,0,100,0);
   #endif
@@ -227,7 +202,6 @@ void process() {
 
 void collectData() {
   imuMain.collectData();
-  // imuSide.collectData();
 }
 
 float getHeading() {
@@ -241,5 +215,4 @@ float getRawHeading() {
 void tare(float currentHeading) {
   imuMain.tare(currentHeading);
 }
-
 }  // namespace imus
