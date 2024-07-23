@@ -156,6 +156,9 @@ class Manager:
         self.world.end()
         self.world.terminate()
 
+    def terminate(self):
+        self.world.terminate()
+
     # Callback for threads.
     def run_step_agent(self, agent):
         logging.info("Stepping agent {}".format(agent.get_name()))
