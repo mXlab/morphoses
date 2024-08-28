@@ -45,6 +45,7 @@ class Agent:
         action_profile = kwargs.get('action_profile', 'grid')
         time_step = np.max(kwargs.get('time_step', 0), 0)
         time_balance = np.max(kwargs.get('time_balance', 0), 0)
+        self.time_step_total = time_step + time_balance
         navigation_mode = kwargs.get('navigation_mode', False)
         flash_mode = kwargs.get('flash_mode', False)
         self.action_manager = action.ActionManager(self, world, action_profile, time_step, time_balance, navigation_mode, flash_mode)
@@ -185,7 +186,7 @@ class Agent:
             # Random behavior.
             if np.random.random() < 0.2: # 20% chance of tilting randomly
                 self.world.set_motors(self, 0, utils.lerp(np.random.random(), -1, 1))
-            self.world.sleep(self.time_step + self.time_balance) # Wait for a normal step.
+            self.world.sleep(self.time_step_total) # Wait for a normal step.
 
             # Display visualization stop state.
             self.world.display_stop(self, self.get_state(), self.success)            

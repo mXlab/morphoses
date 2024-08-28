@@ -1,11 +1,11 @@
 ---
 sequence:  
-  - dance
-  - curiosity
-  - synchrony
+  #- dance
+  #- curiosity
+  #- synchrony
   # - get_close_thing1
-  - go_to_y
-  - get_close_center
+  #- go_to_y
+  #- get_close_center
   - immobilism
 
 robots:

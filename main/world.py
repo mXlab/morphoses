@@ -502,9 +502,11 @@ class World:
         if success:
             base_color = [96, 255, 48],
             alt_color  = [4, 32, 0]
+            scaled_reward = 1
         else:
             base_color = [24, 24, 24],
             alt_color  = [8, 8, 8]
+            scaled_reward = 0
         # Calculate color representative of reward.
         animation = {
             "base": base_color,
@@ -520,7 +522,7 @@ class World:
         self.messaging.send_animation(name, animation)
 
         # Send state data.
-        self.send_state(agent, state)
+        self.send_state(agent, state, scaled_reward)
 
     # Idle mode (between behaviors).
     def display_fade(self, agent):
@@ -569,12 +571,12 @@ class World:
         name = self.agent_as_name(agent)
         self.messaging.send_animation(name, animation)
 
-    def display(self, agent, reward, scaled_reward):
+    def display(self, agent,state, reward, scaled_reward):
         # Display scaled reward.
         self.display_reward(agent, scaled_reward)
 
         # Send state data.
-        self.send_state(agent, state)
+        self.send_state(agent, state, scaled_reward)
 
     # def set_animation_period(self, agent, period):
     #     name = self.agent_as_name(agent)
@@ -730,7 +732,7 @@ class World:
         # for robot_name in self.robots:
         #     self.messaging.send_info("/{}/pos".format(robot_name), [self.get(robot_name, 'x'), self.get(robot_name, 'y')])
     
-    def send_state(self, agent, state):
+    def send_state(self, agent, state,scaled_reward):
         # Broadcast as OSC.
         name = self.agent_as_name(agent)
         info = state[0].tolist() + [scaled_reward]
