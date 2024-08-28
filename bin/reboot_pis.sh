@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # List of IP addresses of the remote computers
-declare -a ips=("192.168.0.161" "192.168.0.171" "192.168.0.181")
+declare -a ips=("192.168.0.161")
 
 # Username on the remote computers
 username="pi"

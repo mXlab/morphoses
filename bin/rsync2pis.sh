@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Directory to upload
-local_file="$(pwd)/Processing/MorphosesDisplay/"
+local_file="$(pwd)/MorphosesTitleDisplay/"
 
 # Remote directory where to upload the directory
-remote_dir="/home/pi/morphoses/Processing/MorphosesDisplay"
+remote_dir="/home/pi/morphoses/MorphosesTitleDisplay"
 
 # List of IP addresses of the remote computers
-declare -a ips=("192.168.0.161" "192.168.0.171" "192.168.0.181")
+declare -a ips=("192.168.0.161")
 
 # Username on the remote computers
 username="pi"
