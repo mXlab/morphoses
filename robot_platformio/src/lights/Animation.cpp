@@ -157,11 +157,6 @@ void display() {
 
 void stop() {
   if (lockMutex()) {
-    // Clear all pixels.
-    pixels::clear();
-    pixels::display();
-
-    // 
     isRunning = false;
     unlockMutex();
   }
