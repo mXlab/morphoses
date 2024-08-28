@@ -498,7 +498,7 @@ class World:
         self.messaging.send(name, "/nav", { 'action': "stop" })
         
     # Stop mode: depending on success.
-    def display_stop(self, agent, success):
+    def display_stop(self, agent, state, success):
         if success:
             base_color = [96, 255, 48],
             alt_color  = [4, 32, 0]
@@ -518,6 +518,9 @@ class World:
         # Send animation parameters.
         name = self.agent_as_name(agent)
         self.messaging.send_animation(name, animation)
+
+        # Send state data.
+        self.send_state(agent, state)
 
     # Idle mode (between behaviors).
     def display_fade(self, agent):
@@ -566,14 +569,12 @@ class World:
         name = self.agent_as_name(agent)
         self.messaging.send_animation(name, animation)
 
-    def display(self, agent, state, reward, scaled_reward):
+    def display(self, agent, reward, scaled_reward):
         # Display scaled reward.
         self.display_reward(agent, scaled_reward)
 
-        # Broadcast as OSC.
-        name = self.agent_as_name(agent)
-        info = state[0].tolist() + [scaled_reward]
-        self.messaging.send_info(name, "/display-data", info)
+        # Send state data.
+        self.send_state(agent, state)
 
     # def set_animation_period(self, agent, period):
     #     name = self.agent_as_name(agent)
@@ -728,3 +729,9 @@ class World:
         return
         # for robot_name in self.robots:
         #     self.messaging.send_info("/{}/pos".format(robot_name), [self.get(robot_name, 'x'), self.get(robot_name, 'y')])
+    
+    def send_state(self, agent, state):
+        # Broadcast as OSC.
+        name = self.agent_as_name(agent)
+        info = state[0].tolist() + [scaled_reward]
+        self.messaging.send_info(name, "/display-data", info)

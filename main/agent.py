@@ -179,10 +179,16 @@ class Agent:
         #     self.success = False
 
         if self.is_stopped():
+            # Tell the visualization that the robot has stopped.
             self.world.send_info(self.get_name(), "/stopped", self.success)
-            if np.random.random() < 0.2:
+
+            # Random behavior.
+            if np.random.random() < 0.2: # 20% chance of tilting randomly
                 self.world.set_motors(self, 0, utils.lerp(np.random.random(), -1, 1))
-            self.world.sleep(1.0)
+            self.world.sleep(self.time_step + self.time_balance) # Wait for a normal step.
+
+            # Display visualization stop state.
+            self.world.display_stop(self, self.get_state(), self.success)            
 
         else:
             # If the robot is within virtual fence: Perform standard RL loop.
@@ -273,7 +279,7 @@ class Agent:
             if self.is_stopped():
                 self.behavior_chrono.stop()
                 self.high_reward_chrono.stop()
-                self.world.display_stop(self, self.success)
+                self.world.display_stop(self, state, self.success)
                 return
 
             # print("({}, {}) => {}".format(self.prev_state, self.action_manager.get_action(self.prev_action), r))
