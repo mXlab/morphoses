@@ -85,6 +85,12 @@ void update();
 // Display animation.
 void display();
 
+// Stop animation module.
+void stop();
+
+// Start animation module.
+void start();
+
 // Task handle.
 void run(void *parameters);
 

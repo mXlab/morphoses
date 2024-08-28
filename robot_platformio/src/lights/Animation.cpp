@@ -6,6 +6,8 @@ namespace animations {
 TaskHandle_t taskAnimation;
 SemaphoreHandle_t animationMutex = NULL;
 
+bool isRunning;
+
 // Current and previous animations.
 Animation current;
 Animation previous;
@@ -153,15 +155,34 @@ void display() {
   pixels::display();
 }
 
+void stop() {
+  if (lockMutex()) {
+    // Clear all pixels.
+    pixels::clear();
+    pixels::display();
+
+    // 
+    isRunning = false;
+    unlockMutex();
+  }
+}
+
+// Start animation module.
+void start() {
+  if (lockMutex()) {
+    isRunning = true;
+    unlockMutex();
+  }
+}
+
 void run(void *parameters) {
   // Infinite loop.
   for (;;) {
     // Ping watchdog.
     watchdog::reset();
 
-    // Wait for mutex.
-    if (lockMutex()) {
-
+    // Wait for mutex and check if animation is running.
+    if (lockMutex() && isRunning) {
       // Update animation.
       pq::Plaquette.step();
 
@@ -169,8 +190,7 @@ void run(void *parameters) {
       // Unlock mutex.
       unlockMutex();
       // Display animation frame.
-      display();
-      
+      display();      
     }
   }
 }
