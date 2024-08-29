@@ -372,7 +372,12 @@ namespace energy {
             sprintf(buff,"[Battery critical] Last reading %.2F volts, Average %.2F", batteryVoltage, batteryVoltageAverage);
             mqtt::debug(buff);
 
+            // Stop power consumption.
             motors::setEnginePower(false);
+            animations::stop();
+            pixels::clear();
+            pixels::display();
+
             // watchdog::deleteCurrentTask();
             delay(1000); 
 
