@@ -347,10 +347,12 @@ void collectData() {
 }  // namespace navigation
 
 namespace energy {
+
 #define ENERGY_VOLTAGE_LOW_WAKEUP_TIME 10
 #define ENERGY_VOLTAGE_OK_MODE 0
 #define ENERGY_VOLTAGE_LOW_MODE 1
 #define ENERGY_VOLTAGE_CRITICAL_MODE 2
+#define ENERGY_VOLTAGE_N_READINGS 20
 
         void deepSleepLowMode(float batteryVoltage) {
             char buff[64];
@@ -395,8 +397,7 @@ namespace energy {
         }
 
         void check() {
-          static int numReadings = 20;
-          static float voltageReading[numReadings]={0};
+          static float voltageReading[ENERGY_VOLTAGE_N_READINGS]={0};
           static unsigned int voltageReadingIndex = 0;
           static bool firstBufferFill = false;
           
@@ -409,13 +410,13 @@ namespace energy {
           }
 
           voltageReading[voltageReadingIndex] = batteryVoltage;
-          voltageReadingIndex = (voltageReadingIndex + 1) % numReadings; // loop the buffer index
+          voltageReadingIndex = (voltageReadingIndex + 1) % ENERGY_VOLTAGE_N_READINGS; // loop the buffer index
           
           if(voltageReadingIndex == 0) firstBufferFill = true; // Buffer is filled with readings
 
           if(!firstBufferFill) return; // Wait until buffer is filled
           
-          float batteryVoltageMax = *std::max_element(voltageReading, voltageReading + numReadings);//average(voltageReading , sizeof(voltageReading)/sizeof(voltageReading[0])); // calculate average
+          float batteryVoltageMax = *std::max_element(voltageReading, voltageReading + ENERGY_VOLTAGE_N_READINGS);//average(voltageReading , sizeof(voltageReading)/sizeof(voltageReading[0])); // calculate average
               // If energy level is critical, just shut down the ESP.
           if (batteryVoltageMax < ENERGY_VOLTAGE_CRITICAL) {
               deepSleepCriticalMode(batteryVoltage,batteryVoltageMax);
