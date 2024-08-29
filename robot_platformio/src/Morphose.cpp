@@ -375,6 +375,7 @@ namespace energy {
             // Stop power consumption.
             motors::setEnginePower(false);
             animations::stop();
+            delay(100);
             pixels::clear();
             pixels::display();
 

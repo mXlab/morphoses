@@ -6,7 +6,7 @@ namespace animations {
 TaskHandle_t taskAnimation;
 SemaphoreHandle_t animationMutex = NULL;
 
-bool isRunning;
+bool isRunning = true;
 
 // Current and previous animations.
 Animation current;
@@ -156,18 +156,12 @@ void display() {
 }
 
 void stop() {
-  if (lockMutex()) {
     isRunning = false;
-    unlockMutex();
-  }
 }
 
 // Start animation module.
 void start() {
-  if (lockMutex()) {
     isRunning = true;
-    unlockMutex();
-  }
 }
 
 void run(void *parameters) {
