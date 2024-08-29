@@ -394,8 +394,8 @@ namespace energy {
         }
 
         void check() {
-          static const float criticalVoltage = 12.0;
-          static float voltageReading[20]={0};
+          static int numReadings = 20;
+          static float voltageReading[numReadings]={0};
           static unsigned int voltageReadingIndex = 0;
           static bool firstBufferFill = false;
           
@@ -408,15 +408,15 @@ namespace energy {
           }
 
           voltageReading[voltageReadingIndex] = batteryVoltage;
-          voltageReadingIndex = (voltageReadingIndex + 1) % 20; // loop the buffer index
+          voltageReadingIndex = (voltageReadingIndex + 1) % numReadings; // loop the buffer index
           
           if(voltageReadingIndex == 0) firstBufferFill = true; // Buffer is filled with readings
 
           if(!firstBufferFill) return; // Wait until buffer is filled
           
-          float batteryVoltageMax = *std::max_element(voltageReading, voltageReading + 20);//average(voltageReading , sizeof(voltageReading)/sizeof(voltageReading[0])); // calculate average
+          float batteryVoltageMax = *std::max_element(voltageReading, voltageReading + numReadings);//average(voltageReading , sizeof(voltageReading)/sizeof(voltageReading[0])); // calculate average
               // If energy level is critical, just shut down the ESP.
-          if (batteryVoltageMax < criticalVoltage) {
+          if (batteryVoltageMax < ENERGY_VOLTAGE_CRITICAL) {
               deepSleepCriticalMode(batteryVoltage,batteryVoltageMax);
           }else{
               mqtt::sendBatteryVoltage(batteryVoltageMax);
