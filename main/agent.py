@@ -41,6 +41,8 @@ class Agent:
 
         reward_profile = kwargs.get('reward_profile', [])
         self.extrinsic_rewards = get_extrinsic_rewards(reward_profile)
+        self.min_reward = kwargs.get('min_reward', +9999)
+        self.max_reward = kwargs.get('max_reward', -9999)
 
         action_profile = kwargs.get('action_profile', 'grid')
         time_step = np.max(kwargs.get('time_step', 0), 0)
@@ -146,19 +148,19 @@ class Agent:
 
     def begin(self):
         while not self.state_is_ready():
-            if self.begin_attempts >= 5: 
+            if self.begin_attempts >= 10: 
                 print('Max begin attempts reached for {}. Force exiting function'.format(self.get_name()))
                 return False
             self.world.update() # Update (will ping the robots).
             self.world.sleep(1.0) # Wait - don't wait for less than that pls
-            self.begin_attempts +=1 
+            self.begin_attempts += 1
 
         self.prev_state = self.get_state()
         self.prev_action = None
         self.r = 0
         self.avg_r = None
-        self.max_r = -9999
-        self.min_r = +9999
+        self.max_r = self.max_reward
+        self.min_r = self.min_reward
         self.iter = 0
         self.prev_corr_action = None
 
@@ -244,7 +246,7 @@ class Agent:
             self.min_r = min(self.min_r, r)
             self.max_r = max(self.max_r, r)
             scaled_r = utils.inv_lerp(r, self.min_r, self.max_r)
-            self.world.display(self, state, r, scaled_r)
+            self.world.display(self, state, scaled_r)
 
             #self.world.debug_display(self, self.get_state(False), r_int, r_ext, r)
 

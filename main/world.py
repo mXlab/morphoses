@@ -46,6 +46,8 @@ class Data:
 
     # Temporarily store value at time t (in seconds).
     def store(self, value, t, delta=None):
+        if math.isnan(value):
+            return
         if self.stored_time is None:
             self.stored_value = value
         else:
@@ -58,7 +60,7 @@ class Data:
             self.min_value = min(self.min_value, self.stored_value)
             self.max_value = max(self.max_value, self.stored_value)
         
-        if self.force_delta and delta is not None:
+        if self.force_delta and delta is not None and not math.isnan(delta):
             self.delta_value = delta
 
     # Update values based on stored value.
@@ -499,30 +501,7 @@ class World:
         
     # Stop mode: depending on success.
     def display_stop(self, agent, state, success):
-        if success:
-            base_color = [96, 255, 48],
-            alt_color  = [4, 32, 0]
-            scaled_reward = 1
-        else:
-            base_color = [24, 24, 24],
-            alt_color  = [8, 8, 8]
-            scaled_reward = 0
-        # Calculate color representative of reward.
-        animation = {
-            "base": base_color,
-            "alt": alt_color,
-            "period": 4,
-            "noise": 0.1,
-            "region": 0,
-            "type": 0
-        }
-
-        # Send animation parameters.
-        name = self.agent_as_name(agent)
-        self.messaging.send_animation(name, animation)
-
-        # Send state data.
-        self.send_state(agent, state, scaled_reward)
+        self.display(agent, state, 1 if success else 0)
 
     # Idle mode (between behaviors).
     def display_fade(self, agent):
@@ -571,7 +550,7 @@ class World:
         name = self.agent_as_name(agent)
         self.messaging.send_animation(name, animation)
 
-    def display(self, agent,state, reward, scaled_reward):
+    def display(self, agent, state, scaled_reward):
         # Display scaled reward.
         self.display_reward(agent, scaled_reward)
 
