@@ -649,6 +649,7 @@ class World:
     def end(self):
         for robot in self.robots:
             self.set_motors(robot, 0, 0)
+            # Send IDLE command multiple times just to be sure.
             self.messaging.send(robot, "/idle", 1)
             self.messaging.send(robot, "/idle", 1)
             self.messaging.send(robot, "/idle", 1)
