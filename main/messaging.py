@@ -200,7 +200,11 @@ class Messaging:
     # Receive RTLS location.
     def receive_location(self, data, node_id):
         pos = data['position']
-        if pos['quality'] > 40 and node_id in self.rtls_nodes.keys():
+        # We used to check that pos['quality'] > 40 but it was error-prone because
+        # if quality of readings was too low data never got registered resulting in
+        # system failure. There might be a smarter way to fix this but for now we chose
+        # to just do this.
+        if node_id in self.rtls_nodes.keys():
             self.world.store_position(self.rtls_nodes[node_id], [float(pos['x']), float(pos['y'])])
 
     # Receive data from robot.

@@ -77,6 +77,7 @@ class RobotExt:
 		self.temp.par.Speedstatus = int(float(p[1]))
 		self.temp.par.Steertemp = int(float(p[2]))
 		self.temp.par.Steerstatus = int(float(p[3]))
+	
 		
 	def UpdateBattery(self,voltage):
 		self.battery.par.Voltage = voltage
